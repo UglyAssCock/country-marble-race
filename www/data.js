@@ -1,111 +1,132 @@
-// UN-Recognized Sovereign States + Regions, Alliances, Fun Facts, Translations, Skins & Achievements
+// UN-Recognized Countries + 12 Track Definitions + Formula & NASCAR Scoring Systems
 window.GAME_DATA = {
-  gpPoints: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
+  // Formula 1 Style GP Points (Top 10 score)
+  formulaPoints: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
+
+  // Helper for NASCAR Cup Style Points (Full field scores: 1st=40, 2nd=35, 3rd=34, 4th=33... min 1 pt)
+  getPoints(rankIndex, system) {
+    if (system === "nascar") {
+      if (rankIndex === 0) return 40;
+      return Math.max(1, 36 - rankIndex);
+    }
+    return this.formulaPoints[rankIndex] || 0;
+  },
+
+  tracks: [
+    { id: "classic", name: "Classic Funnel Park" },
+    { id: "spinnerMayhem", name: "Spinner Mayhem" },
+    { id: "bumperPinball", name: "Pinball Bumper Arena" },
+    { id: "seesawDrop", name: "Seesaw Canyon" },
+    { id: "gauntlet", name: "World Cup Gauntlet" },
+    { id: "plinko", name: "Mega Plinko Matrix" },
+    { id: "zigzag", name: "Zig-Zag Serpent Slalom" },
+    { id: "hyperSpeed", name: "Nitro Booster Highway" },
+    { id: "swissAlps", name: "Alpine Ice Chutes" },
+    { id: "saharaDunes", name: "Sahara Funnel Dunes" },
+    { id: "chaosReactor", name: "Twin Reactor Spinners" },
+    { id: "endurance", name: "Grand Marathon Colosseum" }
+  ],
 
   i18n: {
     en: {
       title: "Country Marble Race",
       customCreator: "Custom Race Creator",
-      numCountries: "Countries (2-100)",
-      raceFormat: "Race Format",
-      regionFilter: "Region / Continent",
-      trackSelect: "Track",
-      difficulty: "Difficulty",
-      raceLength: "Race Length",
+      numCountries: "Marbles (2-100)",
+      raceFormat: "Game Mode",
+      regionFilter: "Region / Pool",
+      trackSelect: "Track Selection",
+      difficulty: "Obstacle Density",
+      raceLength: "Track Length",
       cameraMode: "Default Camera",
       physicsSpeed: "Physics Speed",
-      numRounds: "Rounds (1-20)",
-      elimCount: "Eliminate Per Round",
-      tourneyFormat: "Tournament Structure",
+      numRounds: "Number of Rounds (1-20)",
+      elimCount: "Knockout Cut / Round",
       countrySelection: "Selection Mode",
-      competitions: "Major Cups & Championships",
+      competitions: "Major Cups & Grand Prix Leagues",
       navRace: "Race",
       navCups: "Cups",
       navStats: "Stats",
       navEditor: "Editor",
-      navShop: "Skins",
+      navShop: "Custom",
       navConfig: "Options"
     },
     ar: {
       title: "سباق كرات الدول",
       customCreator: "إنشاء سباق مخصص",
-      numCountries: "عدد الدول (2-100)",
-      raceFormat: "نظام السباق",
-      regionFilter: "القارة / المنطقة",
+      numCountries: "عدد الكرات (2-100)",
+      raceFormat: "نظام اللعب",
+      regionFilter: "المنطقة / الفئة",
       trackSelect: "المضمار",
-      difficulty: "الصعوبة",
+      difficulty: "كثافة العوائق",
       raceLength: "طول المضمار",
       cameraMode: "الكاميرا",
       physicsSpeed: "سرعة الفيزياء",
       numRounds: "عدد الجولات (1-20)",
       elimCount: "الإقصاء في كل جولة",
-      tourneyFormat: "نظام البطولة",
-      countrySelection: "اختيار الدول",
-      competitions: "البطولات والكؤوس العالمية",
+      countrySelection: "اختيار الكرات",
+      competitions: "البطولات والجائزة الكبرى",
       navRace: "سباق",
       navCups: "بطولات",
-      navStats: "إحصائيات",
+      navStats: "الترتيب",
       navEditor: "مضماري",
-      navShop: "متجر",
+      navShop: "تصميم",
       navConfig: "إعدادات"
     },
     fr: {
       title: "Course de Billes des Pays",
       customCreator: "Créateur de Course",
-      numCountries: "Pays (2-100)",
-      raceFormat: "Format de Course",
-      regionFilter: "Continent / Région",
-      trackSelect: "Circuit",
-      difficulty: "Difficulté",
-      raceLength: "Longueur",
+      numCountries: "Billes (2-100)",
+      raceFormat: "Mode de Jeu",
+      regionFilter: "Région / Pool",
+      trackSelect: "Sélection du Circuit",
+      difficulty: "Densité d'Obstacles",
+      raceLength: "Longueur de Piste",
       cameraMode: "Caméra",
       physicsSpeed: "Vitesse Physique",
       numRounds: "Manches (1-20)",
-      elimCount: "Éliminés par Manche",
-      tourneyFormat: "Format Tournoi",
-      countrySelection: "Sélection des Pays",
-      competitions: "Coupes et Championnats",
+      elimCount: "Éliminés / Manche",
+      countrySelection: "Mode de Sélection",
+      competitions: "Coupes et Grands Prix",
       navRace: "Course",
       navCups: "Coupes",
       navStats: "Stats",
       navEditor: "Éditeur",
-      navShop: "Skins",
+      navShop: "Custom",
       navConfig: "Options"
     },
     es: {
-      title: "Carrera de Canicas de Países",
+      title: "Carrera de Canicas",
       customCreator: "Creador de Carreras",
-      numCountries: "Países (2-100)",
-      raceFormat: "Formato de Carrera",
-      regionFilter: "Región / Continente",
-      trackSelect: "Pista",
+      numCountries: "Canicas (2-100)",
+      raceFormat: "Modo de Juego",
+      regionFilter: "Región / Grupo",
+      trackSelect: "Selección de Pista",
       difficulty: "Dificultad",
-      raceLength: "Longitud",
+      raceLength: "Longitud de Pista",
       cameraMode: "Cámara",
       physicsSpeed: "Velocidad Física",
       numRounds: "Rondas (1-20)",
-      elimCount: "Eliminados por Ronda",
-      tourneyFormat: "Formato de Torneo",
+      elimCount: "Eliminados / Ronda",
       countrySelection: "Selección",
-      competitions: "Copas y Campeonatos",
+      competitions: "Copas y Grandes Premios",
       navRace: "Carrera",
       navCups: "Copas",
       navStats: "Récords",
       navEditor: "Editor",
-      navShop: "Skins",
+      navShop: "Crear",
       navConfig: "Ajustes"
     }
   },
 
   competitions: [
-    { id: "wmc", name: "🌍 World Marble Cup", region: "ALL", count: 32, rounds: 4, format: "knockout", track: "gauntlet" },
-    { id: "afcon", name: "🦁 African Marble Cup", region: "Africa", count: 24, rounds: 4, format: "knockout", track: "classic" },
-    { id: "euro", name: "🏰 European Marble Cup", region: "Europe", count: 24, rounds: 4, format: "knockout", track: "spinnerMayhem" },
-    { id: "asian", name: "🐉 Asian Marble Cup", region: "Asia", count: 24, rounds: 4, format: "knockout", track: "bumperPinball" },
-    { id: "arab", name: "🌙 Arab Marble Cup", region: "Arab", count: 16, rounds: 3, format: "knockout", track: "seesawDrop" },
-    { id: "copa", name: "☀️ South American Cup", region: "SouthAmerica", count: 10, rounds: 3, format: "points", track: "classic" },
-    { id: "gold", name: "🦅 North American Cup", region: "NorthAmerica", count: 12, rounds: 3, format: "knockout", track: "spinnerMayhem" },
-    { id: "nations", name: "🏅 World Nations League", region: "ALL", count: 20, rounds: 5, format: "points", track: "gauntlet" }
+    { id: "wmc", name: "🌍 World Marble Knockout Cup", region: "ALL", count: 32, rounds: 5, format: "knockout", track: "rotate" },
+    { id: "f1gp", name: "🏎️ Formula World Grand Prix", region: "ALL", count: 24, rounds: 6, format: "grandprix", gpSystem: "formula", track: "rotate" },
+    { id: "nascar", name: "🏁 NASCAR 40-Marble Cup Series", region: "ALL", count: 40, rounds: 6, format: "grandprix", gpSystem: "nascar", track: "rotate" },
+    { id: "afcon", name: "🦁 African Marble Cup", region: "Africa", count: 24, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "euro", name: "🏰 European Marble Cup", region: "Europe", count: 24, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "asian", name: "🐉 Asian Marble Cup", region: "Asia", count: 24, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "arab", name: "🌙 Arab Marble Cup", region: "Arab", count: 16, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "copa", name: "☀️ South American GP", region: "SouthAmerica", count: 10, rounds: 4, format: "grandprix", gpSystem: "formula", track: "rotate" }
   ],
 
   skins: [
@@ -118,15 +139,14 @@ window.GAME_DATA = {
 
   achievements: [
     { id: "first_win", name: "First Podium Gold", desc: "Complete your first marble race.", reward: 50 },
-    { id: "underdog", name: "Giant Slayer", desc: "Win a race with a small or island country.", reward: 100 },
+    { id: "underdog", name: "Giant Slayer", desc: "Win a race with a small or custom marble.", reward: 100 },
     { id: "comeback", name: "Miracle Comeback", desc: "Win after being outside the top 5 mid-race.", reward: 120 },
     { id: "photofinish", name: "Photo Finish!", desc: "Finish 1st and 2nd within 60 milliseconds.", reward: 100 },
-    { id: "architect", name: "Track Architect", desc: "Save a custom track in the Track Editor.", reward: 80 },
-    { id: "world_champ", name: "Cup Champion", desc: "Win any Major Cup or Career Final.", reward: 200 }
+    { id: "architect", name: "Track Architect", desc: "Save an interactive custom track.", reward: 80 },
+    { id: "world_champ", name: "Cup Champion", desc: "Win any Major Cup or Grand Prix Series.", reward: 200 }
   ],
 
   countries: [
-    // Africa & Arab World
     { code: "DZ", name: "Algeria", flag: "🇩🇿", region: ["Africa", "Arab"], color: "#16a34a", small: false, fact: "Algeria is the largest country in Africa by land area, covering over 2.38 million sq km." },
     { code: "MA", name: "Morocco", flag: "🇲🇦", region: ["Africa", "Arab"], color: "#dc2626", small: false, fact: "Morocco is home to the University of Al Quaraouiyine, founded in 859 AD in Fez." },
     { code: "TN", name: "Tunisia", flag: "🇹🇳", region: ["Africa", "Arab"], color: "#ef4444", small: false, fact: "Tunisia was home to the ancient city of Carthage and the northernmost point of Africa." },
@@ -147,13 +167,11 @@ window.GAME_DATA = {
     { code: "TZ", name: "Tanzania", flag: "🇹🇿", region: ["Africa"], color: "#0284c7", small: false, fact: "Mount Kilimanjaro in Tanzania is the highest free-standing mountain in the world." },
     { code: "CD", name: "DR Congo", flag: "🇨🇩", region: ["Africa"], color: "#2563eb", small: false, fact: "The Congo River is the deepest recorded river in the world, reaching depths over 220 meters." },
     { code: "UG", name: "Uganda", flag: "🇺🇬", region: ["Africa"], color: "#eab308", small: false, fact: "Uganda is called the Pearl of Africa and contains the source of the White Nile." },
-    { code: "KM", name: "Comoros", flag: "🇰🇲", region: ["Africa", "Arab"], color: "#16a34a", small: true, fact: "Comoros is an volcanic island nation known as the 'Perfume Islands' for its ylang-ylang." },
+    { code: "KM", name: "Comoros", flag: "🇰🇲", region: ["Africa", "Arab"], color: "#16a34a", small: true, fact: "Comoros is a volcanic island nation known as the 'Perfume Islands' for its ylang-ylang." },
     { code: "DJ", name: "Djibouti", flag: "🇩🇯", region: ["Africa", "Arab"], color: "#38bdf8", small: true, fact: "Lake Assal in Djibouti is the lowest point on land in Africa and one of the saltiest lakes on Earth." },
     { code: "SO", name: "Somalia", flag: "🇸🇴", region: ["Africa", "Arab"], color: "#3b82f6", small: false, fact: "Somalia possesses the longest coastline on the African mainland, stretching over 3,000 km." },
     { code: "CV", name: "Cabo Verde", flag: "🇨🇻", region: ["Africa"], color: "#1d4ed8", small: true, fact: "Cabo Verde is an Atlantic archipelago of 10 volcanic islands off West Africa." },
     { code: "MU", name: "Mauritius", flag: "🇲🇺", region: ["Africa"], color: "#ef4444", small: true, fact: "Mauritius was the only known habitat of the extinct flightless Dodo bird." },
-
-    // Asia & Arab World
     { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", region: ["Asia", "Arab"], color: "#15803d", small: false, fact: "Saudi Arabia contains the Rub' al Khali, the largest contiguous sand desert in the world." },
     { code: "QA", name: "Qatar", flag: "🇶🇦", region: ["Asia", "Arab"], color: "#881337", small: true, fact: "Qatar's flag is the only national flag with a width more than twice its height." },
     { code: "AE", name: "UAE", flag: "🇦🇪", region: ["Asia", "Arab"], color: "#16a34a", small: false, fact: "The UAE is home to the Burj Khalifa, the tallest structure ever built by humans at 828m." },
@@ -181,8 +199,6 @@ window.GAME_DATA = {
     { code: "UZ", name: "Uzbekistan", flag: "🇺🇿", region: ["Asia"], color: "#0284c7", small: false, fact: "Samarkand in Uzbekistan was a jewel of the ancient Silk Road trade network." },
     { code: "SG", name: "Singapore", flag: "🇸🇬", region: ["Asia"], color: "#ef4444", small: true, fact: "Singapore is one of only three surviving sovereign city-states in the modern world." },
     { code: "MV", name: "Maldives", flag: "🇲🇻", region: ["Asia"], color: "#16a34a", small: true, fact: "Maldives has the lowest average ground elevation of any country in the world at 1.5 meters." },
-
-    // Europe
     { code: "FR", name: "France", flag: "🇫🇷", region: ["Europe"], color: "#2563eb", small: false, fact: "France spans 12 different time zones thanks to its overseas territories across the globe." },
     { code: "DE", name: "Germany", flag: "🇩🇪", region: ["Europe"], color: "#eab308", small: false, fact: "Johannes Gutenberg introduced movable-type printing in Mainz, Germany around 1450." },
     { code: "ES", name: "Spain", flag: "🇪🇸", region: ["Europe"], color: "#dc2626", small: false, fact: "Spain produces nearly half of the world's olive oil supply." },
@@ -205,8 +221,6 @@ window.GAME_DATA = {
     { code: "DK", name: "Denmark", flag: "🇩🇰", region: ["Europe"], color: "#b91c1c", small: false, fact: "The Dannebrog of Denmark is the oldest continuously used national flag in the world (since 1219)." },
     { code: "IE", name: "Ireland", flag: "🇮🇪", region: ["Europe"], color: "#16a34a", small: false, fact: "The harp is Ireland's official national emblem, making it the only nation with a musical instrument symbol." },
     { code: "RS", name: "Serbia", flag: "🇷🇸", region: ["Europe"], color: "#dc2626", small: false, fact: "Serbia is one of the world's top exporters of raspberries and produced 18 Roman Emperors." },
-
-    // South America
     { code: "BR", name: "Brazil", flag: "🇧🇷", region: ["SouthAmerica"], color: "#22c55e", small: false, fact: "Brazil contains 60% of the Amazon Rainforest, the most biodiverse tract of tropical rainforest on Earth." },
     { code: "AR", name: "Argentina", flag: "🇦🇷", region: ["SouthAmerica"], color: "#38bdf8", small: false, fact: "Argentina contains both the highest peak (Aconcagua) and lowest point in the Southern Hemisphere." },
     { code: "UY", name: "Uruguay", flag: "🇺🇾", region: ["SouthAmerica"], color: "#0284c7", small: true, fact: "Uruguay hosted and won the inaugural FIFA World Cup in Montevideo in 1930." },
@@ -217,8 +231,6 @@ window.GAME_DATA = {
     { code: "PY", name: "Paraguay", flag: "🇵🇾", region: ["SouthAmerica"], color: "#dc2626", small: false, fact: "Paraguay's national flag features two distinct emblems on its front and reverse sides." },
     { code: "BO", name: "Bolivia", flag: "🇧🇴", region: ["SouthAmerica"], color: "#16a34a", small: false, fact: "Salar de Uyuni in Bolivia is the world's largest salt flat at over 10,000 square kilometers." },
     { code: "VE", name: "Venezuela", flag: "🇻🇪", region: ["SouthAmerica"], color: "#eab308", small: false, fact: "Angel Falls in Venezuela is the world's highest uninterrupted waterfall with a drop of 979 meters." },
-
-    // North America & Caribbean
     { code: "US", name: "United States", flag: "🇺🇸", region: ["NorthAmerica"], color: "#2563eb", small: false, fact: "Yellowstone National Park, established in 1872, was the world's first national park." },
     { code: "CA", name: "Canada", flag: "🇨🇦", region: ["NorthAmerica"], color: "#ef4444", small: false, fact: "Canada has the longest coastline in the world at 243,042 kilometers and over 2 million lakes." },
     { code: "MX", name: "Mexico", flag: "🇲🇽", region: ["NorthAmerica"], color: "#16a34a", small: false, fact: "The Great Pyramid of Cholula in Mexico is the largest pyramid by volume known to exist." },
@@ -229,8 +241,6 @@ window.GAME_DATA = {
     { code: "DO", name: "Dominican Rep.", flag: "🇩🇴", region: ["NorthAmerica"], color: "#2563eb", small: false, fact: "Santo Domingo is the oldest permanently inhabited European settlement in the Americas." },
     { code: "HN", name: "Honduras", flag: "🇭🇳", region: ["NorthAmerica"], color: "#0284c7", small: false, fact: "The five stars on the Honduran flag represent the five nations of the former Federal Republic of Central America." },
     { code: "TT", name: "Trinidad & Tobago", flag: "🇹🇹", region: ["NorthAmerica"], color: "#dc2626", small: true, fact: "Trinidad is the birthplace of the steelpan, the only acoustic musical instrument invented in the 20th century." },
-
-    // Oceania
     { code: "AU", name: "Australia", flag: "🇦🇺", region: ["Oceania"], color: "#eab308", small: false, fact: "The Great Barrier Reef off Australia is the largest living structure on Earth, visible from orbit." },
     { code: "NZ", name: "New Zealand", flag: "🇳🇿", region: ["Oceania"], color: "#0284c7", small: false, fact: "New Zealand was the first self-governing country in the world to grant all women the right to vote in 1893." },
     { code: "FJ", name: "Fiji", flag: "🇫🇯", region: ["Oceania"], color: "#38bdf8", small: true, fact: "Fiji is an archipelago of more than 330 islands, of which around 110 are permanently inhabited." },
