@@ -1,9 +1,8 @@
-// Complete Huge-World Country Marble Race Engine
-// - 1200px x 15,000-40,000px Stacked Section Worlds with Lazy Physics Streaming & Viewport Culling
-// - 16 Reusable Obstacle Builders (Thick 26px Solid Black Barriers + Sub-Stepping = Zero Tunneling!)
-// - Periwinkle-Blue Flat Aesthetic, Section Checkpoint Gates, and Ranked Colored Finish-Line Bars (#1 Algeria, #33 Norway)
+// Complete Mega-World Country Marble Race Engine (1600px Wide x up to 65,000px Tall)
+// - Fixed Canvas 2D rendering bug (ctx.measureText) + crash-proof physics loop so races NEVER freeze
+// - Landscape & Portrait orientation lock/toggle + Responsive Wide-World Camera
+// - 250+ Countries & Territories + 24 Giant Multi-Section Tracks + Lazy Section Streaming
 (function () {
-  // String/Number Hash to 32-bit Seed + Mulberry32 Fair PRNG
   function hashSeed(str) {
     const s = String(str || "MARBLE-2026");
     let h = 2166136261 >>> 0;
@@ -24,7 +23,7 @@
     };
   }
 
-  const STORAGE_KEY = "CMR_SAVE_V3";
+  const STORAGE_KEY = "CMR_SAVE_V4";
   const defaultSave = {
     coins: 250,
     equippedSkin: "default",
@@ -49,7 +48,8 @@
       lang: "en",
       maxMarbles: 150,
       colorblind: 0,
-      fontScale: 1
+      fontScale: 1,
+      orientation: "any"
     },
     career: {
       countryCode: "DZ",
@@ -66,7 +66,7 @@
   let State = loadState();
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V2") || localStorage.getItem("CMR_SAVE_V1");
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V3") || localStorage.getItem("CMR_SAVE_V2");
       if (!raw) return JSON.parse(JSON.stringify(defaultSave));
       const parsed = JSON.parse(raw);
       return Object.assign(JSON.parse(JSON.stringify(defaultSave)), parsed);
@@ -99,16 +99,11 @@
   }
 
   // ============================================================================
-  // 16-OBSTACLE REUSABLE LIBRARY & TRACK_BUILDER (WORLD WIDTH = 1200px)
+  // BIGGER WORLD (1600px WIDE x up to 65,000px TALL) & 16-OBSTACLE LIBRARY
   // ============================================================================
-  // Every section generates a blueprint of thick solid black walls, compound spinners,
-  // curved rectangle chains, moving platforms, pendulums, or special zones.
-  // Bodies are spawned lazily into Matter.js only when marbles approach the section!
-
-  const WORLD_W = 1200;
+  const WORLD_W = 1600;
   const WALL_COLOR = "#0a0a0f";
 
-  // Helper to build smooth curved walls/arcs out of overlapping thin/thick rectangles (no poly-decomp needed)
   function createArcSegments(cx, cy, radius, startAngle, endAngle, steps, thickness, color) {
     const segs = [];
     for (let i = 0; i < steps; i++) {
@@ -118,103 +113,95 @@
       const y1 = cy + Math.sin(a1) * radius;
       const x2 = cx + Math.cos(a2) * radius;
       const y2 = cy + Math.sin(a2) * radius;
-      segs.push({ x1, y1, x2, y2, thickness: thickness || 28, color: color || WALL_COLOR });
+      segs.push({ x1, y1, x2, y2, thickness: thickness || 30, color: color || WALL_COLOR });
     }
     return segs;
   }
 
   const OBSTACLE_LIBRARY = {
-    // 10. Large circular chamber at the start with a triangle splitter in the middle
+    // 10. Giant Circular Chamber at Start with Triangle Splitter & Twin Agitators
     startCircleSplitter(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
-      const cy = y0 + 520;
-      const rad = 470;
-      // Left and right circular dome walls leaving a 220px chute at the bottom
-      sec.walls.push(...createArcSegments(cx, cy, rad, Math.PI * 0.62, Math.PI * 1.45, 14, 34, WALL_COLOR));
-      sec.walls.push(...createArcSegments(cx, cy, rad, -Math.PI * 0.45, Math.PI * 0.38, 14, 34, WALL_COLOR));
-      // Top funnel shoulders into dome
-      sec.walls.push({ x1: 40, y1: y0 + 40, x2: cx - 320, y2: cy - 340, thickness: 34, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 40, x2: cx + 320, y2: cy - 340, thickness: 34, color: WALL_COLOR });
+      const cy = y0 + 620;
+      const rad = 610;
+      sec.walls.push(...createArcSegments(cx, cy, rad, Math.PI * 0.61, Math.PI * 1.44, 14, 36, WALL_COLOR));
+      sec.walls.push(...createArcSegments(cx, cy, rad, -Math.PI * 0.44, Math.PI * 0.39, 14, 36, WALL_COLOR));
+      sec.walls.push({ x1: 45, y1: y0 + 40, x2: cx - 420, y2: cy - 440, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: y0 + 40, x2: cx + 420, y2: cy - 440, thickness: 36, color: WALL_COLOR });
 
-      // Giant solid triangle splitter in center of dome
-      const triY = cy + 40;
+      const triY = cy + 30;
       sec.polygons.push({
         points: [
-          { x: cx, y: triY - 130 },
-          { x: cx - 145, y: triY + 100 },
-          { x: cx + 145, y: triY + 100 }
+          { x: cx, y: triY - 160 },
+          { x: cx - 190, y: triY + 120 },
+          { x: cx + 190, y: triY + 120 }
         ],
         color: accent
       });
-      sec.walls.push({ x1: cx, y1: triY - 130, x2: cx - 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
-      sec.walls.push({ x1: cx, y1: triY - 130, x2: cx + 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
-      sec.walls.push({ x1: cx - 145, y1: triY + 100, x2: cx + 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
+      sec.walls.push({ x1: cx, y1: triY - 160, x2: cx - 190, y2: triY + 120, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: cx, y1: triY - 160, x2: cx + 190, y2: triY + 120, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: cx - 190, y1: triY + 120, x2: cx + 190, y2: triY + 120, thickness: 30, color: WALL_COLOR });
 
-      // Two spinning agitators below the dome chute
-      sec.spinners.push({ x: cx - 170, y: y0 + h - 220, len: 170, thick: 22, speed: 0.045, color: accent, style: "cross" });
-      sec.spinners.push({ x: cx + 170, y: y0 + h - 220, len: 170, thick: 22, speed: -0.045, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx - 230, y: y0 + h - 260, len: 230, thick: 24, speed: 0.045, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 230, y: y0 + h - 260, len: 230, thick: 24, speed: -0.045, color: accent, style: "cross" });
     },
 
-    // 1. Pegboard: staggered rows of solid black circular pegs
+    // 1. Pegboard: Wide staggered grid of black & accent pegs
     pegboard(sec, y0, h, accent, diff, rng) {
       const rows = 9;
       const rowH = (h - 280) / rows;
-      const pegR = diff === "hard" ? 22 : 18;
-      // Guiding side walls
-      sec.walls.push({ x1: 40, y1: y0 + 40, x2: 110, y2: y0 + h - 120, thickness: 32, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 40, x2: WORLD_W - 110, y2: y0 + h - 120, thickness: 32, color: WALL_COLOR });
+      const pegR = diff === "hard" ? 24 : 20;
+      sec.walls.push({ x1: 45, y1: y0 + 40, x2: 130, y2: y0 + h - 130, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: y0 + 40, x2: WORLD_W - 130, y2: y0 + h - 130, thickness: 34, color: WALL_COLOR });
 
       for (let r = 0; r < rows; r++) {
-        const py = y0 + 130 + r * rowH;
-        const cols = r % 2 === 0 ? 8 : 7;
-        const startX = r % 2 === 0 ? 175 : 235;
-        const spacing = 120;
+        const py = y0 + 135 + r * rowH;
+        const cols = r % 2 === 0 ? 10 : 9;
+        const startX = r % 2 === 0 ? 200 : 265;
+        const spacing = 132;
         for (let c = 0; c < cols; c++) {
-          const isAccent = (r + c) % 5 === 0;
+          const isAccent = (r + c) % 4 === 0;
           sec.pegs.push({
             x: startX + c * spacing,
             y: py,
-            r: isAccent ? pegR + 5 : pegR,
-            restitution: isAccent ? 0.95 : 0.65,
+            r: isAccent ? pegR + 6 : pegR,
+            restitution: isAccent ? 0.92 : 0.65,
             color: isAccent ? accent : WALL_COLOR
           });
         }
       }
     },
 
-    // 2. Rotating plus/cross/X spinners: rows of small and large crosses turning at different speeds
+    // 2. Rotating Plus/Cross/X Spinners
     crossSpinners(sec, y0, h, accent, diff, rng) {
       const rows = 5;
-      const rowSpacing = (h - 260) / rows;
-      // Side zig-zag deflectors so no marble can hug the outer wall
+      const rowSpacing = (h - 280) / rows;
       for (let r = 0; r < rows; r++) {
-        const ry = y0 + 150 + r * rowSpacing;
+        const ry = y0 + 160 + r * rowSpacing;
         if (r % 2 === 0) {
-          sec.walls.push({ x1: 40, y1: ry - 60, x2: 170, y2: ry + 20, thickness: 28, color: WALL_COLOR });
-          sec.walls.push({ x1: WORLD_W - 40, y1: ry - 60, x2: WORLD_W - 170, y2: ry + 20, thickness: 28, color: WALL_COLOR });
-          // 3 Large Crosses
-          for (let c = 0; c < 3; c++) {
-            const cx = 300 + c * 300;
+          sec.walls.push({ x1: 45, y1: ry - 70, x2: 195, y2: ry + 25, thickness: 30, color: WALL_COLOR });
+          sec.walls.push({ x1: WORLD_W - 45, y1: ry - 70, x2: WORLD_W - 195, y2: ry + 25, thickness: 30, color: WALL_COLOR });
+          for (let c = 0; c < 4; c++) {
+            const cx = 310 + c * 325;
             const dir = (r + c) % 2 === 0 ? 1 : -1;
             sec.spinners.push({
               x: cx,
               y: ry,
-              len: 215,
+              len: 245,
               thick: 24,
-              speed: dir * (0.04 + (c % 2) * 0.015),
-              color: c === 1 ? accent : WALL_COLOR,
+              speed: dir * 0.045,
+              color: c % 2 === 1 ? accent : WALL_COLOR,
               style: "cross"
             });
           }
         } else {
-          // 4 Medium X Spinners
-          for (let c = 0; c < 4; c++) {
-            const cx = 210 + c * 260;
+          for (let c = 0; c < 5; c++) {
+            const cx = 220 + c * 290;
             const dir = (r + c) % 2 === 0 ? -1 : 1;
             sec.spinners.push({
               x: cx,
               y: ry,
-              len: 185,
+              len: 215,
               thick: 22,
               speed: dir * 0.055,
               color: c % 2 === 0 ? accent : WALL_COLOR,
@@ -225,51 +212,49 @@
       }
     },
 
-    // 3. Zigzag sawtooth walls: vertical channels with triangular teeth on both sides
+    // 3. Zigzag Sawtooth Walls
     zigzagSawtooth(sec, y0, h, accent, diff, rng) {
       const teeth = 6;
       const stepY = (h - 260) / teeth;
-      const centerSplitX = WORLD_W / 2;
+      const c1 = WORLD_W * 0.36;
+      const c2 = WORLD_W * 0.64;
 
-      // Central dividing spine with triangular teeth creating two parallel sawtooth canyons
       for (let i = 0; i < teeth; i++) {
-        const ty = y0 + 110 + i * stepY;
-        const toothW = diff === "hard" ? 165 : 135;
-        // Left outer wall tooth
-        sec.walls.push({ x1: 40, y1: ty, x2: 40 + toothW, y2: ty + stepY * 0.5, thickness: 30, color: WALL_COLOR });
-        sec.walls.push({ x1: 40 + toothW, y1: ty + stepY * 0.5, x2: 40, y2: ty + stepY, thickness: 30, color: WALL_COLOR });
-        // Right outer wall tooth
-        sec.walls.push({ x1: WORLD_W - 40, y1: ty, x2: WORLD_W - 40 - toothW, y2: ty + stepY * 0.5, thickness: 30, color: WALL_COLOR });
-        sec.walls.push({ x1: WORLD_W - 40 - toothW, y1: ty + stepY * 0.5, x2: WORLD_W - 40, y2: ty + stepY, thickness: 30, color: WALL_COLOR });
-        // Center diamond sawtooth
-        sec.walls.push({ x1: centerSplitX, y1: ty - 20, x2: centerSplitX - toothW, y2: ty + stepY * 0.35, thickness: 28, color: accent });
-        sec.walls.push({ x1: centerSplitX - toothW, y1: ty + stepY * 0.35, x2: centerSplitX, y2: ty + stepY * 0.75, thickness: 28, color: accent });
-        sec.walls.push({ x1: centerSplitX, y1: ty - 20, x2: centerSplitX + toothW, y2: ty + stepY * 0.35, thickness: 28, color: accent });
-        sec.walls.push({ x1: centerSplitX + toothW, y1: ty + stepY * 0.35, x2: centerSplitX, y2: ty + stepY * 0.75, thickness: 28, color: accent });
+        const ty = y0 + 115 + i * stepY;
+        const toothW = diff === "hard" ? 185 : 150;
+        sec.walls.push({ x1: 45, y1: ty, x2: 45 + toothW, y2: ty + stepY * 0.5, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: 45 + toothW, y1: ty + stepY * 0.5, x2: 45, y2: ty + stepY, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: WORLD_W - 45, y1: ty, x2: WORLD_W - 45 - toothW, y2: ty + stepY * 0.5, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: WORLD_W - 45 - toothW, y1: ty + stepY * 0.5, x2: WORLD_W - 45, y2: ty + stepY, thickness: 32, color: WALL_COLOR });
+
+        [c1, c2].forEach(cx => {
+          sec.walls.push({ x1: cx, y1: ty - 15, x2: cx - toothW * 0.75, y2: ty + stepY * 0.4, thickness: 28, color: accent });
+          sec.walls.push({ x1: cx - toothW * 0.75, y1: ty + stepY * 0.4, x2: cx, y2: ty + stepY * 0.8, thickness: 28, color: accent });
+          sec.walls.push({ x1: cx, y1: ty - 15, x2: cx + toothW * 0.75, y2: ty + stepY * 0.4, thickness: 28, color: accent });
+          sec.walls.push({ x1: cx + toothW * 0.75, y1: ty + stepY * 0.4, x2: cx, y2: ty + stepY * 0.8, thickness: 28, color: accent });
+        });
       }
     },
 
-    // 4. Slanted planks: long angled ramps alternating left and right (serpentine descent)
+    // 4. Slanted Planks (Serpentine Descent)
     slantedPlanks(sec, y0, h, accent, diff, rng) {
       const levels = 5;
       const stepY = (h - 260) / levels;
-      const gapWidth = diff === "hard" ? 210 : 250;
+      const gapWidth = diff === "hard" ? 270 : 320;
 
       for (let i = 0; i < levels; i++) {
         const py = y0 + 130 + i * stepY;
         if (i % 2 === 0) {
-          // Slants down to the right
-          sec.walls.push({ x1: 40, y1: py - 45, x2: WORLD_W - gapWidth, y2: py + 115, thickness: 32, color: WALL_COLOR });
-          sec.pegs.push({ x: WORLD_W - gapWidth * 0.45, y: py + 135, r: 24, restitution: 0.85, color: accent });
+          sec.walls.push({ x1: 45, y1: py - 50, x2: WORLD_W - gapWidth, y2: py + 130, thickness: 34, color: WALL_COLOR });
+          sec.pegs.push({ x: WORLD_W - gapWidth * 0.45, y: py + 145, r: 28, restitution: 0.85, color: accent });
         } else {
-          // Slants down to the left
-          sec.walls.push({ x1: WORLD_W - 40, y1: py - 45, x2: gapWidth, y2: py + 115, thickness: 32, color: WALL_COLOR });
-          sec.pegs.push({ x: gapWidth * 0.45, y: py + 135, r: 24, restitution: 0.85, color: accent });
+          sec.walls.push({ x1: WORLD_W - 45, y1: py - 50, x2: gapWidth, y2: py + 130, thickness: 34, color: WALL_COLOR });
+          sec.pegs.push({ x: gapWidth * 0.45, y: py + 145, r: 28, restitution: 0.85, color: accent });
         }
       }
     },
 
-    // 5. Capsule chambers: stacked rounded pill-shaped rooms filled with rotating crosses, alternating end gaps
+    // 5. Capsule Chambers
     capsuleChambers(sec, y0, h, accent, diff, rng) {
       const rooms = 3;
       const roomH = (h - 240) / rooms;
@@ -277,294 +262,267 @@
       for (let r = 0; r < rooms; r++) {
         const ry = y0 + 100 + r * roomH;
         const exitRight = r % 2 === 0;
-        // Rounded capsule side walls
-        sec.walls.push(...createArcSegments(220, ry + roomH * 0.45, 150, Math.PI * 0.55, Math.PI * 1.45, 7, 30, WALL_COLOR));
-        sec.walls.push(...createArcSegments(WORLD_W - 220, ry + roomH * 0.45, 150, -Math.PI * 0.45, Math.PI * 0.45, 7, 30, WALL_COLOR));
+        sec.walls.push(...createArcSegments(240, ry + roomH * 0.45, 175, Math.PI * 0.55, Math.PI * 1.45, 7, 32, WALL_COLOR));
+        sec.walls.push(...createArcSegments(WORLD_W - 240, ry + roomH * 0.45, 175, -Math.PI * 0.45, Math.PI * 0.45, 7, 32, WALL_COLOR));
 
-        // Floor of the capsule with a gap on alternating ends
         if (exitRight) {
-          sec.walls.push({ x1: 180, y1: ry + roomH * 0.82, x2: WORLD_W - 360, y2: ry + roomH * 0.92, thickness: 30, color: WALL_COLOR });
+          sec.walls.push({ x1: 190, y1: ry + roomH * 0.82, x2: WORLD_W - 440, y2: ry + roomH * 0.93, thickness: 32, color: WALL_COLOR });
         } else {
-          sec.walls.push({ x1: WORLD_W - 180, y1: ry + roomH * 0.82, x2: 360, y2: ry + roomH * 0.92, thickness: 30, color: WALL_COLOR });
+          sec.walls.push({ x1: WORLD_W - 190, y1: ry + roomH * 0.82, x2: 440, y2: ry + roomH * 0.93, thickness: 32, color: WALL_COLOR });
         }
 
-        // Cross spinners & fixed bars inside the capsule room
-        sec.spinners.push({ x: 420, y: ry + roomH * 0.42, len: 165, thick: 20, speed: 0.05, color: accent, style: "cross" });
-        sec.spinners.push({ x: 640, y: ry + roomH * 0.48, len: 165, thick: 20, speed: -0.05, color: WALL_COLOR, style: "cross" });
-        sec.spinners.push({ x: 850, y: ry + roomH * 0.42, len: 165, thick: 20, speed: 0.05, color: accent, style: "cross" });
+        [440, 720, 1000, 1220].forEach((sx, sIdx) => {
+          sec.spinners.push({
+            x: sx,
+            y: ry + roomH * (sIdx % 2 === 0 ? 0.4 : 0.48),
+            len: 200,
+            thick: 22,
+            speed: sIdx % 2 === 0 ? 0.05 : -0.05,
+            color: sIdx % 2 === 0 ? accent : WALL_COLOR,
+            style: "cross"
+          });
+        });
       }
     },
 
-    // 6. Funnels and hourglass pinch points: wide area narrowing into a tiny exit to create traffic jams
+    // 6. Funnels & Hourglass Pinch Points
     funnelHourglass(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
-      const pinchW = diff === "hard" ? 95 : diff === "easy" ? 135 : 112;
+      const pinchW = diff === "hard" ? 135 : diff === "easy" ? 185 : 155;
 
-      // Upper giant hourglass funnel
       const f1Y = y0 + h * 0.32;
-      sec.walls.push({ x1: 40, y1: y0 + 60, x2: cx - pinchW / 2, y2: f1Y, thickness: 34, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 60, x2: cx + pinchW / 2, y2: f1Y, thickness: 34, color: WALL_COLOR });
-      // Short vertical throat
-      sec.walls.push({ x1: cx - pinchW / 2, y1: f1Y, x2: cx - pinchW / 2, y2: f1Y + 90, thickness: 30, color: accent });
-      sec.walls.push({ x1: cx + pinchW / 2, y1: f1Y, x2: cx + pinchW / 2, y2: f1Y + 90, thickness: 30, color: accent });
+      sec.walls.push({ x1: 45, y1: y0 + 60, x2: cx - pinchW / 2, y2: f1Y, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: y0 + 60, x2: cx + pinchW / 2, y2: f1Y, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: cx - pinchW / 2, y1: f1Y, x2: cx - pinchW / 2, y2: f1Y + 95, thickness: 32, color: accent });
+      sec.walls.push({ x1: cx + pinchW / 2, y1: f1Y, x2: cx + pinchW / 2, y2: f1Y + 95, thickness: 32, color: accent });
 
-      // Mid diamond splitter & twin side funnels
       const midY = y0 + h * 0.56;
-      sec.walls.push({ x1: cx, y1: midY - 70, x2: cx - 180, y2: midY + 70, thickness: 30, color: WALL_COLOR });
-      sec.walls.push({ x1: cx, y1: midY - 70, x2: cx + 180, y2: midY + 70, thickness: 30, color: WALL_COLOR });
-      sec.spinners.push({ x: cx - 290, y: midY + 90, len: 160, thick: 20, speed: -0.05, color: accent, style: "cross" });
-      sec.spinners.push({ x: cx + 290, y: midY + 90, len: 160, thick: 20, speed: 0.05, color: accent, style: "cross" });
+      sec.walls.push({ x1: cx, y1: midY - 80, x2: cx - 250, y2: midY + 80, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: cx, y1: midY - 80, x2: cx + 250, y2: midY + 80, thickness: 32, color: WALL_COLOR });
+      sec.spinners.push({ x: cx - 390, y: midY + 100, len: 210, thick: 22, speed: -0.05, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 390, y: midY + 100, len: 210, thick: 22, speed: 0.05, color: accent, style: "cross" });
 
-      // Lower hourglass pinch
       const f2Y = y0 + h * 0.86;
-      sec.walls.push({ x1: 40, y1: midY + 140, x2: cx - pinchW * 0.6, y2: f2Y, thickness: 34, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: midY + 140, x2: cx + pinchW * 0.6, y2: f2Y, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: 45, y1: midY + 150, x2: cx - pinchW * 0.65, y2: f2Y, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: midY + 150, x2: cx + pinchW * 0.65, y2: f2Y, thickness: 36, color: WALL_COLOR });
     },
 
-    // 7. Big rotating wheel with colored blades inside a box
+    // 7. Big Rotating Wheel with Colored Blades inside a Box
     bigWheelBox(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
       const cy = y0 + h * 0.5;
-      const boxW = 760;
-      const boxH = 760;
+      const boxW = 980;
+      const boxH = 880;
 
-      // Top funnel feeding into top of the wheel box
-      sec.walls.push({ x1: 40, y1: y0 + 50, x2: cx - 150, y2: cy - boxH / 2, thickness: 32, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 50, x2: cx + 150, y2: cy - boxH / 2, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: 45, y1: y0 + 50, x2: cx - 190, y2: cy - boxH / 2, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: y0 + 50, x2: cx + 190, y2: cy - boxH / 2, thickness: 34, color: WALL_COLOR });
 
-      // Box left & right walls
-      sec.walls.push({ x1: cx - boxW / 2, y1: cy - boxH / 2, x2: cx - boxW / 2, y2: cy + boxH / 2 - 120, thickness: 34, color: WALL_COLOR });
-      sec.walls.push({ x1: cx + boxW / 2, y1: cy - boxH / 2, x2: cx + boxW / 2, y2: cy + boxH / 2 - 120, thickness: 34, color: WALL_COLOR });
-      // Box slanted floor leading to exit chute
-      sec.walls.push({ x1: cx - boxW / 2, y1: cy + boxH / 2 - 120, x2: cx - 130, y2: cy + boxH / 2 + 60, thickness: 34, color: WALL_COLOR });
-      sec.walls.push({ x1: cx + boxW / 2, y1: cy + boxH / 2 - 120, x2: cx + 130, y2: cy + boxH / 2 + 60, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: cx - boxW / 2, y1: cy - boxH / 2, x2: cx - boxW / 2, y2: cy + boxH / 2 - 140, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: cx + boxW / 2, y1: cy - boxH / 2, x2: cx + boxW / 2, y2: cy + boxH / 2 - 140, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: cx - boxW / 2, y1: cy + boxH / 2 - 140, x2: cx - 175, y2: cy + boxH / 2 + 70, thickness: 36, color: WALL_COLOR });
+      sec.walls.push({ x1: cx + boxW / 2, y1: cy + boxH / 2 - 140, x2: cx + 175, y2: cy + boxH / 2 + 70, thickness: 36, color: WALL_COLOR });
 
-      // Giant 6-Blade Colored Wheel
       sec.spinners.push({
         x: cx,
         y: cy,
-        len: 620,
-        thick: 28,
-        speed: 0.028 * (rng() > 0.5 ? 1 : -1),
+        len: 780,
+        thick: 30,
+        speed: 0.026 * (rng() > 0.5 ? 1 : -1),
         color: accent,
         style: "wheel6"
       });
     },
 
-    // 8. Giant bowl or U-shaped catch basin with a bumpy edge where marbles pile up then spill out
+    // 8. Giant Bowl or U-Shaped Catch Basin
     giantBowlBasin(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
-      // Upper central U-Bowl
-      const bowl1Y = y0 + 420;
-      const bowl1R = 310;
-      sec.walls.push(...createArcSegments(cx, bowl1Y, bowl1R, Math.PI * 0.12, Math.PI * 0.88, 12, 32, WALL_COLOR));
-      // Bumpy rim pegs along the bowl inside & edges
+      const bowl1Y = y0 + 460;
+      const bowl1R = 410;
+      sec.walls.push(...createArcSegments(cx, bowl1Y, bowl1R, Math.PI * 0.12, Math.PI * 0.88, 12, 34, WALL_COLOR));
       for (let i = 0; i <= 6; i++) {
         const ang = Math.PI * (0.18 + (i / 6) * 0.64);
         sec.pegs.push({
-          x: cx + Math.cos(ang) * (bowl1R - 26),
-          y: bowl1Y + Math.sin(ang) * (bowl1R - 26),
-          r: 18,
-          restitution: 0.8,
+          x: cx + Math.cos(ang) * (bowl1R - 28),
+          y: bowl1Y + Math.sin(ang) * (bowl1R - 28),
+          r: 22,
+          restitution: 0.85,
           color: accent
         });
       }
-      // Small spinner inside upper bowl to churn piled-up marbles over the lip
-      sec.spinners.push({ x: cx, y: bowl1Y + 110, len: 220, thick: 22, speed: 0.045, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx, y: bowl1Y + 130, len: 290, thick: 24, speed: 0.045, color: accent, style: "cross" });
 
-      // Side catch ramps that collect spilled marbles into two lower Twin Bowls
-      sec.walls.push({ x1: 40, y1: bowl1Y + 80, x2: 260, y2: y0 + h - 380, thickness: 32, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: bowl1Y + 80, x2: WORLD_W - 260, y2: y0 + h - 380, thickness: 32, color: WALL_COLOR });
-      sec.walls.push(...createArcSegments(cx, y0 + h - 420, 260, Math.PI * 0.18, Math.PI * 0.82, 10, 30, WALL_COLOR));
-      sec.spinners.push({ x: cx, y: y0 + h - 290, len: 190, thick: 22, speed: -0.05, color: accent, style: "cross" });
+      sec.walls.push({ x1: 45, y1: bowl1Y + 90, x2: 340, y2: y0 + h - 410, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: bowl1Y + 90, x2: WORLD_W - 340, y2: y0 + h - 410, thickness: 34, color: WALL_COLOR });
+      sec.walls.push(...createArcSegments(cx, y0 + h - 450, 340, Math.PI * 0.18, Math.PI * 0.82, 10, 32, WALL_COLOR));
+      sec.spinners.push({ x: cx, y: y0 + h - 300, len: 250, thick: 24, speed: -0.05, color: accent, style: "cross" });
     },
 
-    // 9. Staircase ramps (stepped blocks) with a launcher curve
+    // 9. Staircase Ramps with Launcher Curve
     staircaseRamps(sec, y0, h, accent, diff, rng) {
-      // Left staircase descending to the right
-      const steps = 5;
+      const steps = 6;
       for (let s = 0; s < steps; s++) {
-        const sx = 60 + s * 130;
+        const sx = 70 + s * 155;
         const sy = y0 + 140 + s * 95;
-        sec.walls.push({ x1: sx, y1: sy, x2: sx + 135, y2: sy + 18, thickness: 30, color: WALL_COLOR });
-        sec.walls.push({ x1: sx + 135, y1: sy + 18, x2: sx + 135, y2: sy + 95, thickness: 30, color: accent });
+        sec.walls.push({ x1: sx, y1: sy, x2: sx + 160, y2: sy + 20, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: sx + 160, y1: sy + 20, x2: sx + 160, y2: sy + 95, thickness: 32, color: accent });
       }
-      // Curved launcher scoop at bottom of first staircase
-      sec.walls.push(...createArcSegments(820, y0 + 560, 180, Math.PI * 0.1, Math.PI * 0.65, 8, 30, WALL_COLOR));
+      sec.walls.push(...createArcSegments(1120, y0 + 620, 210, Math.PI * 0.1, Math.PI * 0.65, 8, 32, WALL_COLOR));
 
-      // Right staircase descending to the left
       const yMid = y0 + h * 0.52;
       for (let s = 0; s < steps; s++) {
-        const sx = WORLD_W - 60 - s * 130;
+        const sx = WORLD_W - 70 - s * 155;
         const sy = yMid + s * 95;
-        sec.walls.push({ x1: sx, y1: sy, x2: sx - 135, y2: sy + 18, thickness: 30, color: WALL_COLOR });
-        sec.walls.push({ x1: sx - 135, y1: sy + 18, x2: sx - 135, y2: sy + 95, thickness: 30, color: accent });
+        sec.walls.push({ x1: sx, y1: sy, x2: sx - 160, y2: sy + 20, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: sx - 160, y1: sy + 20, x2: sx - 160, y2: sy + 95, thickness: 32, color: accent });
       }
-      sec.walls.push(...createArcSegments(380, yMid + 420, 180, Math.PI * 0.35, Math.PI * 0.9, 8, 30, WALL_COLOR));
+      sec.walls.push(...createArcSegments(480, yMid + 480, 210, Math.PI * 0.35, Math.PI * 0.9, 8, 32, WALL_COLOR));
     },
 
-    // 11. Half-circle and scalloped "bubble" walls that bounce marbles sideways
+    // 11. Half-Circle and Scalloped Bubble Walls
     scallopedBubbleWalls(sec, y0, h, accent, diff, rng) {
       const bubbles = 5;
       const stepY = (h - 240) / bubbles;
       for (let i = 0; i < bubbles; i++) {
         const by = y0 + 150 + i * stepY;
-        // Left & Right giant half-circle wall bubbles
-        sec.pegs.push({ x: 55, y: by, r: 135, restitution: 0.85, color: WALL_COLOR });
-        sec.pegs.push({ x: WORLD_W - 55, y: by + stepY * 0.5, r: 135, restitution: 0.85, color: WALL_COLOR });
-        // Center scalloped bounce domes
-        const centerX = i % 2 === 0 ? 460 : 740;
-        sec.pegs.push({ x: centerX, y: by + stepY * 0.25, r: 85, restitution: 0.95, color: accent });
+        sec.pegs.push({ x: 65, y: by, r: 165, restitution: 0.85, color: WALL_COLOR });
+        sec.pegs.push({ x: WORLD_W - 65, y: by + stepY * 0.5, r: 165, restitution: 0.85, color: WALL_COLOR });
+        sec.pegs.push({ x: 540, y: by + stepY * 0.25, r: 95, restitution: 0.95, color: accent });
+        sec.pegs.push({ x: 1060, y: by + stepY * 0.72, r: 95, restitution: 0.95, color: accent });
       }
     },
 
-    // 12. Mixed field of tiny slanted dashes and large round bumpers
+    // 12. Mixed Field of Slanted Dashes and Large Round Bumpers
     mixedDashesBumpers(sec, y0, h, accent, diff, rng) {
       const rows = 6;
       const stepY = (h - 260) / rows;
       for (let r = 0; r < rows; r++) {
         const ry = y0 + 130 + r * stepY;
-        for (let c = 0; c < 4; c++) {
-          const cx = 200 + c * 265 + (r % 2 === 0 ? -35 : 35);
+        for (let c = 0; c < 5; c++) {
+          const cx = 240 + c * 280 + (r % 2 === 0 ? -45 : 45);
           if ((r + c) % 2 === 0) {
-            // Large round bumper
-            sec.pegs.push({ x: cx, y: ry, r: 44, restitution: 1.05, color: accent });
+            sec.pegs.push({ x: cx, y: ry, r: 48, restitution: 1.05, color: accent });
           } else {
-            // Slanted thick dash
             const ang = ((r + c) % 3 === 0 ? 28 : -28) * (Math.PI / 180);
-            const dx = Math.cos(ang) * 58;
-            const dy = Math.sin(ang) * 58;
-            sec.walls.push({ x1: cx - dx, y1: ry - dy, x2: cx + dx, y2: ry + dy, thickness: 24, color: WALL_COLOR });
+            const dx = Math.cos(ang) * 70;
+            const dy = Math.sin(ang) * 70;
+            sec.walls.push({ x1: cx - dx, y1: ry - dy, x2: cx + dx, y2: ry + dy, thickness: 26, color: WALL_COLOR });
           }
         }
       }
     },
 
-    // 13. Swinging pendulums and moving platforms that slide left-right
+    // 13. Swinging Pendulums and Sliding Platforms
     pendulumsAndSliders(sec, y0, h, accent, diff, rng) {
       const levels = 4;
       const stepY = (h - 260) / levels;
       for (let i = 0; i < levels; i++) {
-        const ly = y0 + 160 + i * stepY;
+        const ly = y0 + 170 + i * stepY;
         if (i % 2 === 0) {
-          // Twin Swinging Pendulums
-          sec.pendulums.push({ pivotX: 380, pivotY: ly - 90, armLen: 185, bobR: 38, speed: 0.035, phase: 0, color: accent });
-          sec.pendulums.push({ pivotX: 820, pivotY: ly - 90, armLen: 185, bobR: 38, speed: 0.035, phase: Math.PI, color: accent });
-          // Side funnel ledges
-          sec.walls.push({ x1: 40, y1: ly - 30, x2: 210, y2: ly + 60, thickness: 28, color: WALL_COLOR });
-          sec.walls.push({ x1: WORLD_W - 40, y1: ly - 30, x2: WORLD_W - 210, y2: ly + 60, thickness: 28, color: WALL_COLOR });
+          [440, 800, 1160].forEach((px, idx) => {
+            sec.pendulums.push({ pivotX: px, pivotY: ly - 100, armLen: 210, bobR: 42, speed: 0.036, phase: idx * 1.4, color: accent });
+          });
+          sec.walls.push({ x1: 45, y1: ly - 30, x2: 240, y2: ly + 70, thickness: 30, color: WALL_COLOR });
+          sec.walls.push({ x1: WORLD_W - 45, y1: ly - 30, x2: WORLD_W - 240, y2: ly + 70, thickness: 30, color: WALL_COLOR });
         } else {
-          // Horizontal Sliding Platform
           sec.sliders.push({
             centerX: WORLD_W / 2,
             y: ly,
-            w: 340,
-            h: 32,
-            range: 280,
+            w: 440,
+            h: 34,
+            range: 380,
             speed: 0.032,
             phase: i * 1.3,
             color: WALL_COLOR
           });
-          sec.pegs.push({ x: 220, y: ly - 20, r: 30, restitution: 0.9, color: accent });
-          sec.pegs.push({ x: WORLD_W - 220, y: ly - 20, r: 30, restitution: 0.9, color: accent });
+          sec.pegs.push({ x: 280, y: ly - 20, r: 36, restitution: 0.9, color: accent });
+          sec.pegs.push({ x: WORLD_W - 280, y: ly - 20, r: 36, restitution: 0.9, color: accent });
         }
       }
     },
 
-    // 14. Narrow tubes, S-curves, and drop shafts
+    // 14. Narrow Tubes, S-Curves, and Drop Shafts
     narrowTubesSCurves(sec, y0, h, accent, diff, rng) {
-      const topY = y0 + 90;
+      const topY = y0 + 95;
       const midY = y0 + h * 0.52;
       const botY = y0 + h - 140;
 
-      // Upper 4 Vertical Narrow Drop Tubes
-      const tubeXs = [240, 480, 720, 960];
-      // Top splitter hats above tube walls
+      const tubeXs = [290, 560, 800, 1040, 1310];
       tubeXs.forEach(tx => {
         sec.walls.push({ x1: tx, y1: topY, x2: tx, y2: midY - 80, thickness: 32, color: WALL_COLOR });
-        sec.pegs.push({ x: tx, y: topY - 8, r: 22, restitution: 0.8, color: accent });
+        sec.pegs.push({ x: tx, y: topY - 10, r: 24, restitution: 0.8, color: accent });
       });
 
-      // Lower Giant S-Curve Chicane
-      sec.walls.push(...createArcSegments(420, midY + 140, 290, -Math.PI * 0.35, Math.PI * 0.45, 9, 32, WALL_COLOR));
-      sec.walls.push(...createArcSegments(780, botY - 160, 290, Math.PI * 0.65, Math.PI * 1.45, 9, 32, WALL_COLOR));
-      sec.spinners.push({ x: WORLD_W / 2, y: midY + 260, len: 185, thick: 22, speed: 0.05, color: accent, style: "cross" });
+      sec.walls.push(...createArcSegments(540, midY + 150, 360, -Math.PI * 0.35, Math.PI * 0.45, 9, 34, WALL_COLOR));
+      sec.walls.push(...createArcSegments(1060, botY - 170, 360, Math.PI * 0.65, Math.PI * 1.45, 9, 34, WALL_COLOR));
+      sec.spinners.push({ x: WORLD_W / 2, y: midY + 280, len: 220, thick: 24, speed: 0.05, color: accent, style: "cross" });
     },
 
-    // 15. Optional bonus section: soccer-goal style gate with moving keeper bar
+    // 15. Soccer-Goal Qualification Gate
     soccerGoalGate(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
       const goalY = y0 + h * 0.52;
-      const goalW = 360;
+      const goalW = 480;
 
-      // Funnel directing marbles toward the stadium pitch
-      sec.walls.push({ x1: 40, y1: y0 + 80, x2: 220, y2: goalY - 160, thickness: 32, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 80, x2: WORLD_W - 220, y2: goalY - 160, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: 45, y1: y0 + 80, x2: 290, y2: goalY - 160, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: y0 + 80, x2: WORLD_W - 290, y2: goalY - 160, thickness: 34, color: WALL_COLOR });
 
-      // Goalposts (Thick white/accent posts)
-      sec.walls.push({ x1: cx - goalW / 2, y1: goalY - 90, x2: cx - goalW / 2, y2: goalY + 80, thickness: 28, color: "#ffffff" });
-      sec.walls.push({ x1: cx + goalW / 2, y1: goalY - 90, x2: cx + goalW / 2, y2: goalY + 80, thickness: 28, color: "#ffffff" });
+      sec.walls.push({ x1: cx - goalW / 2, y1: goalY - 95, x2: cx - goalW / 2, y2: goalY + 85, thickness: 30, color: "#ffffff" });
+      sec.walls.push({ x1: cx + goalW / 2, y1: goalY - 95, x2: cx + goalW / 2, y2: goalY + 85, thickness: 30, color: "#ffffff" });
 
-      // Moving Goalkeeper Slider Bar inside the goal mouth
       sec.sliders.push({
         centerX: cx,
         y: goalY - 20,
-        w: 125,
-        h: 28,
-        range: 110,
+        w: 165,
+        h: 30,
+        range: 145,
         speed: 0.055,
         phase: 0,
         color: "#ef4444"
       });
 
-      // Goal boost zone inside the net (marbles scoring a goal get a turbo boost downward)
       sec.zones.push({
-        x: cx - goalW / 2 + 20,
+        x: cx - goalW / 2 + 25,
         y: goalY,
-        w: goalW - 40,
-        h: 110,
+        w: goalW - 50,
+        h: 115,
         kind: "goalBoost",
         label: "⚽ GOAL BOOST!"
       });
 
-      // Side slow penalty ramps for marbles that miss the goalposts
-      sec.walls.push({ x1: 40, y1: goalY + 40, x2: cx - 190, y2: y0 + h - 130, thickness: 30, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 40, y1: goalY + 40, x2: cx + 190, y2: y0 + h - 130, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: 45, y1: goalY + 40, x2: cx - 230, y2: y0 + h - 130, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 45, y1: goalY + 40, x2: cx + 230, y2: y0 + h - 130, thickness: 32, color: WALL_COLOR });
     },
 
-    // 16. "No collision zone" section where marbles pass through each other, and a normal section after it
+    // 16. No-Collision Ghost Zone + Solid Recovery Section
     noCollisionGhostZone(sec, y0, h, accent, diff, rng) {
       const cx = WORLD_W / 2;
-      // Ghost phase band covering upper 60% of the section
       sec.zones.push({
-        x: 60,
+        x: 70,
         y: y0 + 70,
-        w: WORLD_W - 120,
+        w: WORLD_W - 140,
         h: h * 0.56,
         kind: "ghost",
         label: "👻 NO-COLLISION GHOST ZONE"
       });
 
-      // Criss-crossing ramps inside the ghost zone so marbles pass straight through each other at the X-intersection!
-      sec.walls.push({ x1: 60, y1: y0 + 130, x2: cx - 70, y2: y0 + h * 0.42, thickness: 28, color: WALL_COLOR });
-      sec.walls.push({ x1: WORLD_W - 60, y1: y0 + 130, x2: cx + 70, y2: y0 + h * 0.42, thickness: 28, color: WALL_COLOR });
+      sec.walls.push({ x1: 70, y1: y0 + 130, x2: cx - 90, y2: y0 + h * 0.42, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 70, y1: y0 + 130, x2: cx + 90, y2: y0 + h * 0.42, thickness: 30, color: WALL_COLOR });
 
-      // Normal solid collision section immediately after the ghost zone
       const solidY = y0 + h * 0.72;
-      sec.spinners.push({ x: cx - 220, y: solidY, len: 195, thick: 22, speed: 0.05, color: accent, style: "cross" });
-      sec.spinners.push({ x: cx + 220, y: solidY, len: 195, thick: 22, speed: -0.05, color: accent, style: "cross" });
-      sec.pegs.push({ x: cx, y: solidY + 60, r: 36, restitution: 0.9, color: accent });
+      sec.spinners.push({ x: cx - 290, y: solidY, len: 230, thick: 24, speed: 0.05, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 290, y: solidY, len: 230, thick: 24, speed: -0.05, color: accent, style: "cross" });
+      sec.pegs.push({ x: cx, y: solidY + 60, r: 44, restitution: 0.9, color: accent });
     }
   };
 
   const TRACK_BUILDER = {
     buildHugeWorld(sectionTypes, difficulty, rng) {
       const sections = [];
-      let currentY = 380; // Top spawn chamber height (0 to 380px)
+      let currentY = 440;
       const accents = window.GAME_DATA.sectionAccents;
 
       sectionTypes.forEach((type, idx) => {
-        const h = type === "capsuleChambers" || type === "champions_marathon" ? 2100 : 1850;
+        const h = type === "capsuleChambers" ? 2250 : 2050;
         const accent = accents[idx % accents.length];
         const sec = {
           index: idx + 1,
@@ -588,35 +546,32 @@
           dynamicItems: []
         };
 
-        // Call obstacle library generator
         const builder = OBSTACLE_LIBRARY[type] || OBSTACLE_LIBRARY.crossSpinners;
         builder(sec, currentY, h, accent, difficulty, rng);
 
-        // Connect section exit funnel so marbles smoothly enter the next section
         const exitY = currentY + h - 55;
-        sec.walls.push({ x1: 40, y1: exitY - 95, x2: 185, y2: exitY, thickness: 32, color: WALL_COLOR });
-        sec.walls.push({ x1: WORLD_W - 40, y1: exitY - 95, x2: WORLD_W - 185, y2: exitY, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: 45, y1: exitY - 100, x2: 230, y2: exitY, thickness: 34, color: WALL_COLOR });
+        sec.walls.push({ x1: WORLD_W - 45, y1: exitY - 100, x2: WORLD_W - 230, y2: exitY, thickness: 34, color: WALL_COLOR });
 
         sections.push(sec);
         currentY += h;
       });
 
-      const finishY = currentY + 120;
-      const totalHeight = finishY + 900;
+      const finishY = currentY + 140;
+      const totalHeight = finishY + 1100;
       return { sections, finishY, totalHeight };
     },
 
     buildCustomEditorWorld(customItems, difficulty) {
-      // Converts user's custom editor items into a huge 1200px wide world
       const sections = [];
-      const h = 8400;
+      const h = 10400;
       const sec = {
         index: 1,
         total: 1,
         type: "custom",
         title: "CUSTOM PRO EDITOR TRACK",
-        yStart: 380,
-        yEnd: 380 + h,
+        yStart: 440,
+        yEnd: 440 + h,
         accent: "#f59e0b",
         walls: [],
         pegs: [],
@@ -625,7 +580,7 @@
         sliders: [],
         polygons: [],
         zones: [],
-        gateY: 380 + h - 45,
+        gateY: 440 + h - 45,
         passedMarbles: new Set(),
         loaded: false,
         matterBodies: [],
@@ -637,48 +592,48 @@
 
       customItems.forEach(item => {
         const x = item.x * scaleX;
-        const y = 380 + item.y * scaleY;
+        const y = 440 + item.y * scaleY;
         const scl = item.scale || 1;
         const rad = ((item.angle || 0) * Math.PI) / 180;
 
         if (item.type === "cross") {
-          sec.spinners.push({ x, y, len: 210 * scl, thick: 24, speed: 0.05 * ((item.angle || 0) >= 0 ? 1 : -1), color: "#f59e0b", style: "cross" });
+          sec.spinners.push({ x, y, len: 250 * scl, thick: 24, speed: 0.05 * ((item.angle || 0) >= 0 ? 1 : -1), color: "#f59e0b", style: "cross" });
         } else if (item.type === "wheel") {
-          sec.spinners.push({ x, y, len: 420 * scl, thick: 26, speed: 0.03, color: "#10b981", style: "wheel6" });
+          sec.spinners.push({ x, y, len: 520 * scl, thick: 28, speed: 0.03, color: "#10b981", style: "wheel6" });
         } else if (item.type === "funnel") {
-          const w = 220 * scl, fh = 95 * scl, gap = 62 * scl;
-          sec.walls.push({ x1: x - w, y1: y - fh, x2: x - gap, y2: y + fh, thickness: 32, color: WALL_COLOR });
-          sec.walls.push({ x1: x + w, y1: y - fh, x2: x + gap, y2: y + fh, thickness: 32, color: WALL_COLOR });
+          const w = 280 * scl, fh = 110 * scl, gap = 75 * scl;
+          sec.walls.push({ x1: x - w, y1: y - fh, x2: x - gap, y2: y + fh, thickness: 34, color: WALL_COLOR });
+          sec.walls.push({ x1: x + w, y1: y - fh, x2: x + gap, y2: y + fh, thickness: 34, color: WALL_COLOR });
         } else if (item.type === "bowl") {
-          sec.walls.push(...createArcSegments(x, y, 220 * scl, Math.PI * 0.15, Math.PI * 0.85, 10, 30, WALL_COLOR));
+          sec.walls.push(...createArcSegments(x, y, 270 * scl, Math.PI * 0.15, Math.PI * 0.85, 10, 32, WALL_COLOR));
         } else if (item.type === "pegGrid") {
-          [-140, -70, 0, 70, 140].forEach(px => {
-            [-45, 45].forEach(py => {
-              sec.pegs.push({ x: x + (px + (py > 0 ? 30 : -30)) * scl, y: y + py * scl, r: 18 * scl, restitution: 0.75, color: WALL_COLOR });
+          [-180, -90, 0, 90, 180].forEach(px => {
+            [-55, 55].forEach(py => {
+              sec.pegs.push({ x: x + (px + (py > 0 ? 35 : -35)) * scl, y: y + py * scl, r: 20 * scl, restitution: 0.75, color: WALL_COLOR });
             });
           });
         } else if (item.type === "bumper") {
-          sec.pegs.push({ x, y, r: 42 * scl, restitution: 1.05, color: "#ef4444" });
+          sec.pegs.push({ x, y, r: 48 * scl, restitution: 1.05, color: "#ef4444" });
         } else if (item.type === "pendulum") {
-          sec.pendulums.push({ pivotX: x, pivotY: y - 90, armLen: 175 * scl, bobR: 36 * scl, speed: 0.04, phase: 0, color: "#3b82f6" });
+          sec.pendulums.push({ pivotX: x, pivotY: y - 100, armLen: 210 * scl, bobR: 42 * scl, speed: 0.04, phase: 0, color: "#3b82f6" });
         } else if (item.type === "goal") {
-          sec.zones.push({ x: x - 140 * scl, y: y - 40, w: 280 * scl, h: 90, kind: "goalBoost", label: "⚽ GOAL BOOST" });
+          sec.zones.push({ x: x - 180 * scl, y: y - 40, w: 360 * scl, h: 100, kind: "goalBoost", label: "⚽ GOAL BOOST" });
         } else {
-          const half = 160 * scl;
+          const half = 200 * scl;
           const dx = Math.cos(rad) * half;
           const dy = Math.sin(rad) * half;
-          sec.walls.push({ x1: x - dx, y1: y - dy, x2: x + dx, y2: y + dy, thickness: 30, color: WALL_COLOR });
+          sec.walls.push({ x1: x - dx, y1: y - dy, x2: x + dx, y2: y + dy, thickness: 32, color: WALL_COLOR });
         }
       });
 
       sections.push(sec);
-      const finishY = 380 + h + 120;
-      return { sections, finishY, totalHeight: finishY + 900 };
+      const finishY = 440 + h + 140;
+      return { sections, finishY, totalHeight: finishY + 1100 };
     }
   };
 
   // ============================================================================
-  // UI CONTROLLER
+  // UI CONTROLLER & ORIENTATION SWITCHER
   // ============================================================================
   const UI = {
     manualSelected: new Set(["DZ", "MA", "TN", "EG", "SA", "FR", "BR", "AR", "DE", "JP", "ES", "SN"]),
@@ -695,10 +650,53 @@
       this.onTrackChange();
       this.applySettings(true);
       Editor.init();
+
+      const badge = document.getElementById("totalCountriesBadge");
+      if (badge) badge.textContent = `${getAllMarblesPool().length} Flags`;
+
+      window.addEventListener("resize", () => {
+        const canvas = document.getElementById("raceCanvas");
+        if (canvas && document.getElementById("screen-race").classList.contains("active")) {
+          canvas.width = canvas.clientWidth || 360;
+          canvas.height = canvas.clientHeight || 640;
+        }
+      });
     },
 
     refreshHeader() {
       document.getElementById("coinCount").textContent = State.coins;
+    },
+
+    async toggleOrientation() {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          const cur = screen.orientation.type || "";
+          if (cur.includes("portrait")) {
+            await screen.orientation.lock("landscape");
+          } else {
+            await screen.orientation.lock("portrait");
+          }
+          return;
+        }
+      } catch (e) {}
+      // If browser/WebView requires rotating the phone physically, also cycle camera to Wide Landscape View
+      if (Game.session) {
+        Game.cameraMode = Game.cameraMode === "wide" ? "leader" : "wide";
+        Game.updateHUDButtons();
+      } else {
+        alert("Rotate your phone sideways for Landscape Mode (enabled in APK)! You can also use 'Landscape Wide View' camera in races.");
+      }
+    },
+
+    async setOrientationPref(mode) {
+      State.settings.orientation = mode;
+      saveState();
+      try {
+        if (screen.orientation) {
+          if (mode === "any" && screen.orientation.unlock) screen.orientation.unlock();
+          else if (screen.orientation.lock) await screen.orientation.lock(mode);
+        }
+      } catch (e) {}
     },
 
     onFormatChange() {
@@ -827,9 +825,17 @@
     },
 
     openCountryPicker() {
+      document.getElementById("pickerSearch").value = "";
+      this.filterCountryPicker("");
+      document.getElementById("pickerModal").classList.add("active");
+    },
+
+    filterCountryPicker(query) {
+      const q = (query || "").toLowerCase().trim();
       const grid = document.getElementById("countryPickerGrid");
       grid.innerHTML = "";
       getAllMarblesPool().forEach(c => {
+        if (q && !c.name.toLowerCase().includes(q) && !c.code.toLowerCase().includes(q)) return;
         const div = document.createElement("div");
         div.className = "country-chip" + (this.manualSelected.has(c.code) ? " selected" : "");
         div.innerHTML = `<span>${c.flag}</span> <span>${c.name}</span>`;
@@ -841,13 +847,12 @@
         };
         grid.appendChild(div);
       });
-      document.getElementById("pickerModal").classList.add("active");
     },
 
     selectAllCountries(flag) {
       if (flag) getAllMarblesPool().forEach(c => this.manualSelected.add(c.code));
       else this.manualSelected.clear();
-      this.openCountryPicker();
+      this.filterCountryPicker(document.getElementById("pickerSearch").value);
       this.updateManualCount();
     },
 
@@ -861,7 +866,7 @@
     },
 
     savePreset() {
-      const name = prompt("Preset Name:", "Huge Race " + (State.presets.length + 1));
+      const name = prompt("Preset Name:", "Mega Race " + (State.presets.length + 1));
       if (!name) return;
       const preset = {
         name,
@@ -915,7 +920,7 @@
         <div style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid #334155;">
           <div style="font-weight:800; margin-bottom:4px;">${c.name}</div>
           <div style="font-size:0.74rem; color:var(--muted); margin-bottom:8px;">
-            ${c.count} Marbles • ${c.rounds} Huge Tracks • ${c.format === "grandprix" ? "GP Points" : "Knockout"}
+            ${c.count} Marbles • ${c.rounds} Mega Tracks • ${c.format === "grandprix" ? "GP Points" : "Knockout"}
           </div>
           <button class="btn btn-sm btn-block" onclick="Game.startCup('${c.id}')">Start Competition</button>
         </div>
@@ -924,10 +929,10 @@
 
     renderCareerBox() {
       const stages = [
-        "Stage 1/4: Regional Qualifier (Top 10 Advance - Alpine Slalom)",
-        "Stage 2/4: Continental Group Stage (Top 6 Advance - Serpentine Citadel)",
-        "Stage 3/4: World Cup Semi-Final (Top 3 Advance - Pendulum Fortress)",
-        "Stage 4/4: World Marble Cup Final (Win 1st Place - 40,000px Marathon)"
+        "Stage 1/4: Regional Qualifier (Top 12 Advance - Alpine Slalom)",
+        "Stage 2/4: Continental Group Stage (Top 8 Advance - Atlas Mountains)",
+        "Stage 3/4: World Cup Semi-Final (Top 4 Advance - Pendulum Fortress)",
+        "Stage 4/4: World Marble Cup Final (Win 1st Place - 60,000px Marathon)"
       ];
       const cObj = findMarbleByCode(State.career.countryCode);
       document.getElementById("careerStatusBox").innerHTML = `
@@ -1047,6 +1052,7 @@
     },
 
     openSettings() {
+      document.getElementById("optOrientation").value = State.settings.orientation || "any";
       document.getElementById("optLang").value = State.settings.lang;
       document.getElementById("optMaxMarbles").value = State.settings.maxMarbles;
       document.getElementById("optColorblind").value = State.settings.colorblind;
@@ -1106,7 +1112,7 @@
       const getCoords = e => {
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.round(((e.clientX - rect.left) / rect.width) * 360);
-        const y = Math.round(((e.clientY - rect.top) / rect.height) * 360 + this.scrollY);
+        const y = Math.round(((e.clientY - rect.top) / rect.height) * 340 + this.scrollY);
         return { x: Math.max(24, Math.min(336, x)), y: Math.max(80, Math.min(this.virtualHeight - 90, y)) };
       };
 
@@ -1282,7 +1288,7 @@
       if (!this.ctx) return;
       const ctx = this.ctx;
       ctx.fillStyle = "#92a8d8";
-      ctx.fillRect(0, 0, 360, 360);
+      ctx.fillRect(0, 0, 360, 340);
       ctx.save();
       ctx.translate(0, -this.scrollY);
 
@@ -1297,7 +1303,6 @@
         ctx.fillText(y + "m", 14, y - 4);
       }
 
-      // Thick Black Side Walls
       ctx.fillStyle = "#0a0a0f";
       ctx.fillRect(0, 0, 10, this.virtualHeight);
       ctx.fillRect(350, 0, 10, this.virtualHeight);
@@ -1377,7 +1382,7 @@
   };
 
   // ============================================================================
-  // CORE HUGE-WORLD MARBLE RACE ENGINE (LAZY STREAMING + SUB-STEPPING + CULLING)
+  // CORE MEGA-WORLD MARBLE RACE ENGINE (CRASH-PROOF LOOP + NO COMPOUND NaN BUG)
   // ============================================================================
   const Game = {
     session: null,
@@ -1388,7 +1393,7 @@
     cameraMode: "leader",
     autoPlay: false,
     camY: 0,
-    camScale: 1,
+    camScale: 0.25,
     lavaY: -500,
     simTick: 0,
     mediaRecorder: null,
@@ -1399,20 +1404,20 @@
       let basePool = getAllMarblesPool();
       if (manual) {
         basePool = basePool.filter(c => UI.manualSelected.has(c.code));
-        if (basePool.length < 2) basePool = getAllMarblesPool().slice(0, 16);
+        if (basePool.length < 2) basePool = getAllMarblesPool().slice(0, 20);
       } else if (region === "CUSTOM") {
         basePool = (State.customMarbles && State.customMarbles.length >= 2)
           ? State.customMarbles.slice()
-          : getAllMarblesPool().slice(0, 16);
+          : getAllMarblesPool().slice(0, 20);
       } else if (region && region !== "ALL") {
         basePool = basePool.filter(c => c.region.includes(region));
+        if (basePool.length < 2) basePool = getAllMarblesPool();
       }
 
       const cap = Math.max(2, Math.min(Number(count) || 80, State.settings.maxMarbles || 300));
       const rng = createRNG(Date.now() ^ (Math.random() * 0xffffffff));
       const result = [];
 
-      // Allow up to 300 marbles by cycling through shuffled pool if count > pool size
       let pass = 0;
       while (result.length < cap) {
         const copy = basePool.slice();
@@ -1461,7 +1466,7 @@
 
     getTrackDisplayName(trackId) {
       if (trackId === "custom") return "Custom Pro Editor Track";
-      if (trackId === "seeded_random") return `Seeded Huge Track (${this.session?.seedStr || "RANDOM"})`;
+      if (trackId === "seeded_random") return `Seeded Mega Track (${this.session?.seedStr || "RANDOM"})`;
       const found = window.GAME_DATA.tracks.find(t => t.id === trackId);
       return found ? found.name : trackId;
     },
@@ -1485,7 +1490,7 @@
       this.cameraMode = camera;
 
       this.session = {
-        modeTitle: format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "Huge Marble Race",
+        modeTitle: format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "Mega Marble Race",
         format,
         gpSystem,
         trackSchedule: this.buildTrackSchedule(track, rounds),
@@ -1518,7 +1523,7 @@
         trackSchedule: this.buildTrackSchedule("rotate", cup.rounds),
         seedStr: cup.id.toUpperCase(),
         difficulty: "medium",
-        length: "medium",
+        length: "long",
         physSpeed: 1,
         totalRounds: cup.rounds,
         currentRound: 1,
@@ -1540,8 +1545,8 @@
       saveState();
       const playerMarble = findMarbleByCode(code);
       const stageNames = ["Career Qualifier", "Career Group Stage", "Career Semi-Final", "Career World Cup Final"];
-      const stageTracks = ["alpine_slalom", "serpent_citadel", "pendulum_fortress", "champions_marathon"];
-      const counts = [40, 50, 32, 24];
+      const stageTracks = ["alpine_slalom", "atlas_mountains", "pendulum_fortress", "champions_marathon"];
+      const counts = [50, 60, 40, 30];
       const st = State.career.stage || 0;
       const pool = this.pickCountries("ALL", counts[st], false).filter(c => c.code !== code);
       const entrants = [playerMarble, ...pool.slice(0, counts[st] - 1)];
@@ -1553,7 +1558,7 @@
         trackSchedule: [stageTracks[st]],
         seedStr: "CAREER-" + st,
         difficulty: st >= 2 ? "hard" : "medium",
-        length: st === 3 ? "long" : "medium",
+        length: st === 3 ? "marathon" : "long",
         physSpeed: 1,
         totalRounds: 1,
         currentRound: 1,
@@ -1613,8 +1618,8 @@
     },
 
     resolveSectionList(trackId, lengthSetting, rng) {
-      const countMap = { short: 8, medium: 12, long: 16, marathon: 20 };
-      const targetSections = countMap[lengthSetting] || 12;
+      const countMap = { short: 10, medium: 15, long: 20, marathon: 28 };
+      const targetSections = countMap[lengthSetting] || 15;
       const allObstacleKeys = Object.keys(OBSTACLE_LIBRARY).filter(k => k !== "startCircleSplitter");
 
       if (trackId === "seeded_random") {
@@ -1640,8 +1645,8 @@
     launchRound() {
       UI.showScreen("race");
       const canvas = document.getElementById("raceCanvas");
-      canvas.width = canvas.clientWidth || 360;
-      canvas.height = canvas.clientHeight || 640;
+      canvas.width = canvas.clientWidth || window.innerWidth || 360;
+      canvas.height = canvas.clientHeight || window.innerHeight || 640;
 
       const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "colossus_odyssey";
       this.currentTrackId = currentTrackId;
@@ -1660,6 +1665,7 @@
 
       this.lavaY = -500;
       this.camY = 0;
+      this.camScale = canvas.width / WORLD_W;
       this.simTick = 0;
 
       this.setupPhysicsWorld(rng);
@@ -1673,18 +1679,17 @@
       if (this.engine) World.clear(this.engine.world);
 
       this.engine = Engine.create({
-        positionIterations: 10,
-        velocityIterations: 8
+        positionIterations: 6,
+        velocityIterations: 4
       });
-      this.engine.gravity.y = 0.92 * (this.session.physSpeed || 1);
+      this.engine.gravity.y = 0.95 * (this.session.physSpeed || 1);
 
       const H = this.worldData.totalHeight;
-      // Ultra-thick 140px outer boundary containment walls so no marble can EVER escape left or right
-      const wallOpts = { isStatic: true, restitution: 0.45, friction: 0.005 };
+      const wallOpts = { isStatic: true, restitution: 0.45, friction: 0.004 };
       World.add(this.engine.world, [
-        Bodies.rectangle(-30, H / 2, 140, H * 2, wallOpts),
-        Bodies.rectangle(WORLD_W + 30, H / 2, 140, H * 2, wallOpts),
-        Bodies.rectangle(WORLD_W / 2, -90, WORLD_W + 200, 140, wallOpts)
+        Bodies.rectangle(-30, H / 2, 150, H * 2, wallOpts),
+        Bodies.rectangle(WORLD_W + 30, H / 2, 150, H * 2, wallOpts),
+        Bodies.rectangle(WORLD_W / 2, -90, WORLD_W + 250, 150, wallOpts)
       ]);
 
       this.marbles = [];
@@ -1693,26 +1698,25 @@
       this.raceStartTime = performance.now();
       this.midRaceRecorded = false;
 
-      // Spawn 2 to 300 Marbles cleanly in the top launch bay (Y = 40 to 340)
       const list = this.session.activeCountries.slice();
-      const r = list.length > 180 ? 15 : list.length > 90 ? 18 : 22;
-      const usableW = WORLD_W - 220;
-      const cols = Math.max(8, Math.floor(usableW / (r * 2.35)));
+      const r = list.length > 180 ? 17 : list.length > 90 ? 20 : 24;
+      const usableW = WORLD_W - 260;
+      const cols = Math.max(10, Math.floor(usableW / (r * 2.35)));
 
       list.forEach((country, idx) => {
         const col = idx % cols;
         const row = Math.floor(idx / cols);
-        const jitterX = (rng() - 0.5) * 8;
-        const x = 110 + col * (usableW / Math.max(1, cols - 1)) + jitterX;
-        const y = 45 + row * (r * 2.35) + (rng() - 0.5) * 5;
+        const jitterX = (rng() - 0.5) * 10;
+        const x = 130 + col * (usableW / Math.max(1, cols - 1)) + jitterX;
+        const y = 50 + row * (r * 2.35) + (rng() - 0.5) * 6;
 
         const body = Bodies.circle(x, y, r, {
           restitution: 0.52,
           friction: 0.002,
-          frictionAir: 0.003,
+          frictionAir: 0.0028,
           density: 0.0025
         });
-        Body.setVelocity(body, { x: (rng() - 0.5) * 3, y: 1.5 + rng() * 2 });
+        Body.setVelocity(body, { x: (rng() - 0.5) * 3.5, y: 2 + rng() * 2.5 });
         World.add(this.engine.world, body);
 
         this.marbles.push({
@@ -1732,17 +1736,15 @@
         });
       });
 
-      // Immediately stream in the first 2 sections
-      this.updateLazySections(0, 2600);
+      this.updateLazySections(0, 3200);
     },
 
-    // Lazy Section Streaming: Creates Matter.js bodies only for sections near active marbles
-    // and destroys bodies for sections all marbles have passed!
+    // Lazy Section Streaming with Independent Blade Bodies (Zero Compound Body NaN Bugs!)
     updateLazySections(minMarbleY, maxMarbleY) {
       if (!window.Matter || !this.engine || !this.worldData) return;
-      const { World, Bodies, Body } = window.Matter;
-      const activeTop = minMarbleY - 1200;
-      const activeBottom = maxMarbleY + 2200;
+      const { World, Bodies } = window.Matter;
+      const activeTop = minMarbleY - 1400;
+      const activeBottom = maxMarbleY + 2600;
 
       this.worldData.sections.forEach(sec => {
         const shouldBeLoaded = sec.yEnd >= activeTop && sec.yStart <= activeBottom;
@@ -1752,13 +1754,12 @@
           sec.matterBodies = [];
           sec.dynamicItems = [];
 
-          // 1. Thick Solid Walls
           sec.walls.forEach(w => {
             const dx = w.x2 - w.x1;
             const dy = w.y2 - w.y1;
             const len = Math.hypot(dx, dy);
             const ang = Math.atan2(dy, dx);
-            const b = Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, len + 10, w.thickness || 28, {
+            const b = Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, len + 10, w.thickness || 30, {
               isStatic: true,
               angle: ang,
               restitution: 0.45,
@@ -1767,7 +1768,6 @@
             sec.matterBodies.push(b);
           });
 
-          // 2. Pegs & Bumpers
           sec.pegs.forEach(p => {
             const b = Bodies.circle(p.x, p.y, p.r, {
               isStatic: true,
@@ -1777,27 +1777,23 @@
             sec.matterBodies.push(b);
           });
 
-          // 3. Compound Cross / Wheel Spinners
+          // Spinners built from individual centered static rectangles (fast & 100% crash-free)
           sec.spinners.forEach(sp => {
-            const parts = [];
-            const blades = sp.style === "wheel6" ? 3 : 2;
-            for (let k = 0; k < blades; k++) {
+            const bladesCount = sp.style === "wheel6" ? 3 : 2;
+            const bladeBodies = [];
+            for (let k = 0; k < bladesCount; k++) {
               const bar = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 24, {
-                angle: (k * Math.PI) / blades
+                isStatic: true,
+                angle: (k * Math.PI) / bladesCount,
+                restitution: 0.72,
+                friction: 0.002
               });
-              parts.push(bar);
+              bladeBodies.push(bar);
+              sec.matterBodies.push(bar);
             }
-            const comp = Body.create({
-              parts,
-              isStatic: true,
-              restitution: 0.7,
-              friction: 0.005
-            });
-            sec.matterBodies.push(comp);
-            sec.dynamicItems.push({ kind: "spinner", body: comp, spec: sp, angle: 0 });
+            sec.dynamicItems.push({ kind: "spinner", blades: bladeBodies, spec: sp, angle: 0 });
           });
 
-          // 4. Swinging Pendulums
           sec.pendulums.forEach(pd => {
             const bob = Bodies.circle(pd.pivotX, pd.pivotY + pd.armLen, pd.bobR, {
               isStatic: true,
@@ -1807,7 +1803,6 @@
             sec.dynamicItems.push({ kind: "pendulum", body: bob, spec: pd, curX: pd.pivotX, curY: pd.pivotY + pd.armLen });
           });
 
-          // 5. Horizontal Sliders
           sec.sliders.forEach(sl => {
             const plat = Bodies.rectangle(sl.centerX, sl.y, sl.w, sl.h, {
               isStatic: true,
@@ -1819,7 +1814,6 @@
 
           World.add(this.engine.world, sec.matterBodies);
         } else if (!shouldBeLoaded && sec.loaded) {
-          // Unload passed section from physics engine to save CPU/RAM on low-end phones
           World.remove(this.engine.world, sec.matterBodies);
           sec.matterBodies = [];
           sec.dynamicItems = [];
@@ -1834,12 +1828,15 @@
       const skin = window.GAME_DATA.skins.find(s => s.id === State.equippedSkin) || window.GAME_DATA.skins[0];
 
       const stepFrame = () => {
-        // Sub-stepping: 2 sub-steps per frame at 1x speed (4 at 2x, 6 at 3x) so marbles never tunnel through barriers!
-        const subSteps = this.speedMult * 2;
-        for (let s = 0; s < subSteps; s++) {
-          this.stepPhysicsSubStep();
+        try {
+          const subSteps = this.speedMult * 2;
+          for (let s = 0; s < subSteps; s++) {
+            this.stepPhysicsSubStep();
+          }
+          this.renderScene(ctx, canvas, skin);
+        } catch (err) {
+          console.error("Race loop recovered from error:", err);
         }
-        this.renderScene(ctx, canvas, skin);
 
         if (this.checkRaceFinished()) {
           this.onRoundComplete();
@@ -1852,60 +1849,61 @@
 
     stepPhysicsSubStep() {
       if (!window.Matter || !this.engine || !this.worldData) return;
-      const { Engine, Body } = window.Matter;
+      const { Engine, Body, World } = window.Matter;
       this.simTick += 1;
       const finishY = this.worldData.finishY;
 
-      // Update kinematic spinners, pendulums, and sliders in loaded sections
       const spd = (this.session.physSpeed || 1) * 0.5;
       this.worldData.sections.forEach(sec => {
         if (!sec.loaded) return;
         sec.dynamicItems.forEach(item => {
           if (item.kind === "spinner") {
             item.angle += item.spec.speed * spd;
-            Body.setAngle(item.body, item.angle);
-            Body.setAngularVelocity(item.body, item.spec.speed * spd);
+            const n = item.blades.length;
+            for (let k = 0; k < n; k++) {
+              Body.setAngle(item.blades[k], item.angle + (k * Math.PI) / n);
+            }
           } else if (item.kind === "pendulum") {
             const swing = Math.sin(this.simTick * item.spec.speed * spd + item.spec.phase) * 0.85;
             const bx = item.spec.pivotX + Math.sin(swing) * item.spec.armLen;
             const by = item.spec.pivotY + Math.cos(swing) * item.spec.armLen;
-            Body.setVelocity(item.body, { x: bx - item.curX, y: by - item.curY });
             Body.setPosition(item.body, { x: bx, y: by });
             item.curX = bx;
             item.curY = by;
           } else if (item.kind === "slider") {
             const nx = item.spec.centerX + Math.sin(this.simTick * item.spec.speed * spd + item.spec.phase) * item.spec.range;
-            Body.setVelocity(item.body, { x: nx - item.curX, y: 0 });
             Body.setPosition(item.body, { x: nx, y: item.spec.y });
             item.curX = nx;
           }
         });
       });
 
-      // Fixed 8.33ms (120Hz) sub-step
       Engine.update(this.engine, 1000 / 120);
 
       if (this.session.format === "survival") {
-        this.lavaY += 1.6 * spd;
+        this.lavaY += 1.8 * spd;
       }
 
       let minActiveY = Infinity;
       let maxActiveY = 0;
 
-      // Update Marbles, Velocity Clamp, Ghost Zones, Section Checkpoints & Anti-Stuck
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
 
-        // Clamp horizontal bounds inside [40, WORLD_W - 40] as an extra safety net
-        if (m.body.position.x < 35 + m.r) {
-          Body.setPosition(m.body, { x: 38 + m.r, y: m.body.position.y });
+        // Guard against NaN positions
+        if (!Number.isFinite(m.body.position.x) || !Number.isFinite(m.body.position.y)) {
+          Body.setPosition(m.body, { x: WORLD_W / 2, y: (m.lastMoveY || 100) + 40 });
+          Body.setVelocity(m.body, { x: 0, y: 4 });
+        }
+
+        if (m.body.position.x < 40 + m.r) {
+          Body.setPosition(m.body, { x: 42 + m.r, y: m.body.position.y });
           Body.setVelocity(m.body, { x: Math.abs(m.body.velocity.x) * 0.5, y: m.body.velocity.y });
-        } else if (m.body.position.x > WORLD_W - 35 - m.r) {
-          Body.setPosition(m.body, { x: WORLD_W - 38 - m.r, y: m.body.position.y });
+        } else if (m.body.position.x > WORLD_W - 40 - m.r) {
+          Body.setPosition(m.body, { x: WORLD_W - 42 - m.r, y: m.body.position.y });
           Body.setVelocity(m.body, { x: -Math.abs(m.body.velocity.x) * 0.5, y: m.body.velocity.y });
         }
 
-        // Clamp max speed so a marble can never move more than its radius in one sub-step
         const vx = m.body.velocity.x;
         const vy = m.body.velocity.y;
         const maxV = m.r * 0.85;
@@ -1921,9 +1919,8 @@
         if (m.y < minActiveY) minActiveY = m.y;
         if (m.y > maxActiveY) maxActiveY = m.y;
 
-        // Check active section zones (Ghost Zone & Soccer Goal Boost)
         let insideGhost = false;
-        const secIdx = Math.floor((m.y - 380) / 1850);
+        const secIdx = Math.floor((m.y - 440) / 2050);
         for (let si = Math.max(0, secIdx - 1); si <= Math.min(this.worldData.sections.length - 1, secIdx + 1); si++) {
           const sec = this.worldData.sections[si];
           if (m.y >= sec.gateY && !sec.passedMarbles.has(m.country.code)) {
@@ -1934,29 +1931,27 @@
               if (z.kind === "ghost") {
                 insideGhost = true;
               } else if (z.kind === "goalBoost") {
-                Body.setVelocity(m.body, { x: m.body.velocity.x * 0.8, y: Math.max(m.body.velocity.y, 12) });
+                Body.setVelocity(m.body, { x: m.body.velocity.x * 0.8, y: Math.max(m.body.velocity.y, 13) });
               }
             }
           });
         }
 
-        // Toggle Matter.js negative collision group in Ghost Zone (marbles pass through each other but hit walls!)
         if (insideGhost !== m.inGhostZone) {
           m.inGhostZone = insideGhost;
           m.body.collisionFilter.group = insideGhost ? -2 : 0;
         }
 
-        // Anti-stuck logic: nudge after 1.5s, micro-teleport down after 3s
         if (Math.abs(m.y - m.lastMoveY) < 1.8) {
           m.stuckFrames += 1;
-          if (m.stuckFrames === 160) {
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 9, y: -6 });
-          } else if (m.stuckFrames > 320) {
+          if (m.stuckFrames === 140) {
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 11, y: -7 });
+          } else if (m.stuckFrames > 280) {
             Body.setPosition(m.body, {
               x: WORLD_W * 0.25 + Math.random() * (WORLD_W * 0.5),
-              y: m.y + 85
+              y: m.y + 95
             });
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 4, y: 5 });
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 5, y: 6 });
             m.stuckFrames = 0;
           }
         } else {
@@ -1964,27 +1959,24 @@
           m.stuckFrames = 0;
         }
 
-        if (this.simTick % 2 === 0 && State.equippedSkin !== "default") {
+        if (this.simTick % 3 === 0 && State.equippedSkin !== "default") {
           m.trail.push({ x: m.x, y: m.y });
-          if (m.trail.length > 7) m.trail.shift();
+          if (m.trail.length > 6) m.trail.shift();
         }
 
-        // Check Survival Lava or Finish Line
         if (this.session.format === "survival" && m.y < this.lavaY) {
           m.eliminated = true;
           m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
           this.eliminatedOrder.push(m);
-          window.Matter.World.remove(this.engine.world, m.body);
+          World.remove(this.engine.world, m.body);
         } else if (m.y >= finishY) {
           m.finished = true;
           m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
           this.finishedOrder.push(m);
-          // Put finished marble to sleep and remove from physics world so finish area never lags!
-          window.Matter.World.remove(this.engine.world, m.body);
+          World.remove(this.engine.world, m.body);
         }
       });
 
-      // Stream sections lazily every 15 sub-steps
       if (this.simTick % 15 === 0 && minActiveY < Infinity) {
         this.updateLazySections(minActiveY, maxActiveY);
       }
@@ -1994,6 +1986,16 @@
         const sorted = this.marbles.slice().sort((a, b) => b.y - a.y);
         sorted.forEach((m, idx) => { m.midRank = idx + 1; });
       }
+    },
+
+    nudgeAllMarbles() {
+      if (!window.Matter || !this.marbles) return;
+      const { Body } = window.Matter;
+      this.marbles.forEach(m => {
+        if (!m.finished && !m.eliminated) {
+          Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 12, y: 9 });
+        }
+      });
     },
 
     checkRaceFinished() {
@@ -2014,7 +2016,6 @@
       const H = canvas.height;
       const finishY = this.worldData.finishY;
 
-      // Flat soft periwinkle-blue background
       ctx.fillStyle = "#92a8d8";
       ctx.fillRect(0, 0, W, H);
 
@@ -2025,59 +2026,59 @@
         ...this.eliminatedOrder.slice().reverse()
       ];
 
-      // Camera scaling & vertical tracking
+      const isLandscape = W > H;
       const baseScale = W / WORLD_W;
       let targetScale = baseScale;
       let targetWorldY = 0;
 
       if (this.cameraMode === "overview") {
-        targetScale = baseScale * 0.55;
+        targetScale = baseScale * (isLandscape ? 0.48 : 0.55);
         const leadY = activeMarbles[0]?.y || finishY;
         const visibleWorldH = H / targetScale;
-        targetWorldY = Math.max(0, Math.min(finishY + 600 - visibleWorldH, leadY - visibleWorldH * 0.5));
+        targetWorldY = Math.max(0, Math.min(finishY + 800 - visibleWorldH, leadY - visibleWorldH * 0.5));
+      } else if (this.cameraMode === "wide") {
+        targetScale = baseScale * 0.78;
+        const leadY = activeMarbles[0]?.y || finishY;
+        const visibleWorldH = H / targetScale;
+        targetWorldY = Math.max(0, Math.min(finishY + 800 - visibleWorldH, leadY - visibleWorldH * 0.52));
       } else if (this.cameraMode === "pack") {
-        const packSlice = activeMarbles.slice(0, Math.min(18, activeMarbles.length));
+        const packSlice = activeMarbles.slice(0, Math.min(20, activeMarbles.length));
         const avgY = packSlice.length
           ? packSlice.reduce((s, m) => s + m.y, 0) / packSlice.length
           : finishY;
         const visibleWorldH = H / targetScale;
-        targetWorldY = Math.max(0, Math.min(finishY + 650 - visibleWorldH, avgY - visibleWorldH * 0.48));
+        targetWorldY = Math.max(0, Math.min(finishY + 800 - visibleWorldH, avgY - visibleWorldH * 0.48));
       } else {
-        // Leader camera: follows leading active marble, or shows finish board once leaders cross
         const leader = activeMarbles[0];
         const visibleWorldH = H / targetScale;
-        const focusY = leader ? leader.y : finishY + 120;
-        targetWorldY = Math.max(0, Math.min(finishY + 750 - visibleWorldH, focusY - visibleWorldH * 0.55));
+        const focusY = leader ? leader.y : finishY + 150;
+        targetWorldY = Math.max(0, Math.min(finishY + 900 - visibleWorldH, focusY - visibleWorldH * 0.52));
       }
 
-      this.camScale += (targetScale - this.camScale) * 0.15;
-      this.camY += (targetWorldY - this.camY) * 0.16;
+      this.camScale += (targetScale - this.camScale) * 0.18;
+      this.camY += (targetWorldY - this.camY) * 0.18;
 
-      const viewTop = this.camY - 300;
-      const viewBottom = this.camY + (H / this.camScale) + 300;
+      const viewTop = this.camY - 350;
+      const viewBottom = this.camY + (H / this.camScale) + 350;
 
       ctx.save();
-      if (this.cameraMode === "overview") {
+      if (this.cameraMode === "overview" || this.cameraMode === "wide") {
         ctx.translate((W - WORLD_W * this.camScale) / 2, 0);
       }
       ctx.scale(this.camScale, this.camScale);
       ctx.translate(0, -this.camY);
 
-      // Outer thick solid black world walls
       ctx.fillStyle = WALL_COLOR;
-      ctx.fillRect(-40, 0, 80, finishY + 900);
-      ctx.fillRect(WORLD_W - 40, 0, 80, finishY + 900);
+      ctx.fillRect(-40, 0, 85, finishY + 1100);
+      ctx.fillRect(WORLD_W - 45, 0, 85, finishY + 1100);
 
-      // Render only sections inside camera view (Frustum Culling)
       this.worldData.sections.forEach(sec => {
         if (sec.yEnd < viewTop || sec.yStart > viewBottom) return;
 
-        // Colored accent side stripes for this section
         ctx.fillStyle = sec.accent;
-        ctx.fillRect(28, sec.yStart, 16, sec.yEnd - sec.yStart);
-        ctx.fillRect(WORLD_W - 44, sec.yStart, 16, sec.yEnd - sec.yStart);
+        ctx.fillRect(30, sec.yStart, 18, sec.yEnd - sec.yStart);
+        ctx.fillRect(WORLD_W - 48, sec.yStart, 18, sec.yEnd - sec.yStart);
 
-        // Special Zones (Ghost Zone & Soccer Goal Boost)
         sec.zones.forEach(z => {
           if (z.kind === "ghost") {
             ctx.fillStyle = "rgba(139, 92, 246, 0.22)";
@@ -2086,20 +2087,19 @@
             ctx.lineWidth = 6;
             ctx.strokeRect(z.x, z.y, z.w, z.h);
             ctx.fillStyle = "#ffffff";
-            ctx.font = "900 32px sans-serif";
+            ctx.font = "900 36px sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(z.label, WORLD_W / 2, z.y + 52);
+            ctx.fillText(z.label, WORLD_W / 2, z.y + 56);
           } else if (z.kind === "goalBoost") {
-            ctx.fillStyle = "rgba(16, 185, 129, 0.32)";
+            ctx.fillStyle = "rgba(16, 185, 129, 0.34)";
             ctx.fillRect(z.x, z.y, z.w, z.h);
             ctx.fillStyle = "#052e16";
-            ctx.font = "900 30px sans-serif";
+            ctx.font = "900 34px sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(z.label, z.x + z.w / 2, z.y + 62);
+            ctx.fillText(z.label, z.x + z.w / 2, z.y + 66);
           }
         });
 
-        // Polygons (Triangle Splitters)
         sec.polygons.forEach(poly => {
           ctx.fillStyle = poly.color;
           ctx.beginPath();
@@ -2111,11 +2111,10 @@
           ctx.fill();
         });
 
-        // Solid Black & Accent Walls
         sec.walls.forEach(w => {
           if (Math.max(w.y1, w.y2) < viewTop || Math.min(w.y1, w.y2) > viewBottom) return;
           ctx.strokeStyle = w.color || WALL_COLOR;
-          ctx.lineWidth = w.thickness || 28;
+          ctx.lineWidth = w.thickness || 30;
           ctx.lineCap = "round";
           ctx.beginPath();
           ctx.moveTo(w.x1, w.y1);
@@ -2123,7 +2122,6 @@
           ctx.stroke();
         });
 
-        // Pegs & Bumpers
         sec.pegs.forEach(p => {
           if (p.y + p.r < viewTop || p.y - p.r > viewBottom) return;
           ctx.fillStyle = p.color || WALL_COLOR;
@@ -2137,7 +2135,6 @@
           }
         });
 
-        // Dynamic Spinners, Pendulums & Sliders
         sec.dynamicItems.forEach(item => {
           if (item.kind === "spinner") {
             const sp = item.spec;
@@ -2167,7 +2164,7 @@
             }
             ctx.fillStyle = "#ffffff";
             ctx.beginPath();
-            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.arc(0, 0, 16, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
           } else if (item.kind === "pendulum") {
@@ -2196,16 +2193,15 @@
           }
         });
 
-        // Colored Section Checkpoint Gate Bar at the bottom of the section
         if (sec.gateY >= viewTop && sec.gateY <= viewBottom) {
           ctx.fillStyle = sec.accent;
-          ctx.fillRect(40, sec.gateY - 18, WORLD_W - 80, 36);
+          ctx.fillRect(45, sec.gateY - 20, WORLD_W - 90, 40);
           ctx.strokeStyle = WALL_COLOR;
           ctx.lineWidth = 5;
-          ctx.strokeRect(40, sec.gateY - 18, WORLD_W - 80, 36);
+          ctx.strokeRect(45, sec.gateY - 20, WORLD_W - 90, 40);
 
           ctx.fillStyle = "#0a0a0f";
-          ctx.font = "900 24px sans-serif";
+          ctx.font = "900 26px sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(
@@ -2216,49 +2212,45 @@
         }
       });
 
-      // Survival Rising Lava
       if (this.session.format === "survival" && this.lavaY > 0) {
         ctx.fillStyle = "rgba(239, 68, 68, 0.42)";
         ctx.fillRect(0, Math.max(0, viewTop), WORLD_W, Math.max(0, this.lavaY - Math.max(0, viewTop)));
         ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 14;
         ctx.beginPath();
         ctx.moveTo(0, this.lavaY);
         ctx.lineTo(WORLD_W, this.lavaY);
         ctx.stroke();
       }
 
-      // Checkered Finish Line Banner + Colored Finisher Position Bars (#1 Algeria, #2 Morocco, #33 Norway)
-      if (finishY + 800 >= viewTop && finishY - 100 <= viewBottom) {
+      if (finishY + 1000 >= viewTop && finishY - 120 <= viewBottom) {
         const sq = 40;
-        for (let x = 40; x < WORLD_W - 40; x += sq) {
+        for (let x = 45; x < WORLD_W - 45; x += sq) {
           ctx.fillStyle = Math.floor(x / sq) % 2 === 0 ? "#ffffff" : "#0a0a0f";
-          ctx.fillRect(x, finishY, sq, 28);
+          ctx.fillRect(x, finishY, sq, 30);
           ctx.fillStyle = Math.floor(x / sq) % 2 === 0 ? "#0a0a0f" : "#ffffff";
-          ctx.fillRect(x, finishY + 28, sq, 28);
+          ctx.fillRect(x, finishY + 30, sq, 30);
         }
 
-        // Stacked Colored Finish Bars showing each finished marble (#1 Country, #2 Country...)
-        const barH = 38;
-        const maxBarsShown = Math.min(this.finishedOrder.length, 20);
+        const barH = 42;
+        const maxBarsShown = Math.min(this.finishedOrder.length, 22);
         for (let i = 0; i < maxBarsShown; i++) {
           const finMarble = this.finishedOrder[i];
-          const by = finishY + 66 + i * (barH + 4);
+          const by = finishY + 72 + i * (barH + 5);
           ctx.fillStyle = finMarble.country.color || "#3b82f6";
-          ctx.fillRect(60, by, WORLD_W - 120, barH);
+          ctx.fillRect(65, by, WORLD_W - 130, barH);
           ctx.strokeStyle = WALL_COLOR;
           ctx.lineWidth = 5;
-          ctx.strokeRect(60, by, WORLD_W - 120, barH);
+          ctx.strokeRect(65, by, WORLD_W - 130, barH);
 
           ctx.fillStyle = "#ffffff";
-          ctx.font = "900 24px sans-serif";
+          ctx.font = "900 26px sans-serif";
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
-          ctx.fillText(`#${i + 1}  ${finMarble.country.flag}  ${finMarble.country.name}`, 82, by + barH / 2);
+          ctx.fillText(`#${i + 1}  ${finMarble.country.flag}  ${finMarble.country.name}`, 90, by + barH / 2);
         }
       }
 
-      // Render Active Marbles inside camera view (Culled)
       const cbOutline = State.settings.colorblind === 1;
       const top5Set = new Set(activeMarbles.slice(0, 5));
 
@@ -2298,41 +2290,39 @@
         ctx.textBaseline = "middle";
         ctx.fillText(m.country.flag, 0, 1);
 
-        // Draw floating name label above the Top 5 Leaders
+        // Fixed: Use standard ctx.measureText(labelTxt).width
         if (top5Set.has(m)) {
           const rankIdx = activeMarbles.indexOf(m) + this.finishedOrder.length + 1;
           const labelTxt = `#${rankIdx} ${m.country.name}`;
-          ctx.font = "900 22px sans-serif";
-          const tw = ctx.measureWidth(labelTxt).width + 16;
+          ctx.font = "900 24px sans-serif";
+          const tw = ctx.measureText(labelTxt).width + 20;
           ctx.fillStyle = "rgba(10, 10, 15, 0.88)";
-          ctx.fillRect(-tw / 2, -m.r - 34, tw, 26);
+          ctx.fillRect(-tw / 2, -m.r - 36, tw, 28);
           ctx.fillStyle = rankIdx === 1 ? "#fbbf24" : "#ffffff";
-          ctx.fillText(labelTxt, 0, -m.r - 21);
+          ctx.fillText(labelTxt, 0, -m.r - 22);
         }
         ctx.restore();
       });
 
       ctx.restore();
 
-      // Right-Edge Vertical Minimap Strip (Always shows all 20-300 marbles along the full track!)
+      // Right-Edge Vertical Minimap Strip
       const stripW = 18;
       const stripX = W - stripW - 4;
       const stripY = 8;
       const stripH = H - 16;
-      ctx.fillStyle = "rgba(10, 14, 26, 0.78)";
+      ctx.fillStyle = "rgba(10, 14, 26, 0.82)";
       ctx.fillRect(stripX, stripY, stripW, stripH);
       ctx.strokeStyle = "#000000";
       ctx.lineWidth = 2;
       ctx.strokeRect(stripX, stripY, stripW, stripH);
 
-      // Section ticks on minimap
       this.worldData.sections.forEach(sec => {
         const sy = stripY + (sec.yStart / finishY) * stripH;
         ctx.fillStyle = sec.accent;
         ctx.fillRect(stripX + 2, sy, stripW - 4, 2);
       });
 
-      // Marble dots on minimap
       this.marbles.forEach(m => {
         if (m.eliminated) return;
         const pct = Math.min(1, Math.max(0, m.y / finishY));
@@ -2341,7 +2331,6 @@
         ctx.fillRect(stripX + 4, my - 1.5, stripW - 8, 3);
       });
 
-      // Update Top HUD
       document.getElementById("hudTitle").textContent =
         `${this.session.modeTitle} • Rd ${this.session.currentRound}/${this.session.totalRounds}`;
       document.getElementById("hudTrackName").textContent =
@@ -2358,7 +2347,7 @@
     skipToResult() {
       if (!this.session || !this.worldData) return;
       let guard = 0;
-      while (!this.checkRaceFinished() && guard < 4500) {
+      while (!this.checkRaceFinished() && guard < 4000) {
         this.stepPhysicsSubStep();
         guard++;
       }
@@ -2408,7 +2397,6 @@
       if (winner.country.small || winner.country.isCustom) UI.unlockAchievement("underdog");
       State.coins += 30;
 
-      // Update stats: GP Points ONLY added in Grand Prix mode
       finalOrder.forEach((m, idx) => {
         const pos = idx + 1;
         const st = ensureCountryStat(m.country.code);
@@ -2445,7 +2433,6 @@
         if (pos <= 3) st.podiums += 1;
       });
 
-      // Knockout Elimination handling
       let elimNote = "";
       let knockedCodes = new Set();
       if (this.session.format === "knockout" && this.session.activeCountries.length > 2) {
@@ -2493,7 +2480,6 @@
 
       const leaderMs = finalOrder[0]?.finishTimeMs || 1000;
 
-      // Full standings from #1 to Last Place
       document.getElementById("winPodiumList").innerHTML = finalOrder.map((m, idx) => {
         const isElim = m.eliminated || (knockedCodes && knockedCodes.has(m.country.code));
         const timeStr = m.eliminated
@@ -2544,7 +2530,7 @@
 
       if (this.session.isCareer) {
         const myRank = this.finishedOrder.findIndex(m => m.country.code === this.session.careerCode) + 1;
-        const passRanks = [10, 6, 3, 1];
+        const passRanks = [12, 8, 4, 1];
         const passRank = passRanks[State.career.stage] || 1;
         if (myRank > 0 && myRank <= passRank) {
           if (State.career.stage < 3) {
@@ -2556,7 +2542,7 @@
             ensureCountryStat(this.session.careerCode).cups += 1;
             UI.unlockAchievement("world_champ");
             saveState();
-            alert("🏆 WORLD CUP CAREER CHAMPION! You conquered all 4 huge tracks!");
+            alert("🏆 WORLD CUP CAREER CHAMPION! You conquered all 4 mega tracks!");
           }
         } else {
           alert(`Finished #${myRank} (Needed Top ${passRank}). Try this stage again!`);
@@ -2601,12 +2587,12 @@
     },
 
     cycleSpeed() {
-      this.speedMult = this.speedMult === 1 ? 2 : 1;
+      this.speedMult = this.speedMult === 1 ? 2 : this.speedMult === 2 ? 3 : 1;
       this.updateHUDButtons();
     },
 
     cycleCamera() {
-      const modes = ["leader", "pack", "overview"];
+      const modes = ["leader", "pack", "wide", "overview"];
       const idx = (modes.indexOf(this.cameraMode) + 1) % modes.length;
       this.cameraMode = modes[idx];
       this.updateHUDButtons();
