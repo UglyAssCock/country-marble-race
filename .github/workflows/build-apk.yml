@@ -31,11 +31,12 @@ jobs:
           npm install
           cp node_modules/matter-js/build/matter.min.js www/matter.min.js
 
-      - name: Build Android APK
+      - name: Build Android APK with Landscape and Portrait Support
         run: |
           rm -rf android
           npx cap add android
           npx cap sync android
+          sed -i 's/android:name=".MainActivity"/android:name=".MainActivity" android:screenOrientation="fullSensor"/g' android/app/src/main/AndroidManifest.xml
           chmod +x android/gradlew
           cd android && ./gradlew assembleDebug --no-daemon
 
