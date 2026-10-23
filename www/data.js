@@ -1,9 +1,7 @@
-// UN-Recognized Countries + 12 Track Definitions + Formula & NASCAR Scoring Systems
+// UN-Recognized Countries + 12 Huge Multi-Section Track Presets + Scoring & Accent Palettes
 window.GAME_DATA = {
-  // Formula 1 Style GP Points (Top 10 score)
   formulaPoints: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1],
 
-  // Helper for NASCAR Cup Style Points (Full field scores: 1st=40, 2nd=35, 3rd=34, 4th=33... min 1 pt)
   getPoints(rankIndex, system) {
     if (system === "nascar") {
       if (rankIndex === 0) return 40;
@@ -12,31 +10,162 @@ window.GAME_DATA = {
     return this.formulaPoints[rankIndex] || 0;
   },
 
+  // Distinct bright flat colors for section headers, blades, and finish bars
+  sectionAccents: [
+    "#ef4444", "#f97316", "#f59e0b", "#10b981",
+    "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899",
+    "#eab308", "#14b8a6", "#6366f1", "#f43f5e"
+  ],
+
+  // 12 Preset Huge Multi-Section Tracks (All 16 Obstacle Types Represented)
   tracks: [
-    { id: "classic", name: "Classic Funnel Park" },
-    { id: "spinnerMayhem", name: "Spinner Mayhem" },
-    { id: "bumperPinball", name: "Pinball Bumper Arena" },
-    { id: "seesawDrop", name: "Seesaw Canyon" },
-    { id: "gauntlet", name: "World Cup Gauntlet" },
-    { id: "plinko", name: "Mega Plinko Matrix" },
-    { id: "zigzag", name: "Zig-Zag Serpent Slalom" },
-    { id: "hyperSpeed", name: "Nitro Booster Highway" },
-    { id: "swissAlps", name: "Alpine Ice Chutes" },
-    { id: "saharaDunes", name: "Sahara Funnel Dunes" },
-    { id: "chaosReactor", name: "Twin Reactor Spinners" },
-    { id: "endurance", name: "Grand Marathon Colosseum" }
+    {
+      id: "colossus_odyssey",
+      name: "Colossus 16-Section Odyssey",
+      difficulty: "medium",
+      length: "long",
+      sections: [
+        "startCircleSplitter", "pegboard", "crossSpinners", "zigzagSawtooth",
+        "slantedPlanks", "capsuleChambers", "funnelHourglass", "bigWheelBox",
+        "giantBowlBasin", "staircaseRamps", "scallopedBubbleWalls", "mixedDashesBumpers",
+        "pendulumsAndSliders", "narrowTubesSCurves", "soccerGoalGate", "noCollisionGhostZone"
+      ]
+    },
+    {
+      id: "serpent_citadel",
+      name: "Serpentine Citadel & Capsules",
+      difficulty: "medium",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "slantedPlanks", "capsuleChambers", "crossSpinners",
+        "zigzagSawtooth", "slantedPlanks", "capsuleChambers", "funnelHourglass",
+        "bigWheelBox", "staircaseRamps", "mixedDashesBumpers", "giantBowlBasin"
+      ]
+    },
+    {
+      id: "hourglass_jam",
+      name: "Hourglass Traffic Jam & Bowls",
+      difficulty: "hard",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "funnelHourglass", "giantBowlBasin", "pegboard",
+        "funnelHourglass", "scallopedBubbleWalls", "giantBowlBasin", "crossSpinners",
+        "funnelHourglass", "narrowTubesSCurves", "mixedDashesBumpers", "giantBowlBasin"
+      ]
+    },
+    {
+      id: "pendulum_fortress",
+      name: "Pendulum & Slider Fortress",
+      difficulty: "hard",
+      length: "long",
+      sections: [
+        "startCircleSplitter", "pendulumsAndSliders", "staircaseRamps", "crossSpinners",
+        "pendulumsAndSliders", "capsuleChambers", "bigWheelBox", "zigzagSawtooth",
+        "pendulumsAndSliders", "slantedPlanks", "funnelHourglass", "soccerGoalGate"
+      ]
+    },
+    {
+      id: "stadion_cup",
+      name: "Stadium Goal Qualification Gauntlet",
+      difficulty: "medium",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "pegboard", "soccerGoalGate", "slantedPlanks",
+        "crossSpinners", "soccerGoalGate", "giantBowlBasin", "mixedDashesBumpers",
+        "noCollisionGhostZone", "soccerGoalGate", "funnelHourglass", "staircaseRamps"
+      ]
+    },
+    {
+      id: "reactor_core",
+      name: "Big Wheel & Cross Spinner Reactor",
+      difficulty: "hard",
+      length: "long",
+      sections: [
+        "startCircleSplitter", "crossSpinners", "bigWheelBox", "funnelHourglass",
+        "crossSpinners", "capsuleChambers", "bigWheelBox", "narrowTubesSCurves",
+        "crossSpinners", "giantBowlBasin", "bigWheelBox", "mixedDashesBumpers"
+      ]
+    },
+    {
+      id: "alpine_slalom",
+      name: "Alpine S-Curve & Staircase Drop",
+      difficulty: "easy",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "slantedPlanks", "staircaseRamps", "narrowTubesSCurves",
+        "scallopedBubbleWalls", "giantBowlBasin", "slantedPlanks", "staircaseRamps",
+        "pegboard", "narrowTubesSCurves", "mixedDashesBumpers", "funnelHourglass"
+      ]
+    },
+    {
+      id: "ghost_phantom",
+      name: "Phantom No-Collision Ghost Run",
+      difficulty: "medium",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "noCollisionGhostZone", "funnelHourglass", "crossSpinners",
+        "noCollisionGhostZone", "capsuleChambers", "giantBowlBasin", "noCollisionGhostZone",
+        "zigzagSawtooth", "bigWheelBox", "pendulumsAndSliders", "funnelHourglass"
+      ]
+    },
+    {
+      id: "bubble_basin",
+      name: "Scalloped Bubble & Basin Cascade",
+      difficulty: "easy",
+      length: "short",
+      sections: [
+        "startCircleSplitter", "scallopedBubbleWalls", "giantBowlBasin", "pegboard",
+        "scallopedBubbleWalls", "mixedDashesBumpers", "giantBowlBasin", "capsuleChambers",
+        "scallopedBubbleWalls", "funnelHourglass"
+      ]
+    },
+    {
+      id: "sawtooth_canyon",
+      name: "Sawtooth & Narrow Tube Canyon",
+      difficulty: "hard",
+      length: "long",
+      sections: [
+        "startCircleSplitter", "zigzagSawtooth", "narrowTubesSCurves", "funnelHourglass",
+        "zigzagSawtooth", "pendulumsAndSliders", "capsuleChambers", "narrowTubesSCurves",
+        "zigzagSawtooth", "bigWheelBox", "staircaseRamps", "giantBowlBasin"
+      ]
+    },
+    {
+      id: "champions_marathon",
+      name: "40,000px Grand World Marathon",
+      difficulty: "hard",
+      length: "marathon",
+      sections: [
+        "startCircleSplitter", "pegboard", "crossSpinners", "funnelHourglass",
+        "slantedPlanks", "capsuleChambers", "bigWheelBox", "zigzagSawtooth",
+        "giantBowlBasin", "staircaseRamps", "scallopedBubbleWalls", "pendulumsAndSliders",
+        "narrowTubesSCurves", "soccerGoalGate", "noCollisionGhostZone", "mixedDashesBumpers",
+        "capsuleChambers", "bigWheelBox", "giantBowlBasin", "funnelHourglass"
+      ]
+    },
+    {
+      id: "pinball_matrix",
+      name: "Giant Pegboard & Bumper Matrix",
+      difficulty: "medium",
+      length: "medium",
+      sections: [
+        "startCircleSplitter", "pegboard", "mixedDashesBumpers", "scallopedBubbleWalls",
+        "giantBowlBasin", "pegboard", "crossSpinners", "mixedDashesBumpers",
+        "funnelHourglass", "bigWheelBox", "pegboard", "staircaseRamps"
+      ]
+    }
   ],
 
   i18n: {
     en: {
       title: "Country Marble Race",
-      customCreator: "Custom Race Creator",
-      numCountries: "Marbles (2-100)",
+      customCreator: "Huge Track Marble Race Creator",
+      numCountries: "Marbles (2-300)",
       raceFormat: "Game Mode",
       regionFilter: "Region / Pool",
-      trackSelect: "Track Selection",
-      difficulty: "Obstacle Density",
-      raceLength: "Track Length",
+      trackSelect: "Huge Track Preset (1200x15,000-40,000px)",
+      difficulty: "Obstacle Difficulty",
+      raceLength: "World Height (Sections)",
       cameraMode: "Default Camera",
       physicsSpeed: "Physics Speed",
       numRounds: "Number of Rounds (1-20)",
@@ -51,14 +180,14 @@ window.GAME_DATA = {
       navConfig: "Options"
     },
     ar: {
-      title: "سباق كرات الدول",
-      customCreator: "إنشاء سباق مخصص",
-      numCountries: "عدد الكرات (2-100)",
+      title: "سباق كرات الدول العملاق",
+      customCreator: "إنشاء سباق مضمار عملاق",
+      numCountries: "عدد الكرات (2-300)",
       raceFormat: "نظام اللعب",
       regionFilter: "المنطقة / الفئة",
-      trackSelect: "المضمار",
-      difficulty: "كثافة العوائق",
-      raceLength: "طول المضمار",
+      trackSelect: "المضمار العملاق",
+      difficulty: "صعوبة العوائق",
+      raceLength: "طول العالم (الأقسام)",
       cameraMode: "الكاميرا",
       physicsSpeed: "سرعة الفيزياء",
       numRounds: "عدد الجولات (1-20)",
@@ -73,19 +202,19 @@ window.GAME_DATA = {
       navConfig: "إعدادات"
     },
     fr: {
-      title: "Course de Billes des Pays",
-      customCreator: "Créateur de Course",
-      numCountries: "Billes (2-100)",
+      title: "Course de Billes Géante",
+      customCreator: "Créateur de Piste Géante",
+      numCountries: "Billes (2-300)",
       raceFormat: "Mode de Jeu",
       regionFilter: "Région / Pool",
-      trackSelect: "Sélection du Circuit",
-      difficulty: "Densité d'Obstacles",
-      raceLength: "Longueur de Piste",
+      trackSelect: "Piste Géante",
+      difficulty: "Difficulté",
+      raceLength: "Hauteur du Monde",
       cameraMode: "Caméra",
       physicsSpeed: "Vitesse Physique",
       numRounds: "Manches (1-20)",
       elimCount: "Éliminés / Manche",
-      countrySelection: "Mode de Sélection",
+      countrySelection: "Sélection",
       competitions: "Coupes et Grands Prix",
       navRace: "Course",
       navCups: "Coupes",
@@ -95,14 +224,14 @@ window.GAME_DATA = {
       navConfig: "Options"
     },
     es: {
-      title: "Carrera de Canicas",
-      customCreator: "Creador de Carreras",
-      numCountries: "Canicas (2-100)",
+      title: "Carrera de Canicas Gigante",
+      customCreator: "Creador de Pista Gigante",
+      numCountries: "Canicas (2-300)",
       raceFormat: "Modo de Juego",
       regionFilter: "Región / Grupo",
-      trackSelect: "Selección de Pista",
+      trackSelect: "Pista Gigante",
       difficulty: "Dificultad",
-      raceLength: "Longitud de Pista",
+      raceLength: "Altura del Mundo",
       cameraMode: "Cámara",
       physicsSpeed: "Velocidad Física",
       numRounds: "Rondas (1-20)",
@@ -119,18 +248,18 @@ window.GAME_DATA = {
   },
 
   competitions: [
-    { id: "wmc", name: "🌍 World Marble Knockout Cup", region: "ALL", count: 32, rounds: 5, format: "knockout", track: "rotate" },
-    { id: "f1gp", name: "🏎️ Formula World Grand Prix", region: "ALL", count: 24, rounds: 6, format: "grandprix", gpSystem: "formula", track: "rotate" },
-    { id: "nascar", name: "🏁 NASCAR 40-Marble Cup Series", region: "ALL", count: 40, rounds: 6, format: "grandprix", gpSystem: "nascar", track: "rotate" },
-    { id: "afcon", name: "🦁 African Marble Cup", region: "Africa", count: 24, rounds: 4, format: "knockout", track: "rotate" },
-    { id: "euro", name: "🏰 European Marble Cup", region: "Europe", count: 24, rounds: 4, format: "knockout", track: "rotate" },
-    { id: "asian", name: "🐉 Asian Marble Cup", region: "Asia", count: 24, rounds: 4, format: "knockout", track: "rotate" },
-    { id: "arab", name: "🌙 Arab Marble Cup", region: "Arab", count: 16, rounds: 4, format: "knockout", track: "rotate" },
-    { id: "copa", name: "☀️ South American GP", region: "SouthAmerica", count: 10, rounds: 4, format: "grandprix", gpSystem: "formula", track: "rotate" }
+    { id: "wmc", name: "🌍 World 100-Marble Knockout Cup", region: "ALL", count: 100, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "f1gp", name: "🏎️ Formula World Grand Prix", region: "ALL", count: 40, rounds: 5, format: "grandprix", gpSystem: "formula", track: "rotate" },
+    { id: "nascar", name: "🏁 NASCAR 80-Marble Cup Series", region: "ALL", count: 80, rounds: 5, format: "grandprix", gpSystem: "nascar", track: "rotate" },
+    { id: "afcon", name: "🦁 African Giant Marble Cup", region: "Africa", count: 40, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "euro", name: "🏰 European Giant Marble Cup", region: "Europe", count: 40, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "asian", name: "🐉 Asian Giant Marble Cup", region: "Asia", count: 40, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "arab", name: "🌙 Arab Marble Champions Cup", region: "Arab", count: 32, rounds: 4, format: "knockout", track: "rotate" },
+    { id: "copa", name: "☀️ South American GP", region: "SouthAmerica", count: 30, rounds: 4, format: "grandprix", gpSystem: "formula", track: "rotate" }
   ],
 
   skins: [
-    { id: "default", name: "Classic Glass", cost: 0, glow: false, trail: "#ffffff" },
+    { id: "default", name: "Classic Flag Sphere", cost: 0, glow: false, trail: null },
     { id: "gold", name: "Golden Aura", cost: 100, glow: "#fbbf24", trail: "#f59e0b" },
     { id: "neon", name: "Cyber Neon Trail", cost: 200, glow: "#06b6d4", trail: "#22d3ee" },
     { id: "emerald", name: "Emerald Flame", cost: 300, glow: "#10b981", trail: "#34d399" },
@@ -138,9 +267,9 @@ window.GAME_DATA = {
   ],
 
   achievements: [
-    { id: "first_win", name: "First Podium Gold", desc: "Complete your first marble race.", reward: 50 },
+    { id: "first_win", name: "First Podium Gold", desc: "Complete your first huge marble race.", reward: 50 },
     { id: "underdog", name: "Giant Slayer", desc: "Win a race with a small or custom marble.", reward: 100 },
-    { id: "comeback", name: "Miracle Comeback", desc: "Win after being outside the top 5 mid-race.", reward: 120 },
+    { id: "comeback", name: "Miracle Comeback", desc: "Win after being outside the top 10 mid-race.", reward: 120 },
     { id: "photofinish", name: "Photo Finish!", desc: "Finish 1st and 2nd within 60 milliseconds.", reward: 100 },
     { id: "architect", name: "Track Architect", desc: "Save an interactive custom track.", reward: 80 },
     { id: "world_champ", name: "Cup Champion", desc: "Win any Major Cup or Grand Prix Series.", reward: 200 }
