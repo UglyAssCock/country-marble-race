@@ -1,11 +1,21 @@
-// Complete Upgraded Country Marble Race Engine:
-// - Interactive Drag/Rotate/Scale Full-Length Track Editor
-// - 12 Built-in Tracks + Automatic Multi-Round Track Rotation
-// - Points Restricted Strictly to Grand Prix Mode (Formula & NASCAR Systems)
-// - Custom Marble Creator + Full Standings (1st to Last)
+// Complete Huge-World Country Marble Race Engine
+// - 1200px x 15,000-40,000px Stacked Section Worlds with Lazy Physics Streaming & Viewport Culling
+// - 16 Reusable Obstacle Builders (Thick 26px Solid Black Barriers + Sub-Stepping = Zero Tunneling!)
+// - Periwinkle-Blue Flat Aesthetic, Section Checkpoint Gates, and Ranked Colored Finish-Line Bars (#1 Algeria, #33 Norway)
 (function () {
+  // String/Number Hash to 32-bit Seed + Mulberry32 Fair PRNG
+  function hashSeed(str) {
+    const s = String(str || "MARBLE-2026");
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
   function createRNG(seed) {
-    let t = seed >>> 0;
+    let t = (typeof seed === "string" ? hashSeed(seed) : seed) >>> 0;
     return function () {
       t += 0x6D2B79F5;
       let r = Math.imul(t ^ (t >>> 15), 1 | t);
@@ -14,30 +24,30 @@
     };
   }
 
-  const STORAGE_KEY = "CMR_SAVE_V2";
+  const STORAGE_KEY = "CMR_SAVE_V3";
   const defaultSave = {
-    coins: 200,
+    coins: 250,
     equippedSkin: "default",
     unlockedSkins: ["default"],
     achievements: [],
     presets: [],
     customMarbles: [],
     customTrack: [
-      { type: "funnel", x: 180, y: 180, angle: 0, scale: 1 },
-      { type: "spinner", x: 180, y: 310, angle: 0, scale: 1.2 },
-      { type: "booster", x: 100, y: 430, angle: 15, scale: 1 },
-      { type: "booster", x: 260, y: 430, angle: -15, scale: 1 },
-      { type: "pegGrid", x: 180, y: 580, angle: 0, scale: 1.1 },
-      { type: "seesaw", x: 180, y: 760, angle: 0, scale: 1.2 },
-      { type: "bumper", x: 120, y: 920, angle: 0, scale: 1.2 },
-      { type: "bumper", x: 240, y: 920, angle: 0, scale: 1.2 },
-      { type: "funnel", x: 180, y: 1120, angle: 0, scale: 1.1 },
-      { type: "spinner", x: 180, y: 1320, angle: 0, scale: 1.3 },
-      { type: "booster", x: 180, y: 1520, angle: 0, scale: 1.2 }
+      { type: "funnel", x: 180, y: 220, angle: 0, scale: 1.1 },
+      { type: "cross", x: 115, y: 380, angle: 0, scale: 1.1 },
+      { type: "cross", x: 245, y: 380, angle: 0, scale: 1.1 },
+      { type: "pegGrid", x: 180, y: 560, angle: 0, scale: 1.1 },
+      { type: "bowl", x: 180, y: 780, angle: 0, scale: 1.1 },
+      { type: "pendulum", x: 180, y: 1020, angle: 0, scale: 1.1 },
+      { type: "wheel", x: 180, y: 1280, angle: 0, scale: 1.1 },
+      { type: "rampL", x: 115, y: 1540, angle: 22, scale: 1.1 },
+      { type: "rampR", x: 245, y: 1700, angle: -22, scale: 1.1 },
+      { type: "goal", x: 180, y: 1960, angle: 0, scale: 1.1 },
+      { type: "funnel", x: 180, y: 2240, angle: 0, scale: 1.1 }
     ],
     settings: {
       lang: "en",
-      maxMarbles: 100,
+      maxMarbles: 150,
       colorblind: 0,
       fontScale: 1
     },
@@ -56,7 +66,7 @@
   let State = loadState();
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V1");
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V2") || localStorage.getItem("CMR_SAVE_V1");
       if (!raw) return JSON.parse(JSON.stringify(defaultSave));
       const parsed = JSON.parse(raw);
       return Object.assign(JSON.parse(JSON.stringify(defaultSave)), parsed);
@@ -76,17 +86,600 @@
   }
 
   function findMarbleByCode(code) {
-    return getAllMarblesPool().find(c => c.code === code) || window.GAME_DATA.countries[0];
+    const baseCode = String(code || "DZ").split("#")[0];
+    return getAllMarblesPool().find(c => c.code === baseCode) || window.GAME_DATA.countries[0];
   }
 
   function ensureCountryStat(code) {
-    if (!State.stats[code]) {
-      State.stats[code] = { races: 0, wins: 0, podiums: 0, points: 0, posSum: 0, cups: 0, recent: [], streak: 0 };
+    const baseCode = String(code || "DZ").split("#")[0];
+    if (!State.stats[baseCode]) {
+      State.stats[baseCode] = { races: 0, wins: 0, podiums: 0, points: 0, posSum: 0, cups: 0, recent: [], streak: 0 };
     }
-    return State.stats[code];
+    return State.stats[baseCode];
   }
 
-  // UI Controller
+  // ============================================================================
+  // 16-OBSTACLE REUSABLE LIBRARY & TRACK_BUILDER (WORLD WIDTH = 1200px)
+  // ============================================================================
+  // Every section generates a blueprint of thick solid black walls, compound spinners,
+  // curved rectangle chains, moving platforms, pendulums, or special zones.
+  // Bodies are spawned lazily into Matter.js only when marbles approach the section!
+
+  const WORLD_W = 1200;
+  const WALL_COLOR = "#0a0a0f";
+
+  // Helper to build smooth curved walls/arcs out of overlapping thin/thick rectangles (no poly-decomp needed)
+  function createArcSegments(cx, cy, radius, startAngle, endAngle, steps, thickness, color) {
+    const segs = [];
+    for (let i = 0; i < steps; i++) {
+      const a1 = startAngle + ((endAngle - startAngle) * i) / steps;
+      const a2 = startAngle + ((endAngle - startAngle) * (i + 1)) / steps;
+      const x1 = cx + Math.cos(a1) * radius;
+      const y1 = cy + Math.sin(a1) * radius;
+      const x2 = cx + Math.cos(a2) * radius;
+      const y2 = cy + Math.sin(a2) * radius;
+      segs.push({ x1, y1, x2, y2, thickness: thickness || 28, color: color || WALL_COLOR });
+    }
+    return segs;
+  }
+
+  const OBSTACLE_LIBRARY = {
+    // 10. Large circular chamber at the start with a triangle splitter in the middle
+    startCircleSplitter(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      const cy = y0 + 520;
+      const rad = 470;
+      // Left and right circular dome walls leaving a 220px chute at the bottom
+      sec.walls.push(...createArcSegments(cx, cy, rad, Math.PI * 0.62, Math.PI * 1.45, 14, 34, WALL_COLOR));
+      sec.walls.push(...createArcSegments(cx, cy, rad, -Math.PI * 0.45, Math.PI * 0.38, 14, 34, WALL_COLOR));
+      // Top funnel shoulders into dome
+      sec.walls.push({ x1: 40, y1: y0 + 40, x2: cx - 320, y2: cy - 340, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 40, x2: cx + 320, y2: cy - 340, thickness: 34, color: WALL_COLOR });
+
+      // Giant solid triangle splitter in center of dome
+      const triY = cy + 40;
+      sec.polygons.push({
+        points: [
+          { x: cx, y: triY - 130 },
+          { x: cx - 145, y: triY + 100 },
+          { x: cx + 145, y: triY + 100 }
+        ],
+        color: accent
+      });
+      sec.walls.push({ x1: cx, y1: triY - 130, x2: cx - 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
+      sec.walls.push({ x1: cx, y1: triY - 130, x2: cx + 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
+      sec.walls.push({ x1: cx - 145, y1: triY + 100, x2: cx + 145, y2: triY + 100, thickness: 28, color: WALL_COLOR });
+
+      // Two spinning agitators below the dome chute
+      sec.spinners.push({ x: cx - 170, y: y0 + h - 220, len: 170, thick: 22, speed: 0.045, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 170, y: y0 + h - 220, len: 170, thick: 22, speed: -0.045, color: accent, style: "cross" });
+    },
+
+    // 1. Pegboard: staggered rows of solid black circular pegs
+    pegboard(sec, y0, h, accent, diff, rng) {
+      const rows = 9;
+      const rowH = (h - 280) / rows;
+      const pegR = diff === "hard" ? 22 : 18;
+      // Guiding side walls
+      sec.walls.push({ x1: 40, y1: y0 + 40, x2: 110, y2: y0 + h - 120, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 40, x2: WORLD_W - 110, y2: y0 + h - 120, thickness: 32, color: WALL_COLOR });
+
+      for (let r = 0; r < rows; r++) {
+        const py = y0 + 130 + r * rowH;
+        const cols = r % 2 === 0 ? 8 : 7;
+        const startX = r % 2 === 0 ? 175 : 235;
+        const spacing = 120;
+        for (let c = 0; c < cols; c++) {
+          const isAccent = (r + c) % 5 === 0;
+          sec.pegs.push({
+            x: startX + c * spacing,
+            y: py,
+            r: isAccent ? pegR + 5 : pegR,
+            restitution: isAccent ? 0.95 : 0.65,
+            color: isAccent ? accent : WALL_COLOR
+          });
+        }
+      }
+    },
+
+    // 2. Rotating plus/cross/X spinners: rows of small and large crosses turning at different speeds
+    crossSpinners(sec, y0, h, accent, diff, rng) {
+      const rows = 5;
+      const rowSpacing = (h - 260) / rows;
+      // Side zig-zag deflectors so no marble can hug the outer wall
+      for (let r = 0; r < rows; r++) {
+        const ry = y0 + 150 + r * rowSpacing;
+        if (r % 2 === 0) {
+          sec.walls.push({ x1: 40, y1: ry - 60, x2: 170, y2: ry + 20, thickness: 28, color: WALL_COLOR });
+          sec.walls.push({ x1: WORLD_W - 40, y1: ry - 60, x2: WORLD_W - 170, y2: ry + 20, thickness: 28, color: WALL_COLOR });
+          // 3 Large Crosses
+          for (let c = 0; c < 3; c++) {
+            const cx = 300 + c * 300;
+            const dir = (r + c) % 2 === 0 ? 1 : -1;
+            sec.spinners.push({
+              x: cx,
+              y: ry,
+              len: 215,
+              thick: 24,
+              speed: dir * (0.04 + (c % 2) * 0.015),
+              color: c === 1 ? accent : WALL_COLOR,
+              style: "cross"
+            });
+          }
+        } else {
+          // 4 Medium X Spinners
+          for (let c = 0; c < 4; c++) {
+            const cx = 210 + c * 260;
+            const dir = (r + c) % 2 === 0 ? -1 : 1;
+            sec.spinners.push({
+              x: cx,
+              y: ry,
+              len: 185,
+              thick: 22,
+              speed: dir * 0.055,
+              color: c % 2 === 0 ? accent : WALL_COLOR,
+              style: "cross"
+            });
+          }
+        }
+      }
+    },
+
+    // 3. Zigzag sawtooth walls: vertical channels with triangular teeth on both sides
+    zigzagSawtooth(sec, y0, h, accent, diff, rng) {
+      const teeth = 6;
+      const stepY = (h - 260) / teeth;
+      const centerSplitX = WORLD_W / 2;
+
+      // Central dividing spine with triangular teeth creating two parallel sawtooth canyons
+      for (let i = 0; i < teeth; i++) {
+        const ty = y0 + 110 + i * stepY;
+        const toothW = diff === "hard" ? 165 : 135;
+        // Left outer wall tooth
+        sec.walls.push({ x1: 40, y1: ty, x2: 40 + toothW, y2: ty + stepY * 0.5, thickness: 30, color: WALL_COLOR });
+        sec.walls.push({ x1: 40 + toothW, y1: ty + stepY * 0.5, x2: 40, y2: ty + stepY, thickness: 30, color: WALL_COLOR });
+        // Right outer wall tooth
+        sec.walls.push({ x1: WORLD_W - 40, y1: ty, x2: WORLD_W - 40 - toothW, y2: ty + stepY * 0.5, thickness: 30, color: WALL_COLOR });
+        sec.walls.push({ x1: WORLD_W - 40 - toothW, y1: ty + stepY * 0.5, x2: WORLD_W - 40, y2: ty + stepY, thickness: 30, color: WALL_COLOR });
+        // Center diamond sawtooth
+        sec.walls.push({ x1: centerSplitX, y1: ty - 20, x2: centerSplitX - toothW, y2: ty + stepY * 0.35, thickness: 28, color: accent });
+        sec.walls.push({ x1: centerSplitX - toothW, y1: ty + stepY * 0.35, x2: centerSplitX, y2: ty + stepY * 0.75, thickness: 28, color: accent });
+        sec.walls.push({ x1: centerSplitX, y1: ty - 20, x2: centerSplitX + toothW, y2: ty + stepY * 0.35, thickness: 28, color: accent });
+        sec.walls.push({ x1: centerSplitX + toothW, y1: ty + stepY * 0.35, x2: centerSplitX, y2: ty + stepY * 0.75, thickness: 28, color: accent });
+      }
+    },
+
+    // 4. Slanted planks: long angled ramps alternating left and right (serpentine descent)
+    slantedPlanks(sec, y0, h, accent, diff, rng) {
+      const levels = 5;
+      const stepY = (h - 260) / levels;
+      const gapWidth = diff === "hard" ? 210 : 250;
+
+      for (let i = 0; i < levels; i++) {
+        const py = y0 + 130 + i * stepY;
+        if (i % 2 === 0) {
+          // Slants down to the right
+          sec.walls.push({ x1: 40, y1: py - 45, x2: WORLD_W - gapWidth, y2: py + 115, thickness: 32, color: WALL_COLOR });
+          sec.pegs.push({ x: WORLD_W - gapWidth * 0.45, y: py + 135, r: 24, restitution: 0.85, color: accent });
+        } else {
+          // Slants down to the left
+          sec.walls.push({ x1: WORLD_W - 40, y1: py - 45, x2: gapWidth, y2: py + 115, thickness: 32, color: WALL_COLOR });
+          sec.pegs.push({ x: gapWidth * 0.45, y: py + 135, r: 24, restitution: 0.85, color: accent });
+        }
+      }
+    },
+
+    // 5. Capsule chambers: stacked rounded pill-shaped rooms filled with rotating crosses, alternating end gaps
+    capsuleChambers(sec, y0, h, accent, diff, rng) {
+      const rooms = 3;
+      const roomH = (h - 240) / rooms;
+
+      for (let r = 0; r < rooms; r++) {
+        const ry = y0 + 100 + r * roomH;
+        const exitRight = r % 2 === 0;
+        // Rounded capsule side walls
+        sec.walls.push(...createArcSegments(220, ry + roomH * 0.45, 150, Math.PI * 0.55, Math.PI * 1.45, 7, 30, WALL_COLOR));
+        sec.walls.push(...createArcSegments(WORLD_W - 220, ry + roomH * 0.45, 150, -Math.PI * 0.45, Math.PI * 0.45, 7, 30, WALL_COLOR));
+
+        // Floor of the capsule with a gap on alternating ends
+        if (exitRight) {
+          sec.walls.push({ x1: 180, y1: ry + roomH * 0.82, x2: WORLD_W - 360, y2: ry + roomH * 0.92, thickness: 30, color: WALL_COLOR });
+        } else {
+          sec.walls.push({ x1: WORLD_W - 180, y1: ry + roomH * 0.82, x2: 360, y2: ry + roomH * 0.92, thickness: 30, color: WALL_COLOR });
+        }
+
+        // Cross spinners & fixed bars inside the capsule room
+        sec.spinners.push({ x: 420, y: ry + roomH * 0.42, len: 165, thick: 20, speed: 0.05, color: accent, style: "cross" });
+        sec.spinners.push({ x: 640, y: ry + roomH * 0.48, len: 165, thick: 20, speed: -0.05, color: WALL_COLOR, style: "cross" });
+        sec.spinners.push({ x: 850, y: ry + roomH * 0.42, len: 165, thick: 20, speed: 0.05, color: accent, style: "cross" });
+      }
+    },
+
+    // 6. Funnels and hourglass pinch points: wide area narrowing into a tiny exit to create traffic jams
+    funnelHourglass(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      const pinchW = diff === "hard" ? 95 : diff === "easy" ? 135 : 112;
+
+      // Upper giant hourglass funnel
+      const f1Y = y0 + h * 0.32;
+      sec.walls.push({ x1: 40, y1: y0 + 60, x2: cx - pinchW / 2, y2: f1Y, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 60, x2: cx + pinchW / 2, y2: f1Y, thickness: 34, color: WALL_COLOR });
+      // Short vertical throat
+      sec.walls.push({ x1: cx - pinchW / 2, y1: f1Y, x2: cx - pinchW / 2, y2: f1Y + 90, thickness: 30, color: accent });
+      sec.walls.push({ x1: cx + pinchW / 2, y1: f1Y, x2: cx + pinchW / 2, y2: f1Y + 90, thickness: 30, color: accent });
+
+      // Mid diamond splitter & twin side funnels
+      const midY = y0 + h * 0.56;
+      sec.walls.push({ x1: cx, y1: midY - 70, x2: cx - 180, y2: midY + 70, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: cx, y1: midY - 70, x2: cx + 180, y2: midY + 70, thickness: 30, color: WALL_COLOR });
+      sec.spinners.push({ x: cx - 290, y: midY + 90, len: 160, thick: 20, speed: -0.05, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 290, y: midY + 90, len: 160, thick: 20, speed: 0.05, color: accent, style: "cross" });
+
+      // Lower hourglass pinch
+      const f2Y = y0 + h * 0.86;
+      sec.walls.push({ x1: 40, y1: midY + 140, x2: cx - pinchW * 0.6, y2: f2Y, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: midY + 140, x2: cx + pinchW * 0.6, y2: f2Y, thickness: 34, color: WALL_COLOR });
+    },
+
+    // 7. Big rotating wheel with colored blades inside a box
+    bigWheelBox(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      const cy = y0 + h * 0.5;
+      const boxW = 760;
+      const boxH = 760;
+
+      // Top funnel feeding into top of the wheel box
+      sec.walls.push({ x1: 40, y1: y0 + 50, x2: cx - 150, y2: cy - boxH / 2, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 50, x2: cx + 150, y2: cy - boxH / 2, thickness: 32, color: WALL_COLOR });
+
+      // Box left & right walls
+      sec.walls.push({ x1: cx - boxW / 2, y1: cy - boxH / 2, x2: cx - boxW / 2, y2: cy + boxH / 2 - 120, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: cx + boxW / 2, y1: cy - boxH / 2, x2: cx + boxW / 2, y2: cy + boxH / 2 - 120, thickness: 34, color: WALL_COLOR });
+      // Box slanted floor leading to exit chute
+      sec.walls.push({ x1: cx - boxW / 2, y1: cy + boxH / 2 - 120, x2: cx - 130, y2: cy + boxH / 2 + 60, thickness: 34, color: WALL_COLOR });
+      sec.walls.push({ x1: cx + boxW / 2, y1: cy + boxH / 2 - 120, x2: cx + 130, y2: cy + boxH / 2 + 60, thickness: 34, color: WALL_COLOR });
+
+      // Giant 6-Blade Colored Wheel
+      sec.spinners.push({
+        x: cx,
+        y: cy,
+        len: 620,
+        thick: 28,
+        speed: 0.028 * (rng() > 0.5 ? 1 : -1),
+        color: accent,
+        style: "wheel6"
+      });
+    },
+
+    // 8. Giant bowl or U-shaped catch basin with a bumpy edge where marbles pile up then spill out
+    giantBowlBasin(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      // Upper central U-Bowl
+      const bowl1Y = y0 + 420;
+      const bowl1R = 310;
+      sec.walls.push(...createArcSegments(cx, bowl1Y, bowl1R, Math.PI * 0.12, Math.PI * 0.88, 12, 32, WALL_COLOR));
+      // Bumpy rim pegs along the bowl inside & edges
+      for (let i = 0; i <= 6; i++) {
+        const ang = Math.PI * (0.18 + (i / 6) * 0.64);
+        sec.pegs.push({
+          x: cx + Math.cos(ang) * (bowl1R - 26),
+          y: bowl1Y + Math.sin(ang) * (bowl1R - 26),
+          r: 18,
+          restitution: 0.8,
+          color: accent
+        });
+      }
+      // Small spinner inside upper bowl to churn piled-up marbles over the lip
+      sec.spinners.push({ x: cx, y: bowl1Y + 110, len: 220, thick: 22, speed: 0.045, color: accent, style: "cross" });
+
+      // Side catch ramps that collect spilled marbles into two lower Twin Bowls
+      sec.walls.push({ x1: 40, y1: bowl1Y + 80, x2: 260, y2: y0 + h - 380, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: bowl1Y + 80, x2: WORLD_W - 260, y2: y0 + h - 380, thickness: 32, color: WALL_COLOR });
+      sec.walls.push(...createArcSegments(cx, y0 + h - 420, 260, Math.PI * 0.18, Math.PI * 0.82, 10, 30, WALL_COLOR));
+      sec.spinners.push({ x: cx, y: y0 + h - 290, len: 190, thick: 22, speed: -0.05, color: accent, style: "cross" });
+    },
+
+    // 9. Staircase ramps (stepped blocks) with a launcher curve
+    staircaseRamps(sec, y0, h, accent, diff, rng) {
+      // Left staircase descending to the right
+      const steps = 5;
+      for (let s = 0; s < steps; s++) {
+        const sx = 60 + s * 130;
+        const sy = y0 + 140 + s * 95;
+        sec.walls.push({ x1: sx, y1: sy, x2: sx + 135, y2: sy + 18, thickness: 30, color: WALL_COLOR });
+        sec.walls.push({ x1: sx + 135, y1: sy + 18, x2: sx + 135, y2: sy + 95, thickness: 30, color: accent });
+      }
+      // Curved launcher scoop at bottom of first staircase
+      sec.walls.push(...createArcSegments(820, y0 + 560, 180, Math.PI * 0.1, Math.PI * 0.65, 8, 30, WALL_COLOR));
+
+      // Right staircase descending to the left
+      const yMid = y0 + h * 0.52;
+      for (let s = 0; s < steps; s++) {
+        const sx = WORLD_W - 60 - s * 130;
+        const sy = yMid + s * 95;
+        sec.walls.push({ x1: sx, y1: sy, x2: sx - 135, y2: sy + 18, thickness: 30, color: WALL_COLOR });
+        sec.walls.push({ x1: sx - 135, y1: sy + 18, x2: sx - 135, y2: sy + 95, thickness: 30, color: accent });
+      }
+      sec.walls.push(...createArcSegments(380, yMid + 420, 180, Math.PI * 0.35, Math.PI * 0.9, 8, 30, WALL_COLOR));
+    },
+
+    // 11. Half-circle and scalloped "bubble" walls that bounce marbles sideways
+    scallopedBubbleWalls(sec, y0, h, accent, diff, rng) {
+      const bubbles = 5;
+      const stepY = (h - 240) / bubbles;
+      for (let i = 0; i < bubbles; i++) {
+        const by = y0 + 150 + i * stepY;
+        // Left & Right giant half-circle wall bubbles
+        sec.pegs.push({ x: 55, y: by, r: 135, restitution: 0.85, color: WALL_COLOR });
+        sec.pegs.push({ x: WORLD_W - 55, y: by + stepY * 0.5, r: 135, restitution: 0.85, color: WALL_COLOR });
+        // Center scalloped bounce domes
+        const centerX = i % 2 === 0 ? 460 : 740;
+        sec.pegs.push({ x: centerX, y: by + stepY * 0.25, r: 85, restitution: 0.95, color: accent });
+      }
+    },
+
+    // 12. Mixed field of tiny slanted dashes and large round bumpers
+    mixedDashesBumpers(sec, y0, h, accent, diff, rng) {
+      const rows = 6;
+      const stepY = (h - 260) / rows;
+      for (let r = 0; r < rows; r++) {
+        const ry = y0 + 130 + r * stepY;
+        for (let c = 0; c < 4; c++) {
+          const cx = 200 + c * 265 + (r % 2 === 0 ? -35 : 35);
+          if ((r + c) % 2 === 0) {
+            // Large round bumper
+            sec.pegs.push({ x: cx, y: ry, r: 44, restitution: 1.05, color: accent });
+          } else {
+            // Slanted thick dash
+            const ang = ((r + c) % 3 === 0 ? 28 : -28) * (Math.PI / 180);
+            const dx = Math.cos(ang) * 58;
+            const dy = Math.sin(ang) * 58;
+            sec.walls.push({ x1: cx - dx, y1: ry - dy, x2: cx + dx, y2: ry + dy, thickness: 24, color: WALL_COLOR });
+          }
+        }
+      }
+    },
+
+    // 13. Swinging pendulums and moving platforms that slide left-right
+    pendulumsAndSliders(sec, y0, h, accent, diff, rng) {
+      const levels = 4;
+      const stepY = (h - 260) / levels;
+      for (let i = 0; i < levels; i++) {
+        const ly = y0 + 160 + i * stepY;
+        if (i % 2 === 0) {
+          // Twin Swinging Pendulums
+          sec.pendulums.push({ pivotX: 380, pivotY: ly - 90, armLen: 185, bobR: 38, speed: 0.035, phase: 0, color: accent });
+          sec.pendulums.push({ pivotX: 820, pivotY: ly - 90, armLen: 185, bobR: 38, speed: 0.035, phase: Math.PI, color: accent });
+          // Side funnel ledges
+          sec.walls.push({ x1: 40, y1: ly - 30, x2: 210, y2: ly + 60, thickness: 28, color: WALL_COLOR });
+          sec.walls.push({ x1: WORLD_W - 40, y1: ly - 30, x2: WORLD_W - 210, y2: ly + 60, thickness: 28, color: WALL_COLOR });
+        } else {
+          // Horizontal Sliding Platform
+          sec.sliders.push({
+            centerX: WORLD_W / 2,
+            y: ly,
+            w: 340,
+            h: 32,
+            range: 280,
+            speed: 0.032,
+            phase: i * 1.3,
+            color: WALL_COLOR
+          });
+          sec.pegs.push({ x: 220, y: ly - 20, r: 30, restitution: 0.9, color: accent });
+          sec.pegs.push({ x: WORLD_W - 220, y: ly - 20, r: 30, restitution: 0.9, color: accent });
+        }
+      }
+    },
+
+    // 14. Narrow tubes, S-curves, and drop shafts
+    narrowTubesSCurves(sec, y0, h, accent, diff, rng) {
+      const topY = y0 + 90;
+      const midY = y0 + h * 0.52;
+      const botY = y0 + h - 140;
+
+      // Upper 4 Vertical Narrow Drop Tubes
+      const tubeXs = [240, 480, 720, 960];
+      // Top splitter hats above tube walls
+      tubeXs.forEach(tx => {
+        sec.walls.push({ x1: tx, y1: topY, x2: tx, y2: midY - 80, thickness: 32, color: WALL_COLOR });
+        sec.pegs.push({ x: tx, y: topY - 8, r: 22, restitution: 0.8, color: accent });
+      });
+
+      // Lower Giant S-Curve Chicane
+      sec.walls.push(...createArcSegments(420, midY + 140, 290, -Math.PI * 0.35, Math.PI * 0.45, 9, 32, WALL_COLOR));
+      sec.walls.push(...createArcSegments(780, botY - 160, 290, Math.PI * 0.65, Math.PI * 1.45, 9, 32, WALL_COLOR));
+      sec.spinners.push({ x: WORLD_W / 2, y: midY + 260, len: 185, thick: 22, speed: 0.05, color: accent, style: "cross" });
+    },
+
+    // 15. Optional bonus section: soccer-goal style gate with moving keeper bar
+    soccerGoalGate(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      const goalY = y0 + h * 0.52;
+      const goalW = 360;
+
+      // Funnel directing marbles toward the stadium pitch
+      sec.walls.push({ x1: 40, y1: y0 + 80, x2: 220, y2: goalY - 160, thickness: 32, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: y0 + 80, x2: WORLD_W - 220, y2: goalY - 160, thickness: 32, color: WALL_COLOR });
+
+      // Goalposts (Thick white/accent posts)
+      sec.walls.push({ x1: cx - goalW / 2, y1: goalY - 90, x2: cx - goalW / 2, y2: goalY + 80, thickness: 28, color: "#ffffff" });
+      sec.walls.push({ x1: cx + goalW / 2, y1: goalY - 90, x2: cx + goalW / 2, y2: goalY + 80, thickness: 28, color: "#ffffff" });
+
+      // Moving Goalkeeper Slider Bar inside the goal mouth
+      sec.sliders.push({
+        centerX: cx,
+        y: goalY - 20,
+        w: 125,
+        h: 28,
+        range: 110,
+        speed: 0.055,
+        phase: 0,
+        color: "#ef4444"
+      });
+
+      // Goal boost zone inside the net (marbles scoring a goal get a turbo boost downward)
+      sec.zones.push({
+        x: cx - goalW / 2 + 20,
+        y: goalY,
+        w: goalW - 40,
+        h: 110,
+        kind: "goalBoost",
+        label: "⚽ GOAL BOOST!"
+      });
+
+      // Side slow penalty ramps for marbles that miss the goalposts
+      sec.walls.push({ x1: 40, y1: goalY + 40, x2: cx - 190, y2: y0 + h - 130, thickness: 30, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 40, y1: goalY + 40, x2: cx + 190, y2: y0 + h - 130, thickness: 30, color: WALL_COLOR });
+    },
+
+    // 16. "No collision zone" section where marbles pass through each other, and a normal section after it
+    noCollisionGhostZone(sec, y0, h, accent, diff, rng) {
+      const cx = WORLD_W / 2;
+      // Ghost phase band covering upper 60% of the section
+      sec.zones.push({
+        x: 60,
+        y: y0 + 70,
+        w: WORLD_W - 120,
+        h: h * 0.56,
+        kind: "ghost",
+        label: "👻 NO-COLLISION GHOST ZONE"
+      });
+
+      // Criss-crossing ramps inside the ghost zone so marbles pass straight through each other at the X-intersection!
+      sec.walls.push({ x1: 60, y1: y0 + 130, x2: cx - 70, y2: y0 + h * 0.42, thickness: 28, color: WALL_COLOR });
+      sec.walls.push({ x1: WORLD_W - 60, y1: y0 + 130, x2: cx + 70, y2: y0 + h * 0.42, thickness: 28, color: WALL_COLOR });
+
+      // Normal solid collision section immediately after the ghost zone
+      const solidY = y0 + h * 0.72;
+      sec.spinners.push({ x: cx - 220, y: solidY, len: 195, thick: 22, speed: 0.05, color: accent, style: "cross" });
+      sec.spinners.push({ x: cx + 220, y: solidY, len: 195, thick: 22, speed: -0.05, color: accent, style: "cross" });
+      sec.pegs.push({ x: cx, y: solidY + 60, r: 36, restitution: 0.9, color: accent });
+    }
+  };
+
+  const TRACK_BUILDER = {
+    buildHugeWorld(sectionTypes, difficulty, rng) {
+      const sections = [];
+      let currentY = 380; // Top spawn chamber height (0 to 380px)
+      const accents = window.GAME_DATA.sectionAccents;
+
+      sectionTypes.forEach((type, idx) => {
+        const h = type === "capsuleChambers" || type === "champions_marathon" ? 2100 : 1850;
+        const accent = accents[idx % accents.length];
+        const sec = {
+          index: idx + 1,
+          total: sectionTypes.length,
+          type,
+          title: type.replace(/([A-Z])/g, " $1").toUpperCase(),
+          yStart: currentY,
+          yEnd: currentY + h,
+          accent,
+          walls: [],
+          pegs: [],
+          spinners: [],
+          pendulums: [],
+          sliders: [],
+          polygons: [],
+          zones: [],
+          gateY: currentY + h - 45,
+          passedMarbles: new Set(),
+          loaded: false,
+          matterBodies: [],
+          dynamicItems: []
+        };
+
+        // Call obstacle library generator
+        const builder = OBSTACLE_LIBRARY[type] || OBSTACLE_LIBRARY.crossSpinners;
+        builder(sec, currentY, h, accent, difficulty, rng);
+
+        // Connect section exit funnel so marbles smoothly enter the next section
+        const exitY = currentY + h - 55;
+        sec.walls.push({ x1: 40, y1: exitY - 95, x2: 185, y2: exitY, thickness: 32, color: WALL_COLOR });
+        sec.walls.push({ x1: WORLD_W - 40, y1: exitY - 95, x2: WORLD_W - 185, y2: exitY, thickness: 32, color: WALL_COLOR });
+
+        sections.push(sec);
+        currentY += h;
+      });
+
+      const finishY = currentY + 120;
+      const totalHeight = finishY + 900;
+      return { sections, finishY, totalHeight };
+    },
+
+    buildCustomEditorWorld(customItems, difficulty) {
+      // Converts user's custom editor items into a huge 1200px wide world
+      const sections = [];
+      const h = 8400;
+      const sec = {
+        index: 1,
+        total: 1,
+        type: "custom",
+        title: "CUSTOM PRO EDITOR TRACK",
+        yStart: 380,
+        yEnd: 380 + h,
+        accent: "#f59e0b",
+        walls: [],
+        pegs: [],
+        spinners: [],
+        pendulums: [],
+        sliders: [],
+        polygons: [],
+        zones: [],
+        gateY: 380 + h - 45,
+        passedMarbles: new Set(),
+        loaded: false,
+        matterBodies: [],
+        dynamicItems: []
+      };
+
+      const scaleX = WORLD_W / 360;
+      const scaleY = h / 2600;
+
+      customItems.forEach(item => {
+        const x = item.x * scaleX;
+        const y = 380 + item.y * scaleY;
+        const scl = item.scale || 1;
+        const rad = ((item.angle || 0) * Math.PI) / 180;
+
+        if (item.type === "cross") {
+          sec.spinners.push({ x, y, len: 210 * scl, thick: 24, speed: 0.05 * ((item.angle || 0) >= 0 ? 1 : -1), color: "#f59e0b", style: "cross" });
+        } else if (item.type === "wheel") {
+          sec.spinners.push({ x, y, len: 420 * scl, thick: 26, speed: 0.03, color: "#10b981", style: "wheel6" });
+        } else if (item.type === "funnel") {
+          const w = 220 * scl, fh = 95 * scl, gap = 62 * scl;
+          sec.walls.push({ x1: x - w, y1: y - fh, x2: x - gap, y2: y + fh, thickness: 32, color: WALL_COLOR });
+          sec.walls.push({ x1: x + w, y1: y - fh, x2: x + gap, y2: y + fh, thickness: 32, color: WALL_COLOR });
+        } else if (item.type === "bowl") {
+          sec.walls.push(...createArcSegments(x, y, 220 * scl, Math.PI * 0.15, Math.PI * 0.85, 10, 30, WALL_COLOR));
+        } else if (item.type === "pegGrid") {
+          [-140, -70, 0, 70, 140].forEach(px => {
+            [-45, 45].forEach(py => {
+              sec.pegs.push({ x: x + (px + (py > 0 ? 30 : -30)) * scl, y: y + py * scl, r: 18 * scl, restitution: 0.75, color: WALL_COLOR });
+            });
+          });
+        } else if (item.type === "bumper") {
+          sec.pegs.push({ x, y, r: 42 * scl, restitution: 1.05, color: "#ef4444" });
+        } else if (item.type === "pendulum") {
+          sec.pendulums.push({ pivotX: x, pivotY: y - 90, armLen: 175 * scl, bobR: 36 * scl, speed: 0.04, phase: 0, color: "#3b82f6" });
+        } else if (item.type === "goal") {
+          sec.zones.push({ x: x - 140 * scl, y: y - 40, w: 280 * scl, h: 90, kind: "goalBoost", label: "⚽ GOAL BOOST" });
+        } else {
+          const half = 160 * scl;
+          const dx = Math.cos(rad) * half;
+          const dy = Math.sin(rad) * half;
+          sec.walls.push({ x1: x - dx, y1: y - dy, x2: x + dx, y2: y + dy, thickness: 30, color: WALL_COLOR });
+        }
+      });
+
+      sections.push(sec);
+      const finishY = 380 + h + 120;
+      return { sections, finishY, totalHeight: finishY + 900 };
+    }
+  };
+
+  // ============================================================================
+  // UI CONTROLLER
+  // ============================================================================
   const UI = {
     manualSelected: new Set(["DZ", "MA", "TN", "EG", "SA", "FR", "BR", "AR", "DE", "JP", "ES", "SN"]),
 
@@ -99,6 +692,7 @@
       this.renderShop();
       this.renderStatsScreen();
       this.onFormatChange();
+      this.onTrackChange();
       this.applySettings(true);
       Editor.init();
     },
@@ -110,6 +704,17 @@
     onFormatChange() {
       const fmt = document.getElementById("crFormat").value;
       document.getElementById("gpSystemWrap").style.display = fmt === "grandprix" ? "block" : "none";
+    },
+
+    onTrackChange() {
+      const trk = document.getElementById("crTrack").value;
+      document.getElementById("seedInputWrap").style.display = trk === "seeded_random" ? "block" : "none";
+    },
+
+    randomizeSeed() {
+      const words = ["ATLAS", "SAHARA", "ORAN", "TITAN", "OLYMPUS", "VORTEX", "NOVA", "FALCON"];
+      const pick = words[Math.floor(Math.random() * words.length)] + "-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById("crTrackSeed").value = pick;
     },
 
     showScreen(id, btn) {
@@ -168,7 +773,7 @@
         flag,
         color,
         border,
-        region: [region, " CUSTOM"],
+        region: [region, "CUSTOM"],
         small: true,
         isCustom: true,
         fact
@@ -180,7 +785,7 @@
       this.renderCustomMarblesList();
       document.getElementById("cmName").value = "";
       document.getElementById("cmFact").value = "";
-      alert(`Custom Marble "${flag} ${name}" created and added to your roster!`);
+      alert(`Custom Marble "${flag} ${name}" created!`);
     },
 
     deleteCustomMarble(code) {
@@ -256,7 +861,7 @@
     },
 
     savePreset() {
-      const name = prompt("Preset Name:", "My Race Setup " + (State.presets.length + 1));
+      const name = prompt("Preset Name:", "Huge Race " + (State.presets.length + 1));
       if (!name) return;
       const preset = {
         name,
@@ -265,6 +870,7 @@
         gpSystem: document.getElementById("crGpSystem").value,
         region: document.getElementById("crRegion").value,
         track: document.getElementById("crTrack").value,
+        seed: document.getElementById("crTrackSeed").value,
         difficulty: document.getElementById("crDifficulty").value,
         length: document.getElementById("crLength").value,
         camera: document.getElementById("crCamera").value,
@@ -292,6 +898,7 @@
       if (p.gpSystem) document.getElementById("crGpSystem").value = p.gpSystem;
       document.getElementById("crRegion").value = p.region;
       document.getElementById("crTrack").value = p.track;
+      if (p.seed) document.getElementById("crTrackSeed").value = p.seed;
       document.getElementById("crDifficulty").value = p.difficulty;
       document.getElementById("crLength").value = p.length;
       document.getElementById("crCamera").value = p.camera;
@@ -299,6 +906,7 @@
       document.getElementById("crRounds").value = p.rounds;
       document.getElementById("crElim").value = p.elim;
       this.onFormatChange();
+      this.onTrackChange();
     },
 
     renderCups() {
@@ -307,7 +915,7 @@
         <div style="background:#0f172a; padding:10px; border-radius:8px; border:1px solid #334155;">
           <div style="font-weight:800; margin-bottom:4px;">${c.name}</div>
           <div style="font-size:0.74rem; color:var(--muted); margin-bottom:8px;">
-            ${c.count} Marbles • ${c.rounds} Tracks • ${c.format === "grandprix" ? "GP Points" : "Knockout"}
+            ${c.count} Marbles • ${c.rounds} Huge Tracks • ${c.format === "grandprix" ? "GP Points" : "Knockout"}
           </div>
           <button class="btn btn-sm btn-block" onclick="Game.startCup('${c.id}')">Start Competition</button>
         </div>
@@ -316,10 +924,10 @@
 
     renderCareerBox() {
       const stages = [
-        "Stage 1/4: Regional Qualifier (Top 5 Advance - Classic Funnel)",
-        "Stage 2/4: Continental Group Stage (Top 4 Advance - Mega Plinko)",
-        "Stage 3/4: World Cup Semi-Final (Top 3 Advance - Twin Reactor)",
-        "Stage 4/4: World Marble Cup Final (Win 1st Place - Marathon Colosseum)"
+        "Stage 1/4: Regional Qualifier (Top 10 Advance - Alpine Slalom)",
+        "Stage 2/4: Continental Group Stage (Top 6 Advance - Serpentine Citadel)",
+        "Stage 3/4: World Cup Semi-Final (Top 3 Advance - Pendulum Fortress)",
+        "Stage 4/4: World Marble Cup Final (Win 1st Place - 40,000px Marathon)"
       ];
       const cObj = findMarbleByCode(State.career.countryCode);
       document.getElementById("careerStatusBox").innerHTML = `
@@ -478,13 +1086,15 @@
     }
   };
 
-  // Upgraded Interactive Pro Track Editor (Virtual Height 1800px, Drag/Select/Rotate/Scale)
+  // ============================================================================
+  // INTERACTIVE PRO TRACK EDITOR
+  // ============================================================================
   const Editor = {
     tool: "select",
     canvas: null,
     ctx: null,
     scrollY: 0,
-    virtualHeight: 1800,
+    virtualHeight: 2600,
     selectedIndex: -1,
     isDragging: false,
 
@@ -497,16 +1107,15 @@
         const rect = this.canvas.getBoundingClientRect();
         const x = Math.round(((e.clientX - rect.left) / rect.width) * 360);
         const y = Math.round(((e.clientY - rect.top) / rect.height) * 360 + this.scrollY);
-        return { x: Math.max(20, Math.min(340, x)), y: Math.max(80, Math.min(this.virtualHeight - 90, y)) };
+        return { x: Math.max(24, Math.min(336, x)), y: Math.max(80, Math.min(this.virtualHeight - 90, y)) };
       };
 
       this.canvas.addEventListener("pointerdown", e => {
         const pt = getCoords(e);
-        // Check if user tapped an existing obstacle
         let hitIdx = -1;
         for (let i = State.customTrack.length - 1; i >= 0; i--) {
           const ob = State.customTrack[i];
-          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 34 * (ob.scale || 1)) {
+          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 38 * (ob.scale || 1)) {
             hitIdx = i;
             break;
           }
@@ -518,7 +1127,6 @@
           this.syncInspector();
           this.draw();
         } else {
-          // Place new obstacle and immediately select it for dragging/tuning
           const newItem = {
             type: this.tool,
             x: pt.x,
@@ -596,7 +1204,7 @@
     duplicateSelected() {
       const ob = State.customTrack[this.selectedIndex];
       if (!ob) return;
-      const copy = Object.assign({}, ob, { x: Math.min(330, ob.x + 25), y: Math.min(this.virtualHeight - 100, ob.y + 40) });
+      const copy = Object.assign({}, ob, { x: Math.min(330, ob.x + 25), y: Math.min(this.virtualHeight - 100, ob.y + 50) });
       State.customTrack.push(copy);
       this.selectedIndex = State.customTrack.length - 1;
       this.syncInspector();
@@ -611,20 +1219,17 @@
       this.draw();
     },
 
-    undo() {
-      State.customTrack.pop();
-      this.selectedIndex = State.customTrack.length - 1;
-      this.syncInspector();
-      this.draw();
-    },
-
     loadTemplate() {
       State.customTrack = [];
-      for (let y = 160; y < this.virtualHeight - 140; y += 160) {
-        State.customTrack.push({ type: "funnel", x: 180, y, angle: 0, scale: 1.1 });
-        State.customTrack.push({ type: "spinner", x: 120, y: y + 70, angle: 0, scale: 1 });
-        State.customTrack.push({ type: "spinner", x: 240, y: y + 70, angle: 0, scale: 1 });
-        State.customTrack.push({ type: "booster", x: 180, y: y + 115, angle: 0, scale: 1 });
+      const types = ["funnel", "cross", "pegGrid", "bowl", "wheel", "pendulum", "rampL", "rampR", "goal"];
+      for (let y = 180, i = 0; y < this.virtualHeight - 160; y += 230, i++) {
+        State.customTrack.push({
+          type: types[i % types.length],
+          x: i % 2 === 0 ? 180 : (i % 4 === 1 ? 120 : 240),
+          y,
+          angle: types[i % types.length] === "rampL" ? 20 : types[i % types.length] === "rampR" ? -20 : 0,
+          scale: 1.1
+        });
       }
       this.selectedIndex = -1;
       this.syncInspector();
@@ -641,7 +1246,7 @@
     save() {
       saveState();
       UI.unlockAchievement("architect");
-      alert("Custom track saved! Select 'Custom Editor Track' or 'Test Race' to play it.");
+      alert("Custom track saved!");
     },
 
     exportCode() {
@@ -649,7 +1254,7 @@
       const inp = document.getElementById("trackCodeInput");
       inp.value = code;
       if (navigator.clipboard) navigator.clipboard.writeText(code).catch(() => {});
-      alert("Track code generated & copied!");
+      alert("Track code copied!");
     },
 
     importCode() {
@@ -660,7 +1265,7 @@
           State.customTrack = parsed;
           saveState();
           this.draw();
-          alert("Track imported successfully!");
+          alert("Track imported!");
         }
       } catch (e) {
         alert("Invalid track code.");
@@ -676,15 +1281,15 @@
     draw() {
       if (!this.ctx) return;
       const ctx = this.ctx;
-      ctx.clearRect(0, 0, 360, 360);
+      ctx.fillStyle = "#92a8d8";
+      ctx.fillRect(0, 0, 360, 360);
       ctx.save();
       ctx.translate(0, -this.scrollY);
 
-      // Grid & height markers
-      ctx.strokeStyle = "#1e293b";
-      ctx.fillStyle = "#64748b";
-      ctx.font = "10px sans-serif";
-      for (let y = 0; y <= this.virtualHeight; y += 100) {
+      ctx.strokeStyle = "rgba(0,0,0,0.18)";
+      ctx.fillStyle = "#0a0a0f";
+      ctx.font = "bold 10px sans-serif";
+      for (let y = 0; y <= this.virtualHeight; y += 200) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(360, y);
@@ -692,19 +1297,11 @@
         ctx.fillText(y + "m", 14, y - 4);
       }
 
-      // Start & Finish Zones
-      ctx.fillStyle = "rgba(56, 189, 248, 0.15)";
-      ctx.fillRect(10, 10, 340, 60);
-      ctx.fillStyle = "#38bdf8";
-      ctx.font = "bold 12px sans-serif";
-      ctx.fillText("🏁 MARBLE SPAWN GATE (0m - 70m)", 80, 42);
+      // Thick Black Side Walls
+      ctx.fillStyle = "#0a0a0f";
+      ctx.fillRect(0, 0, 10, this.virtualHeight);
+      ctx.fillRect(350, 0, 10, this.virtualHeight);
 
-      const finY = this.virtualHeight - 60;
-      ctx.fillStyle = "#10b981";
-      ctx.fillRect(10, finY, 340, 14);
-      ctx.fillText("🏆 FINISH LINE (" + finY + "m)", 105, finY - 8);
-
-      // Draw all placed obstacles
       State.customTrack.forEach((item, idx) => {
         const scl = item.scale || 1;
         const rad = ((item.angle || 0) * Math.PI) / 180;
@@ -715,67 +1312,61 @@
 
         if (idx === this.selectedIndex) {
           ctx.strokeStyle = "#fbbf24";
-          ctx.lineWidth = 2;
-          ctx.setLineDash([4, 3]);
-          ctx.strokeRect(-42, -26, 84, 52);
-          ctx.setLineDash([]);
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-45, -30, 90, 60);
         }
 
-        if (item.type === "bumper") {
-          ctx.fillStyle = "#ef4444";
+        ctx.strokeStyle = "#0a0a0f";
+        ctx.fillStyle = "#0a0a0f";
+        ctx.lineWidth = 7;
+        ctx.lineCap = "round";
+
+        if (item.type === "cross" || item.type === "wheel") {
+          const r = item.type === "wheel" ? 38 : 26;
           ctx.beginPath();
-          ctx.arc(0, 0, 14, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (item.type === "spinner") {
-          ctx.strokeStyle = "#f59e0b";
-          ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.moveTo(-30, 0);
-          ctx.lineTo(30, 0);
-          ctx.stroke();
-        } else if (item.type === "seesaw") {
-          ctx.strokeStyle = "#38bdf8";
-          ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.moveTo(-36, 0);
-          ctx.lineTo(36, 0);
+          ctx.moveTo(-r, 0); ctx.lineTo(r, 0);
+          ctx.moveTo(0, -r); ctx.lineTo(0, r);
           ctx.stroke();
         } else if (item.type === "funnel") {
-          ctx.strokeStyle = "#a855f7";
-          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.moveTo(-45, -18);
-          ctx.lineTo(-14, 18);
-          ctx.moveTo(45, -18);
-          ctx.lineTo(14, 18);
+          ctx.moveTo(-45, -18); ctx.lineTo(-14, 18);
+          ctx.moveTo(45, -18); ctx.lineTo(14, 18);
           ctx.stroke();
-        } else if (item.type === "booster") {
-          ctx.fillStyle = "rgba(16, 185, 129, 0.35)";
-          ctx.fillRect(-18, -18, 36, 36);
-          ctx.fillStyle = "#10b981";
-          ctx.font = "16px sans-serif";
-          ctx.fillText("⚡", -8, 6);
-        } else if (item.type === "slowPad") {
-          ctx.fillStyle = "rgba(148, 163, 184, 0.3)";
-          ctx.fillRect(-22, -16, 44, 32);
-          ctx.fillStyle = "#cbd5e1";
-          ctx.font = "15px sans-serif";
-          ctx.fillText("🕸️", -8, 6);
+        } else if (item.type === "bowl") {
+          ctx.beginPath();
+          ctx.arc(0, -5, 36, 0.15 * Math.PI, 0.85 * Math.PI);
+          ctx.stroke();
+        } else if (item.type === "bumper") {
+          ctx.fillStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.arc(0, 0, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
         } else if (item.type === "pegGrid") {
-          ctx.fillStyle = "#c084fc";
-          [-20, 0, 20].forEach(px => {
+          [-22, 0, 22].forEach(px => {
             [-10, 10].forEach(py => {
               ctx.beginPath();
-              ctx.arc(px + (py > 0 ? 8 : -8), py, 4, 0, Math.PI * 2);
+              ctx.arc(px + (py > 0 ? 8 : -8), py, 4.5, 0, Math.PI * 2);
               ctx.fill();
             });
           });
-        } else {
-          ctx.strokeStyle = "#e2e8f0";
-          ctx.lineWidth = 5;
+        } else if (item.type === "pendulum") {
           ctx.beginPath();
-          ctx.moveTo(-35, 0);
-          ctx.lineTo(35, 0);
+          ctx.moveTo(0, -22); ctx.lineTo(0, 15);
+          ctx.stroke();
+          ctx.fillStyle = "#f59e0b";
+          ctx.beginPath();
+          ctx.arc(0, 15, 10, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (item.type === "goal") {
+          ctx.fillStyle = "#10b981";
+          ctx.fillRect(-35, -12, 70, 24);
+          ctx.fillStyle = "#000";
+          ctx.font = "bold 10px sans-serif";
+          ctx.fillText("⚽ GOAL", -20, 4);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(-36, 0); ctx.lineTo(36, 0);
           ctx.stroke();
         }
         ctx.restore();
@@ -785,57 +1376,81 @@
     }
   };
 
-  // Core Marble Race Physics & Tournament Engine
+  // ============================================================================
+  // CORE HUGE-WORLD MARBLE RACE ENGINE (LAZY STREAMING + SUB-STEPPING + CULLING)
+  // ============================================================================
   const Game = {
     session: null,
     engine: null,
+    worldData: null,
     animId: null,
     speedMult: 1,
     cameraMode: "leader",
     autoPlay: false,
     camY: 0,
-    lavaY: 0,
+    camScale: 1,
+    lavaY: -500,
+    simTick: 0,
     mediaRecorder: null,
     recordedChunks: [],
     lastRecordedBlob: null,
 
     pickCountries(region, count, manual) {
-      let pool = getAllMarblesPool();
+      let basePool = getAllMarblesPool();
       if (manual) {
-        pool = pool.filter(c => UI.manualSelected.has(c.code));
-        if (pool.length < 2) pool = getAllMarblesPool().slice(0, 12);
+        basePool = basePool.filter(c => UI.manualSelected.has(c.code));
+        if (basePool.length < 2) basePool = getAllMarblesPool().slice(0, 16);
       } else if (region === "CUSTOM") {
-        pool = (State.customMarbles && State.customMarbles.length >= 2)
+        basePool = (State.customMarbles && State.customMarbles.length >= 2)
           ? State.customMarbles.slice()
-          : getAllMarblesPool().slice(0, 12);
+          : getAllMarblesPool().slice(0, 16);
       } else if (region && region !== "ALL") {
-        pool = pool.filter(c => c.region.includes(region));
+        basePool = basePool.filter(c => c.region.includes(region));
       }
+
+      const cap = Math.max(2, Math.min(Number(count) || 80, State.settings.maxMarbles || 300));
       const rng = createRNG(Date.now() ^ (Math.random() * 0xffffffff));
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
+      const result = [];
+
+      // Allow up to 300 marbles by cycling through shuffled pool if count > pool size
+      let pass = 0;
+      while (result.length < cap) {
+        const copy = basePool.slice();
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        for (let i = 0; i < copy.length && result.length < cap; i++) {
+          const item = copy[i];
+          if (pass === 0) {
+            result.push(item);
+          } else {
+            result.push(Object.assign({}, item, {
+              code: `${item.code}#${pass + 1}`,
+              name: `${item.name} ${pass + 1}`
+            }));
+          }
+        }
+        pass++;
       }
-      const cap = Math.min(Number(count) || 20, State.settings.maxMarbles || 100, pool.length);
-      return pool.slice(0, Math.max(2, cap));
+      return result;
     },
 
     buildTrackSchedule(selectedTrack, totalRounds) {
       const allIds = window.GAME_DATA.tracks.map(t => t.id);
+      if (selectedTrack === "seeded_random" || selectedTrack === "custom") {
+        const list = [];
+        for (let r = 0; r < totalRounds; r++) list.push(selectedTrack);
+        return list;
+      }
       if (selectedTrack !== "rotate" && selectedTrack) {
-        // Even if user chose a specific starting track, if totalRounds > 1, rotate subsequent rounds so multi-round never repeats the same track!
         const startIdx = Math.max(0, allIds.indexOf(selectedTrack));
         const schedule = [];
         for (let r = 0; r < totalRounds; r++) {
-          if (selectedTrack === "custom" && r === 0) {
-            schedule.push("custom");
-          } else {
-            schedule.push(allIds[(startIdx + r) % allIds.length]);
-          }
+          schedule.push(allIds[(startIdx + r) % allIds.length]);
         }
         return schedule;
       }
-      // Shuffle all 12 tracks for rotation
       const shuffled = allIds.slice().sort(() => Math.random() - 0.5);
       const schedule = [];
       for (let r = 0; r < totalRounds; r++) {
@@ -845,33 +1460,36 @@
     },
 
     getTrackDisplayName(trackId) {
-      if (trackId === "custom") return "Custom Editor Track";
+      if (trackId === "custom") return "Custom Pro Editor Track";
+      if (trackId === "seeded_random") return `Seeded Huge Track (${this.session?.seedStr || "RANDOM"})`;
       const found = window.GAME_DATA.tracks.find(t => t.id === trackId);
       return found ? found.name : trackId;
     },
 
     startFromCreator() {
-      const count = Number(document.getElementById("crCount").value) || 20;
+      const count = Number(document.getElementById("crCount").value) || 80;
       const format = document.getElementById("crFormat").value;
       const gpSystem = document.getElementById("crGpSystem").value || "formula";
       const region = document.getElementById("crRegion").value;
       const track = document.getElementById("crTrack").value;
+      const seedStr = document.getElementById("crTrackSeed").value.trim() || "ORAN-2026";
       const difficulty = document.getElementById("crDifficulty").value;
       const length = document.getElementById("crLength").value;
       const camera = document.getElementById("crCamera").value;
       const physSpeed = Number(document.getElementById("crPhysSpeed").value) || 1;
       const rounds = Math.max(1, Math.min(20, Number(document.getElementById("crRounds").value) || 1));
-      const elim = Math.max(1, Number(document.getElementById("crElim").value) || 1);
+      const elim = Math.max(1, Number(document.getElementById("crElim").value) || 5);
       const manual = document.getElementById("crSelectMode").value === "manual";
 
       const entrants = this.pickCountries(region, count, manual);
       this.cameraMode = camera;
 
       this.session = {
-        modeTitle: format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "Marble Race",
+        modeTitle: format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "Huge Marble Race",
         format,
         gpSystem,
         trackSchedule: this.buildTrackSchedule(track, rounds),
+        seedStr,
         difficulty,
         length,
         physSpeed,
@@ -879,7 +1497,7 @@
         currentRound: 1,
         elimPerRound: elim,
         activeCountries: entrants,
-        seriesScores: {}, // GP Points (only in grandprix) OR Round Wins (in other multi-round modes)
+        seriesScores: {},
         teamScores: {},
         isRivalry: false,
         isCareer: false,
@@ -898,12 +1516,13 @@
         format: cup.format,
         gpSystem: cup.gpSystem || "formula",
         trackSchedule: this.buildTrackSchedule("rotate", cup.rounds),
+        seedStr: cup.id.toUpperCase(),
         difficulty: "medium",
-        length: "long",
+        length: "medium",
         physSpeed: 1,
         totalRounds: cup.rounds,
         currentRound: 1,
-        elimPerRound: Math.max(1, Math.floor(entrants.length / (cup.rounds + 1))),
+        elimPerRound: Math.max(2, Math.floor(entrants.length / (cup.rounds + 1))),
         activeCountries: entrants,
         seriesScores: {},
         teamScores: {},
@@ -921,8 +1540,8 @@
       saveState();
       const playerMarble = findMarbleByCode(code);
       const stageNames = ["Career Qualifier", "Career Group Stage", "Career Semi-Final", "Career World Cup Final"];
-      const stageTracks = ["classic", "plinko", "chaosReactor", "endurance"];
-      const counts = [16, 20, 14, 10];
+      const stageTracks = ["alpine_slalom", "serpent_citadel", "pendulum_fortress", "champions_marathon"];
+      const counts = [40, 50, 32, 24];
       const st = State.career.stage || 0;
       const pool = this.pickCountries("ALL", counts[st], false).filter(c => c.code !== code);
       const entrants = [playerMarble, ...pool.slice(0, counts[st] - 1)];
@@ -932,8 +1551,9 @@
         format: "normal",
         gpSystem: "formula",
         trackSchedule: [stageTracks[st]],
+        seedStr: "CAREER-" + st,
         difficulty: st >= 2 ? "hard" : "medium",
-        length: st === 3 ? "marathon" : "long",
+        length: st === 3 ? "long" : "medium",
         physSpeed: 1,
         totalRounds: 1,
         currentRound: 1,
@@ -971,8 +1591,9 @@
         format: "normal",
         gpSystem: "formula",
         trackSchedule: this.buildTrackSchedule("rotate", bestOf),
+        seedStr: "RIVALRY",
         difficulty: "medium",
-        length: "long",
+        length: "short",
         physSpeed: 1,
         totalRounds: bestOf,
         currentRound: 1,
@@ -991,118 +1612,118 @@
       this.launchRound();
     },
 
+    resolveSectionList(trackId, lengthSetting, rng) {
+      const countMap = { short: 8, medium: 12, long: 16, marathon: 20 };
+      const targetSections = countMap[lengthSetting] || 12;
+      const allObstacleKeys = Object.keys(OBSTACLE_LIBRARY).filter(k => k !== "startCircleSplitter");
+
+      if (trackId === "seeded_random") {
+        const list = ["startCircleSplitter"];
+        while (list.length < targetSections) {
+          const pick = allObstacleKeys[Math.floor(rng() * allObstacleKeys.length)];
+          list.push(pick);
+        }
+        return list;
+      }
+
+      const preset = window.GAME_DATA.tracks.find(t => t.id === trackId) || window.GAME_DATA.tracks[0];
+      const list = ["startCircleSplitter"];
+      let idx = 1;
+      while (list.length < targetSections) {
+        const nextType = preset.sections[idx % preset.sections.length];
+        list.push(nextType === "startCircleSplitter" ? "crossSpinners" : nextType);
+        idx++;
+      }
+      return list;
+    },
+
     launchRound() {
       UI.showScreen("race");
       const canvas = document.getElementById("raceCanvas");
       canvas.width = canvas.clientWidth || 360;
       canvas.height = canvas.clientHeight || 640;
 
-      const W = canvas.width;
-      // Upgraded Longer Track Multipliers
-      const lenMap = { short: 4.0, medium: 6.5, long: 9.5, marathon: 13.5 };
-      const lenMult = lenMap[this.session.length] || 6.5;
-      const trackHeight = Math.round(canvas.height * lenMult);
-      const finishY = trackHeight - 120;
-      this.lavaY = -140;
-      this.camY = 0;
-
-      const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "classic";
+      const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "colossus_odyssey";
       this.currentTrackId = currentTrackId;
 
-      const rng = createRNG(Date.now() ^ (this.session.currentRound * 99991));
-      this.setupPhysicsWorld(W, trackHeight, finishY, rng, currentTrackId);
+      const seedValue = currentTrackId === "seeded_random"
+        ? `${this.session.seedStr}-R${this.session.currentRound}`
+        : Date.now() ^ (this.session.currentRound * 99991);
+      const rng = createRNG(seedValue);
+
+      if (currentTrackId === "custom" && State.customTrack.length > 0) {
+        this.worldData = TRACK_BUILDER.buildCustomEditorWorld(State.customTrack, this.session.difficulty);
+      } else {
+        const sectionList = this.resolveSectionList(currentTrackId, this.session.length, rng);
+        this.worldData = TRACK_BUILDER.buildHugeWorld(sectionList, this.session.difficulty, rng);
+      }
+
+      this.lavaY = -500;
+      this.camY = 0;
+      this.simTick = 0;
+
+      this.setupPhysicsWorld(rng);
       this.updateHUDButtons();
-      this.startLoop(canvas, W, trackHeight, finishY);
+      this.startLoop(canvas);
     },
 
-    setupPhysicsWorld(W, trackHeight, finishY, rng, trackId) {
-      const hasMatter = typeof window.Matter !== "undefined";
-      this.obstacles = [];
-      this.spinners = [];
-      this.seesaws = [];
-      this.zones = []; // Boosters & slow pads
+    setupPhysicsWorld(rng) {
+      if (!window.Matter) return;
+      const { Engine, World, Bodies, Body } = window.Matter;
+      if (this.engine) World.clear(this.engine.world);
+
+      this.engine = Engine.create({
+        positionIterations: 10,
+        velocityIterations: 8
+      });
+      this.engine.gravity.y = 0.92 * (this.session.physSpeed || 1);
+
+      const H = this.worldData.totalHeight;
+      // Ultra-thick 140px outer boundary containment walls so no marble can EVER escape left or right
+      const wallOpts = { isStatic: true, restitution: 0.45, friction: 0.005 };
+      World.add(this.engine.world, [
+        Bodies.rectangle(-30, H / 2, 140, H * 2, wallOpts),
+        Bodies.rectangle(WORLD_W + 30, H / 2, 140, H * 2, wallOpts),
+        Bodies.rectangle(WORLD_W / 2, -90, WORLD_W + 200, 140, wallOpts)
+      ]);
+
       this.marbles = [];
       this.finishedOrder = [];
       this.eliminatedOrder = [];
       this.raceStartTime = performance.now();
       this.midRaceRecorded = false;
 
-      if (!hasMatter) return;
-      const { Engine, World, Bodies, Body, Constraint } = window.Matter;
-      if (this.engine) World.clear(this.engine.world);
-      this.engine = Engine.create();
-      this.engine.gravity.y = 0.85 * (this.session.physSpeed || 1);
-
-      const wallOpts = { isStatic: true, restitution: 0.5, friction: 0.01 };
-      World.add(this.engine.world, [
-        Bodies.rectangle(-10, trackHeight / 2, 20, trackHeight * 2, wallOpts),
-        Bodies.rectangle(W + 10, trackHeight / 2, 20, trackHeight * 2, wallOpts)
-      ]);
-
-      const addSeg = (x1, y1, x2, y2, color) => {
-        const dx = x2 - x1, dy = y2 - y1;
-        const len = Math.hypot(dx, dy);
-        const ang = Math.atan2(dy, dx);
-        const b = Bodies.rectangle((x1 + x2) / 2, (y1 + y2) / 2, len, 8, {
-          isStatic: true,
-          angle: ang,
-          restitution: 0.45,
-          friction: 0.003
-        });
-        World.add(this.engine.world, b);
-        this.obstacles.push({ kind: "seg", x1, y1, x2, y2, color: color || "#475569" });
-      };
-
-      const addBumper = (x, y, r, color) => {
-        const b = Bodies.circle(x, y, r, { isStatic: true, restitution: 1.2, friction: 0 });
-        World.add(this.engine.world, b);
-        this.obstacles.push({ kind: "bumper", x, y, r, color: color || "#ef4444" });
-      };
-
-      const addSpinner = (x, y, len, dir) => {
-        const b = Bodies.rectangle(x, y, len, 8, { isStatic: true, restitution: 0.7 });
-        World.add(this.engine.world, b);
-        this.spinners.push({ body: b, x, y, len, angle: rng() * Math.PI, speed: 0.05 * dir });
-      };
-
-      const addSeesaw = (x, y, len) => {
-        const plank = Bodies.rectangle(x, y, len, 8, { density: 0.004, friction: 0.01 });
-        const pivot = Constraint.create({ pointA: { x, y }, bodyB: plank, stiffness: 1, length: 0 });
-        World.add(this.engine.world, [plank, pivot]);
-        this.seesaws.push({ body: plank, x, y, len });
-      };
-
-      const addZone = (x, y, r, kind, angleRad) => {
-        this.zones.push({ x, y, r, kind, angle: angleRad || 0 });
-      };
-
-      this.buildTrackGeometry(W, trackHeight, finishY, rng, trackId, addSeg, addBumper, addSpinner, addSeesaw, addZone);
-
-      // Spawn Marbles fairly
+      // Spawn 2 to 300 Marbles cleanly in the top launch bay (Y = 40 to 340)
       const list = this.session.activeCountries.slice();
-      const r = list.length > 45 ? 8.5 : list.length > 25 ? 10 : 12;
+      const r = list.length > 180 ? 15 : list.length > 90 ? 18 : 22;
+      const usableW = WORLD_W - 220;
+      const cols = Math.max(8, Math.floor(usableW / (r * 2.35)));
+
       list.forEach((country, idx) => {
-        const cols = Math.max(5, Math.floor((W - 50) / (r * 2.3)));
         const col = idx % cols;
         const row = Math.floor(idx / cols);
-        const jitter = (rng() - 0.5) * 6;
-        const x = 30 + col * ((W - 60) / Math.max(1, cols - 1)) + jitter;
-        const y = 26 + row * (r * 2.4) + (rng() - 0.5) * 4;
+        const jitterX = (rng() - 0.5) * 8;
+        const x = 110 + col * (usableW / Math.max(1, cols - 1)) + jitterX;
+        const y = 45 + row * (r * 2.35) + (rng() - 0.5) * 5;
 
         const body = Bodies.circle(x, y, r, {
-          restitution: 0.55,
+          restitution: 0.52,
           friction: 0.002,
-          frictionAir: 0.0035,
-          density: 0.002
+          frictionAir: 0.003,
+          density: 0.0025
         });
-        Body.setVelocity(body, { x: (rng() - 0.5) * 2, y: rng() * 1.5 });
+        Body.setVelocity(body, { x: (rng() - 0.5) * 3, y: 1.5 + rng() * 2 });
         World.add(this.engine.world, body);
+
         this.marbles.push({
           country,
           body,
           r,
           x,
           y,
+          lastMoveY: y,
+          stuckFrames: 0,
+          inGhostZone: false,
           trail: [],
           finished: false,
           eliminated: false,
@@ -1110,127 +1731,115 @@
           midRank: idx + 1
         });
       });
+
+      // Immediately stream in the first 2 sections
+      this.updateLazySections(0, 2600);
     },
 
-    buildTrackGeometry(W, trackHeight, finishY, rng, trackId, addSeg, addBumper, addSpinner, addSeesaw, addZone) {
-      if (trackId === "custom" && State.customTrack.length > 0) {
-        const scaleX = W / 360;
-        const scaleY = (finishY - 140) / 1680;
-        State.customTrack.forEach(item => {
-          const x = item.x * scaleX;
-          const y = 110 + item.y * scaleY;
-          const scl = item.scale || 1;
-          const rad = ((item.angle || 0) * Math.PI) / 180;
+    // Lazy Section Streaming: Creates Matter.js bodies only for sections near active marbles
+    // and destroys bodies for sections all marbles have passed!
+    updateLazySections(minMarbleY, maxMarbleY) {
+      if (!window.Matter || !this.engine || !this.worldData) return;
+      const { World, Bodies, Body } = window.Matter;
+      const activeTop = minMarbleY - 1200;
+      const activeBottom = maxMarbleY + 2200;
 
-          if (item.type === "bumper") {
-            addBumper(x, y, 14 * scl);
-          } else if (item.type === "spinner") {
-            addSpinner(x, y, 66 * scl, (item.angle || 0) >= 0 ? 1 : -1);
-          } else if (item.type === "seesaw") {
-            addSeesaw(x, y, 82 * scl);
-          } else if (item.type === "funnel") {
-            const w = 55 * scl, h = 22 * scl, gap = 16 * scl;
-            addSeg(x - w, y - h, x - gap, y + h, "#a855f7");
-            addSeg(x + w, y - h, x + gap, y + h, "#a855f7");
-          } else if (item.type === "booster") {
-            addZone(x, y, 22 * scl, "booster", rad);
-          } else if (item.type === "slowPad") {
-            addZone(x, y, 24 * scl, "slowPad", 0);
-          } else if (item.type === "pegGrid") {
-            [-24, 0, 24].forEach(px => {
-              [-14, 14].forEach(py => {
-                addBumper(x + (px + (py > 0 ? 10 : -10)) * scl, y + py * scl, 5.5 * scl, "#c084fc");
-              });
+      this.worldData.sections.forEach(sec => {
+        const shouldBeLoaded = sec.yEnd >= activeTop && sec.yStart <= activeBottom;
+
+        if (shouldBeLoaded && !sec.loaded) {
+          sec.loaded = true;
+          sec.matterBodies = [];
+          sec.dynamicItems = [];
+
+          // 1. Thick Solid Walls
+          sec.walls.forEach(w => {
+            const dx = w.x2 - w.x1;
+            const dy = w.y2 - w.y1;
+            const len = Math.hypot(dx, dy);
+            const ang = Math.atan2(dy, dx);
+            const b = Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, len + 10, w.thickness || 28, {
+              isStatic: true,
+              angle: ang,
+              restitution: 0.45,
+              friction: 0.003
             });
-          } else {
-            const half = 42 * scl;
-            const dx = Math.cos(rad) * half;
-            const dy = Math.sin(rad) * half;
-            addSeg(x - dx, y - dy, x + dx, y + dy, "#38bdf8");
-          }
-        });
-        return;
-      }
+            sec.matterBodies.push(b);
+          });
 
-      const diffMult = this.session.difficulty === "hard" ? 1.25 : this.session.difficulty === "easy" ? 0.8 : 1;
-      const step = Math.round(180 / diffMult);
-      let idx = 0;
+          // 2. Pegs & Bumpers
+          sec.pegs.forEach(p => {
+            const b = Bodies.circle(p.x, p.y, p.r, {
+              isStatic: true,
+              restitution: p.restitution || 0.75,
+              friction: 0.001
+            });
+            sec.matterBodies.push(b);
+          });
 
-      for (let y = 160; y < finishY - 130; y += step) {
-        idx++;
-        const gap = 33;
+          // 3. Compound Cross / Wheel Spinners
+          sec.spinners.forEach(sp => {
+            const parts = [];
+            const blades = sp.style === "wheel6" ? 3 : 2;
+            for (let k = 0; k < blades; k++) {
+              const bar = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 24, {
+                angle: (k * Math.PI) / blades
+              });
+              parts.push(bar);
+            }
+            const comp = Body.create({
+              parts,
+              isStatic: true,
+              restitution: 0.7,
+              friction: 0.005
+            });
+            sec.matterBodies.push(comp);
+            sec.dynamicItems.push({ kind: "spinner", body: comp, spec: sp, angle: 0 });
+          });
 
-        if (trackId === "plinko" || (trackId === "endurance" && idx % 5 === 0)) {
-          const cols = 6;
-          for (let c = 1; c < cols; c++) {
-            addBumper((W / cols) * c + (idx % 2 === 0 ? 14 : -14), y, 6.5, "#c084fc");
-            addBumper((W / cols) * c, y + 48, 6.5, "#c084fc");
-          }
-        } else if (trackId === "zigzag" || (trackId === "swissAlps" && idx % 2 === 0)) {
-          if (idx % 2 === 0) {
-            addSeg(10, y - 25, W * 0.68, y + 30, "#38bdf8");
-            addZone(W * 0.82, y + 35, 20, "booster", 0.3);
-          } else {
-            addSeg(W - 10, y - 25, W * 0.32, y + 30, "#38bdf8");
-            addZone(W * 0.18, y + 35, 20, "booster", -0.3);
-          }
-        } else if (trackId === "hyperSpeed") {
-          addSeg(10, y - 25, W / 2 - gap, y + 20, "#10b981");
-          addSeg(W - 10, y - 25, W / 2 + gap, y + 20, "#10b981");
-          addZone(W * 0.25, y + 60, 22, "booster", 0);
-          addZone(W * 0.75, y + 60, 22, "booster", 0);
-          addSpinner(W * 0.5, y + 60, 62, idx % 2 === 0 ? 1 : -1);
-        } else if (trackId === "saharaDunes") {
-          addSeg(8, y - 35, W / 2 - gap, y + 25, "#f59e0b");
-          addSeg(W - 8, y - 35, W / 2 + gap, y + 25, "#f59e0b");
-          addZone(W * 0.5, y + 60, 24, "slowPad", 0);
-          addBumper(W * 0.28, y + 70, 12, "#eab308");
-          addBumper(W * 0.72, y + 70, 12, "#eab308");
-        } else if (trackId === "chaosReactor" || trackId === "spinnerMayhem") {
-          addSpinner(W * 0.28, y, 72, 1);
-          addSpinner(W * 0.72, y, 72, -1);
-          addSpinner(W * 0.5, y + 58, 68, idx % 2 === 0 ? 1 : -1);
-        } else if (trackId === "bumperPinball") {
-          for (let k = 0; k < 4; k++) addBumper(W * (0.2 + k * 0.2), y - 15, 13);
-          for (let k = 0; k < 3; k++) addBumper(W * (0.3 + k * 0.2), y + 40, 15);
-        } else if (trackId === "seesawDrop") {
-          addSeesaw(W * 0.33, y, 88);
-          addSeesaw(W * 0.67, y + 36, 88);
-          addSeg(0, y - 25, W * 0.2, y + 10, "#38bdf8");
-          addSeg(W, y - 25, W * 0.8, y + 10, "#38bdf8");
-        } else {
-          // Classic / Gauntlet / Endurance mix
-          const mod = idx % 4;
-          if (mod === 0) {
-            addSeg(10, y - 30, W / 2 - gap, y + 22, "#f59e0b");
-            addSeg(W - 10, y - 30, W / 2 + gap, y + 22, "#f59e0b");
-            addSpinner(W / 2, y + 60, 58, rng() > 0.5 ? 1 : -1);
-          } else if (mod === 1) {
-            addSpinner(W * 0.3, y, 66, 1);
-            addSpinner(W * 0.7, y, 66, -1);
-            addZone(W * 0.5, y + 45, 20, "booster", 0);
-          } else if (mod === 2) {
-            for (let k = 0; k < 4; k++) addBumper(W * (0.2 + k * 0.2), y, 12);
-            addSeesaw(W * 0.5, y + 55, 92);
-          } else {
-            addSeg(0, y - 20, W * 0.36, y + 22, "#a855f7");
-            addSeg(W, y - 20, W * 0.64, y + 22, "#a855f7");
-            addBumper(W * 0.5, y + 45, 14);
-          }
+          // 4. Swinging Pendulums
+          sec.pendulums.forEach(pd => {
+            const bob = Bodies.circle(pd.pivotX, pd.pivotY + pd.armLen, pd.bobR, {
+              isStatic: true,
+              restitution: 0.95
+            });
+            sec.matterBodies.push(bob);
+            sec.dynamicItems.push({ kind: "pendulum", body: bob, spec: pd, curX: pd.pivotX, curY: pd.pivotY + pd.armLen });
+          });
+
+          // 5. Horizontal Sliders
+          sec.sliders.forEach(sl => {
+            const plat = Bodies.rectangle(sl.centerX, sl.y, sl.w, sl.h, {
+              isStatic: true,
+              restitution: 0.6
+            });
+            sec.matterBodies.push(plat);
+            sec.dynamicItems.push({ kind: "slider", body: plat, spec: sl, curX: sl.centerX });
+          });
+
+          World.add(this.engine.world, sec.matterBodies);
+        } else if (!shouldBeLoaded && sec.loaded) {
+          // Unload passed section from physics engine to save CPU/RAM on low-end phones
+          World.remove(this.engine.world, sec.matterBodies);
+          sec.matterBodies = [];
+          sec.dynamicItems = [];
+          sec.loaded = false;
         }
-      }
+      });
     },
 
-    startLoop(canvas, W, trackHeight, finishY) {
+    startLoop(canvas) {
       if (this.animId) cancelAnimationFrame(this.animId);
       const ctx = canvas.getContext("2d");
       const skin = window.GAME_DATA.skins.find(s => s.id === State.equippedSkin) || window.GAME_DATA.skins[0];
 
       const stepFrame = () => {
-        for (let s = 0; s < this.speedMult; s++) {
-          this.stepPhysics(W, trackHeight, finishY);
+        // Sub-stepping: 2 sub-steps per frame at 1x speed (4 at 2x, 6 at 3x) so marbles never tunnel through barriers!
+        const subSteps = this.speedMult * 2;
+        for (let s = 0; s < subSteps; s++) {
+          this.stepPhysicsSubStep();
         }
-        this.renderScene(ctx, canvas, W, trackHeight, finishY, skin);
+        this.renderScene(ctx, canvas, skin);
 
         if (this.checkRaceFinished()) {
           this.onRoundComplete();
@@ -1241,67 +1850,146 @@
       this.animId = requestAnimationFrame(stepFrame);
     },
 
-    stepPhysics(W, trackHeight, finishY) {
-      if (!window.Matter || !this.engine) return;
+    stepPhysicsSubStep() {
+      if (!window.Matter || !this.engine || !this.worldData) return;
       const { Engine, Body } = window.Matter;
+      this.simTick += 1;
+      const finishY = this.worldData.finishY;
 
-      this.spinners.forEach(sp => {
-        sp.angle += sp.speed * (this.session.physSpeed || 1);
-        Body.setAngle(sp.body, sp.angle);
+      // Update kinematic spinners, pendulums, and sliders in loaded sections
+      const spd = (this.session.physSpeed || 1) * 0.5;
+      this.worldData.sections.forEach(sec => {
+        if (!sec.loaded) return;
+        sec.dynamicItems.forEach(item => {
+          if (item.kind === "spinner") {
+            item.angle += item.spec.speed * spd;
+            Body.setAngle(item.body, item.angle);
+            Body.setAngularVelocity(item.body, item.spec.speed * spd);
+          } else if (item.kind === "pendulum") {
+            const swing = Math.sin(this.simTick * item.spec.speed * spd + item.spec.phase) * 0.85;
+            const bx = item.spec.pivotX + Math.sin(swing) * item.spec.armLen;
+            const by = item.spec.pivotY + Math.cos(swing) * item.spec.armLen;
+            Body.setVelocity(item.body, { x: bx - item.curX, y: by - item.curY });
+            Body.setPosition(item.body, { x: bx, y: by });
+            item.curX = bx;
+            item.curY = by;
+          } else if (item.kind === "slider") {
+            const nx = item.spec.centerX + Math.sin(this.simTick * item.spec.speed * spd + item.spec.phase) * item.spec.range;
+            Body.setVelocity(item.body, { x: nx - item.curX, y: 0 });
+            Body.setPosition(item.body, { x: nx, y: item.spec.y });
+            item.curX = nx;
+          }
+        });
       });
 
-      Engine.update(this.engine, 1000 / 60);
+      // Fixed 8.33ms (120Hz) sub-step
+      Engine.update(this.engine, 1000 / 120);
 
       if (this.session.format === "survival") {
-        this.lavaY += 1.05 * (this.session.physSpeed || 1);
+        this.lavaY += 1.6 * spd;
       }
 
+      let minActiveY = Infinity;
+      let maxActiveY = 0;
+
+      // Update Marbles, Velocity Clamp, Ghost Zones, Section Checkpoints & Anti-Stuck
       this.marbles.forEach(m => {
+        if (m.finished || m.eliminated) return;
+
+        // Clamp horizontal bounds inside [40, WORLD_W - 40] as an extra safety net
+        if (m.body.position.x < 35 + m.r) {
+          Body.setPosition(m.body, { x: 38 + m.r, y: m.body.position.y });
+          Body.setVelocity(m.body, { x: Math.abs(m.body.velocity.x) * 0.5, y: m.body.velocity.y });
+        } else if (m.body.position.x > WORLD_W - 35 - m.r) {
+          Body.setPosition(m.body, { x: WORLD_W - 38 - m.r, y: m.body.position.y });
+          Body.setVelocity(m.body, { x: -Math.abs(m.body.velocity.x) * 0.5, y: m.body.velocity.y });
+        }
+
+        // Clamp max speed so a marble can never move more than its radius in one sub-step
+        const vx = m.body.velocity.x;
+        const vy = m.body.velocity.y;
+        const maxV = m.r * 0.85;
+        const curV = Math.hypot(vx, vy);
+        if (curV > maxV) {
+          const scale = maxV / curV;
+          Body.setVelocity(m.body, { x: vx * scale, y: vy * scale });
+        }
+
         m.x = m.body.position.x;
         m.y = m.body.position.y;
 
-        if (!m.finished && !m.eliminated) {
-          // Check Booster / Slow Pad zones
-          this.zones.forEach(z => {
-            if (Math.hypot(m.x - z.x, m.y - z.y) < z.r + m.r) {
-              if (z.kind === "booster") {
-                Body.setVelocity(m.body, {
-                  x: m.body.velocity.x + Math.sin(z.angle) * 3.5,
-                  y: Math.max(m.body.velocity.y, 7.5)
-                });
-              } else if (z.kind === "slowPad") {
-                Body.setVelocity(m.body, {
-                  x: m.body.velocity.x * 0.78,
-                  y: m.body.velocity.y * 0.78
-                });
+        if (m.y < minActiveY) minActiveY = m.y;
+        if (m.y > maxActiveY) maxActiveY = m.y;
+
+        // Check active section zones (Ghost Zone & Soccer Goal Boost)
+        let insideGhost = false;
+        const secIdx = Math.floor((m.y - 380) / 1850);
+        for (let si = Math.max(0, secIdx - 1); si <= Math.min(this.worldData.sections.length - 1, secIdx + 1); si++) {
+          const sec = this.worldData.sections[si];
+          if (m.y >= sec.gateY && !sec.passedMarbles.has(m.country.code)) {
+            sec.passedMarbles.add(m.country.code);
+          }
+          sec.zones.forEach(z => {
+            if (m.x >= z.x && m.x <= z.x + z.w && m.y >= z.y && m.y <= z.y + z.h) {
+              if (z.kind === "ghost") {
+                insideGhost = true;
+              } else if (z.kind === "goalBoost") {
+                Body.setVelocity(m.body, { x: m.body.velocity.x * 0.8, y: Math.max(m.body.velocity.y, 12) });
               }
             }
           });
+        }
 
-          // Anti-stuck nudge
-          if (Math.hypot(m.body.velocity.x, m.body.velocity.y) < 0.15) {
-            Body.applyForce(m.body, m.body.position, {
-              x: (Math.random() - 0.5) * 0.0005,
-              y: 0.0006
+        // Toggle Matter.js negative collision group in Ghost Zone (marbles pass through each other but hit walls!)
+        if (insideGhost !== m.inGhostZone) {
+          m.inGhostZone = insideGhost;
+          m.body.collisionFilter.group = insideGhost ? -2 : 0;
+        }
+
+        // Anti-stuck logic: nudge after 1.5s, micro-teleport down after 3s
+        if (Math.abs(m.y - m.lastMoveY) < 1.8) {
+          m.stuckFrames += 1;
+          if (m.stuckFrames === 160) {
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 9, y: -6 });
+          } else if (m.stuckFrames > 320) {
+            Body.setPosition(m.body, {
+              x: WORLD_W * 0.25 + Math.random() * (WORLD_W * 0.5),
+              y: m.y + 85
             });
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 4, y: 5 });
+            m.stuckFrames = 0;
           }
+        } else {
+          m.lastMoveY = m.y;
+          m.stuckFrames = 0;
+        }
 
+        if (this.simTick % 2 === 0 && State.equippedSkin !== "default") {
           m.trail.push({ x: m.x, y: m.y });
-          if (m.trail.length > 8) m.trail.shift();
+          if (m.trail.length > 7) m.trail.shift();
+        }
 
-          if (this.session.format === "survival" && m.y < this.lavaY) {
-            m.eliminated = true;
-            m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
-            this.eliminatedOrder.push(m);
-          } else if (m.y >= finishY) {
-            m.finished = true;
-            m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
-            this.finishedOrder.push(m);
-          }
+        // Check Survival Lava or Finish Line
+        if (this.session.format === "survival" && m.y < this.lavaY) {
+          m.eliminated = true;
+          m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
+          this.eliminatedOrder.push(m);
+          window.Matter.World.remove(this.engine.world, m.body);
+        } else if (m.y >= finishY) {
+          m.finished = true;
+          m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
+          this.finishedOrder.push(m);
+          // Put finished marble to sleep and remove from physics world so finish area never lags!
+          window.Matter.World.remove(this.engine.world, m.body);
         }
       });
 
-      if (!this.midRaceRecorded && this.marbles.some(m => m.y >= finishY * 0.5)) {
+      // Stream sections lazily every 15 sub-steps
+      if (this.simTick % 15 === 0 && minActiveY < Infinity) {
+        this.updateLazySections(minActiveY, maxActiveY);
+      }
+
+      if (!this.midRaceRecorded && maxActiveY >= finishY * 0.5) {
         this.midRaceRecorded = true;
         const sorted = this.marbles.slice().sort((a, b) => b.y - a.y);
         sorted.forEach((m, idx) => { m.midRank = idx + 1; });
@@ -1321,156 +2009,267 @@
       return remaining.length === 0;
     },
 
-    renderScene(ctx, canvas, W, trackHeight, finishY, skin) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    renderScene(ctx, canvas, skin) {
+      const W = canvas.width;
+      const H = canvas.height;
+      const finishY = this.worldData.finishY;
 
+      // Flat soft periwinkle-blue background
+      ctx.fillStyle = "#92a8d8";
+      ctx.fillRect(0, 0, W, H);
+
+      const activeMarbles = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y);
       const liveRanking = [
         ...this.finishedOrder,
-        ...this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y),
+        ...activeMarbles,
         ...this.eliminatedOrder.slice().reverse()
       ];
 
-      let targetY = 0;
-      let scale = 1;
+      // Camera scaling & vertical tracking
+      const baseScale = W / WORLD_W;
+      let targetScale = baseScale;
+      let targetWorldY = 0;
+
       if (this.cameraMode === "overview") {
-        scale = canvas.height / trackHeight;
-        targetY = 0;
-      } else if (this.cameraMode === "cinematic") {
-        const active = this.marbles.filter(m => !m.finished && !m.eliminated);
-        const avgY = active.length
-          ? active.reduce((acc, m) => acc + m.y, 0) / active.length
+        targetScale = baseScale * 0.55;
+        const leadY = activeMarbles[0]?.y || finishY;
+        const visibleWorldH = H / targetScale;
+        targetWorldY = Math.max(0, Math.min(finishY + 600 - visibleWorldH, leadY - visibleWorldH * 0.5));
+      } else if (this.cameraMode === "pack") {
+        const packSlice = activeMarbles.slice(0, Math.min(18, activeMarbles.length));
+        const avgY = packSlice.length
+          ? packSlice.reduce((s, m) => s + m.y, 0) / packSlice.length
           : finishY;
-        targetY = Math.max(0, Math.min(trackHeight - canvas.height, avgY - canvas.height * 0.45));
+        const visibleWorldH = H / targetScale;
+        targetWorldY = Math.max(0, Math.min(finishY + 650 - visibleWorldH, avgY - visibleWorldH * 0.48));
       } else {
-        const leader = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y)[0]
-          || this.finishedOrder[0];
-        if (leader) {
-          targetY = Math.max(0, Math.min(trackHeight - canvas.height, leader.y - canvas.height * 0.55));
-        }
+        // Leader camera: follows leading active marble, or shows finish board once leaders cross
+        const leader = activeMarbles[0];
+        const visibleWorldH = H / targetScale;
+        const focusY = leader ? leader.y : finishY + 120;
+        targetWorldY = Math.max(0, Math.min(finishY + 750 - visibleWorldH, focusY - visibleWorldH * 0.55));
       }
-      this.camY += (targetY - this.camY) * 0.14;
+
+      this.camScale += (targetScale - this.camScale) * 0.15;
+      this.camY += (targetWorldY - this.camY) * 0.16;
+
+      const viewTop = this.camY - 300;
+      const viewBottom = this.camY + (H / this.camScale) + 300;
 
       ctx.save();
       if (this.cameraMode === "overview") {
-        ctx.scale(scale, scale);
-      } else {
-        ctx.translate(0, -this.camY);
+        ctx.translate((W - WORLD_W * this.camScale) / 2, 0);
       }
+      ctx.scale(this.camScale, this.camScale);
+      ctx.translate(0, -this.camY);
 
-      // Distance grid lines
-      ctx.strokeStyle = "#162032";
-      ctx.fillStyle = "#334155";
-      ctx.font = "10px sans-serif";
-      for (let y = 200; y < trackHeight; y += 200) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(W, y);
-        ctx.stroke();
-        ctx.fillText(y + "m", 8, y - 4);
-      }
+      // Outer thick solid black world walls
+      ctx.fillStyle = WALL_COLOR;
+      ctx.fillRect(-40, 0, 80, finishY + 900);
+      ctx.fillRect(WORLD_W - 40, 0, 80, finishY + 900);
 
-      // Zones (Boosters & Slow Mud)
-      this.zones.forEach(z => {
-        ctx.save();
-        ctx.translate(z.x, z.y);
-        if (z.kind === "booster") {
-          ctx.fillStyle = "rgba(16, 185, 129, 0.28)";
+      // Render only sections inside camera view (Frustum Culling)
+      this.worldData.sections.forEach(sec => {
+        if (sec.yEnd < viewTop || sec.yStart > viewBottom) return;
+
+        // Colored accent side stripes for this section
+        ctx.fillStyle = sec.accent;
+        ctx.fillRect(28, sec.yStart, 16, sec.yEnd - sec.yStart);
+        ctx.fillRect(WORLD_W - 44, sec.yStart, 16, sec.yEnd - sec.yStart);
+
+        // Special Zones (Ghost Zone & Soccer Goal Boost)
+        sec.zones.forEach(z => {
+          if (z.kind === "ghost") {
+            ctx.fillStyle = "rgba(139, 92, 246, 0.22)";
+            ctx.fillRect(z.x, z.y, z.w, z.h);
+            ctx.strokeStyle = "#8b5cf6";
+            ctx.lineWidth = 6;
+            ctx.strokeRect(z.x, z.y, z.w, z.h);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "900 32px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(z.label, WORLD_W / 2, z.y + 52);
+          } else if (z.kind === "goalBoost") {
+            ctx.fillStyle = "rgba(16, 185, 129, 0.32)";
+            ctx.fillRect(z.x, z.y, z.w, z.h);
+            ctx.fillStyle = "#052e16";
+            ctx.font = "900 30px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(z.label, z.x + z.w / 2, z.y + 62);
+          }
+        });
+
+        // Polygons (Triangle Splitters)
+        sec.polygons.forEach(poly => {
+          ctx.fillStyle = poly.color;
           ctx.beginPath();
-          ctx.arc(0, 0, z.r, 0, Math.PI * 2);
+          poly.points.forEach((pt, idx) => {
+            if (idx === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          });
+          ctx.closePath();
           ctx.fill();
-          ctx.fillStyle = "#10b981";
-          ctx.font = "16px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("⚡", 0, 0);
-        } else {
-          ctx.fillStyle = "rgba(148, 163, 184, 0.25)";
-          ctx.beginPath();
-          ctx.arc(0, 0, z.r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#94a3b8";
-          ctx.font = "15px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("🕸️", 0, 0);
-        }
-        ctx.restore();
-      });
+        });
 
-      // Finish line banner
-      for (let x = 0; x < W; x += 20) {
-        ctx.fillStyle = (x / 20) % 2 === 0 ? "#ffffff" : "#10b981";
-        ctx.fillRect(x, finishY, 20, 16);
-      }
-
-      // Survival Lava Zone
-      if (this.session.format === "survival" && this.lavaY > 0) {
-        ctx.fillStyle = "rgba(239, 68, 68, 0.36)";
-        ctx.fillRect(0, 0, W, this.lavaY);
-        ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(0, this.lavaY);
-        ctx.lineTo(W, this.lavaY);
-        ctx.stroke();
-      }
-
-      // Obstacles
-      this.obstacles.forEach(ob => {
-        if (ob.kind === "seg") {
-          ctx.strokeStyle = ob.color;
-          ctx.lineWidth = 8;
+        // Solid Black & Accent Walls
+        sec.walls.forEach(w => {
+          if (Math.max(w.y1, w.y2) < viewTop || Math.min(w.y1, w.y2) > viewBottom) return;
+          ctx.strokeStyle = w.color || WALL_COLOR;
+          ctx.lineWidth = w.thickness || 28;
           ctx.lineCap = "round";
           ctx.beginPath();
-          ctx.moveTo(ob.x1, ob.y1);
-          ctx.lineTo(ob.x2, ob.y2);
+          ctx.moveTo(w.x1, w.y1);
+          ctx.lineTo(w.x2, w.y2);
           ctx.stroke();
-        } else if (ob.kind === "bumper") {
-          ctx.fillStyle = ob.color || "#ef4444";
+        });
+
+        // Pegs & Bumpers
+        sec.pegs.forEach(p => {
+          if (p.y + p.r < viewTop || p.y - p.r > viewBottom) return;
+          ctx.fillStyle = p.color || WALL_COLOR;
           ctx.beginPath();
-          ctx.arc(ob.x, ob.y, ob.r, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+          if (p.color !== WALL_COLOR) {
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = WALL_COLOR;
+            ctx.stroke();
+          }
+        });
+
+        // Dynamic Spinners, Pendulums & Sliders
+        sec.dynamicItems.forEach(item => {
+          if (item.kind === "spinner") {
+            const sp = item.spec;
+            if (sp.y + sp.len < viewTop || sp.y - sp.len > viewBottom) return;
+            ctx.save();
+            ctx.translate(sp.x, sp.y);
+            ctx.rotate(item.angle);
+            const blades = sp.style === "wheel6" ? 3 : 2;
+            for (let k = 0; k < blades; k++) {
+              ctx.save();
+              ctx.rotate((k * Math.PI) / blades);
+              ctx.strokeStyle = WALL_COLOR;
+              ctx.lineWidth = (sp.thick || 24) + 6;
+              ctx.lineCap = "round";
+              ctx.beginPath();
+              ctx.moveTo(-sp.len / 2, 0);
+              ctx.lineTo(sp.len / 2, 0);
+              ctx.stroke();
+
+              ctx.strokeStyle = sp.color || WALL_COLOR;
+              ctx.lineWidth = sp.thick || 24;
+              ctx.beginPath();
+              ctx.moveTo(-sp.len / 2, 0);
+              ctx.lineTo(sp.len / 2, 0);
+              ctx.stroke();
+              ctx.restore();
+            }
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else if (item.kind === "pendulum") {
+            const pd = item.spec;
+            ctx.strokeStyle = WALL_COLOR;
+            ctx.lineWidth = 14;
+            ctx.beginPath();
+            ctx.moveTo(pd.pivotX, pd.pivotY);
+            ctx.lineTo(item.curX, item.curY);
+            ctx.stroke();
+
+            ctx.fillStyle = pd.color;
+            ctx.beginPath();
+            ctx.arc(item.curX, item.curY, pd.bobR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = WALL_COLOR;
+            ctx.stroke();
+          } else if (item.kind === "slider") {
+            const sl = item.spec;
+            ctx.fillStyle = sl.color;
+            ctx.fillRect(item.curX - sl.w / 2, sl.y - sl.h / 2, sl.w, sl.h);
+            ctx.strokeStyle = WALL_COLOR;
+            ctx.lineWidth = 6;
+            ctx.strokeRect(item.curX - sl.w / 2, sl.y - sl.h / 2, sl.w, sl.h);
+          }
+        });
+
+        // Colored Section Checkpoint Gate Bar at the bottom of the section
+        if (sec.gateY >= viewTop && sec.gateY <= viewBottom) {
+          ctx.fillStyle = sec.accent;
+          ctx.fillRect(40, sec.gateY - 18, WORLD_W - 80, 36);
+          ctx.strokeStyle = WALL_COLOR;
+          ctx.lineWidth = 5;
+          ctx.strokeRect(40, sec.gateY - 18, WORLD_W - 80, 36);
+
+          ctx.fillStyle = "#0a0a0f";
+          ctx.font = "900 24px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            `SECTION ${sec.index}/${sec.total}: ${sec.title}  •  PASSED: ${sec.passedMarbles.size}/${this.marbles.length}`,
+            WORLD_W / 2,
+            sec.gateY
+          );
         }
       });
 
-      this.spinners.forEach(sp => {
-        ctx.save();
-        ctx.translate(sp.x, sp.y);
-        ctx.rotate(sp.angle);
-        ctx.strokeStyle = "#f59e0b";
-        ctx.lineWidth = 8;
-        ctx.lineCap = "round";
+      // Survival Rising Lava
+      if (this.session.format === "survival" && this.lavaY > 0) {
+        ctx.fillStyle = "rgba(239, 68, 68, 0.42)";
+        ctx.fillRect(0, Math.max(0, viewTop), WORLD_W, Math.max(0, this.lavaY - Math.max(0, viewTop)));
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 12;
         ctx.beginPath();
-        ctx.moveTo(-sp.len / 2, 0);
-        ctx.lineTo(sp.len / 2, 0);
+        ctx.moveTo(0, this.lavaY);
+        ctx.lineTo(WORLD_W, this.lavaY);
         ctx.stroke();
-        ctx.restore();
-      });
+      }
 
-      this.seesaws.forEach(ss => {
-        ctx.save();
-        ctx.translate(ss.body.position.x, ss.body.position.y);
-        ctx.rotate(ss.body.angle);
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(-ss.len / 2, 0);
-        ctx.lineTo(ss.len / 2, 0);
-        ctx.stroke();
-        ctx.restore();
-      });
+      // Checkered Finish Line Banner + Colored Finisher Position Bars (#1 Algeria, #2 Morocco, #33 Norway)
+      if (finishY + 800 >= viewTop && finishY - 100 <= viewBottom) {
+        const sq = 40;
+        for (let x = 40; x < WORLD_W - 40; x += sq) {
+          ctx.fillStyle = Math.floor(x / sq) % 2 === 0 ? "#ffffff" : "#0a0a0f";
+          ctx.fillRect(x, finishY, sq, 28);
+          ctx.fillStyle = Math.floor(x / sq) % 2 === 0 ? "#0a0a0f" : "#ffffff";
+          ctx.fillRect(x, finishY + 28, sq, 28);
+        }
 
+        // Stacked Colored Finish Bars showing each finished marble (#1 Country, #2 Country...)
+        const barH = 38;
+        const maxBarsShown = Math.min(this.finishedOrder.length, 20);
+        for (let i = 0; i < maxBarsShown; i++) {
+          const finMarble = this.finishedOrder[i];
+          const by = finishY + 66 + i * (barH + 4);
+          ctx.fillStyle = finMarble.country.color || "#3b82f6";
+          ctx.fillRect(60, by, WORLD_W - 120, barH);
+          ctx.strokeStyle = WALL_COLOR;
+          ctx.lineWidth = 5;
+          ctx.strokeRect(60, by, WORLD_W - 120, barH);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "900 24px sans-serif";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`#${i + 1}  ${finMarble.country.flag}  ${finMarble.country.name}`, 82, by + barH / 2);
+        }
+      }
+
+      // Render Active Marbles inside camera view (Culled)
       const cbOutline = State.settings.colorblind === 1;
+      const top5Set = new Set(activeMarbles.slice(0, 5));
+
       this.marbles.forEach(m => {
-        if (m.eliminated) return;
+        if (m.finished || m.eliminated) return;
+        if (m.y + m.r < viewTop || m.y - m.r > viewBottom) return;
 
         if (m.trail.length > 1) {
           ctx.strokeStyle = skin.trail || m.country.color;
-          ctx.lineWidth = 3;
-          ctx.globalAlpha = 0.35;
+          ctx.lineWidth = 8;
+          ctx.globalAlpha = 0.4;
           ctx.beginPath();
           m.trail.forEach((pt, idx) => {
             if (idx === 0) ctx.moveTo(pt.x, pt.y);
@@ -1482,60 +2281,91 @@
 
         ctx.save();
         ctx.translate(m.x, m.y);
-        if (skin.glow) {
-          ctx.shadowColor = skin.glow;
-          ctx.shadowBlur = 10;
-        }
+        if (m.inGhostZone) ctx.globalAlpha = 0.65;
+
         ctx.fillStyle = m.country.color || "#3b82f6";
         ctx.beginPath();
         ctx.arc(0, 0, m.r, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.lineWidth = cbOutline ? 3 : 2;
-        ctx.strokeStyle = cbOutline ? "#ffff00" : (m.country.border || "#ffffff");
+        ctx.lineWidth = cbOutline ? 7 : 5;
+        ctx.strokeStyle = cbOutline ? "#ffff00" : WALL_COLOR;
         ctx.stroke();
 
-        ctx.shadowBlur = 0;
         ctx.fillStyle = "#ffffff";
-        ctx.font = `bold ${Math.round(m.r * 1.05)}px sans-serif`;
+        ctx.font = `bold ${Math.round(m.r * 1.15)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(m.country.flag, 0, 1);
+
+        // Draw floating name label above the Top 5 Leaders
+        if (top5Set.has(m)) {
+          const rankIdx = activeMarbles.indexOf(m) + this.finishedOrder.length + 1;
+          const labelTxt = `#${rankIdx} ${m.country.name}`;
+          ctx.font = "900 22px sans-serif";
+          const tw = ctx.measureWidth(labelTxt).width + 16;
+          ctx.fillStyle = "rgba(10, 10, 15, 0.88)";
+          ctx.fillRect(-tw / 2, -m.r - 34, tw, 26);
+          ctx.fillStyle = rankIdx === 1 ? "#fbbf24" : "#ffffff";
+          ctx.fillText(labelTxt, 0, -m.r - 21);
+        }
         ctx.restore();
       });
 
       ctx.restore();
 
+      // Right-Edge Vertical Minimap Strip (Always shows all 20-300 marbles along the full track!)
+      const stripW = 18;
+      const stripX = W - stripW - 4;
+      const stripY = 8;
+      const stripH = H - 16;
+      ctx.fillStyle = "rgba(10, 14, 26, 0.78)";
+      ctx.fillRect(stripX, stripY, stripW, stripH);
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(stripX, stripY, stripW, stripH);
+
+      // Section ticks on minimap
+      this.worldData.sections.forEach(sec => {
+        const sy = stripY + (sec.yStart / finishY) * stripH;
+        ctx.fillStyle = sec.accent;
+        ctx.fillRect(stripX + 2, sy, stripW - 4, 2);
+      });
+
+      // Marble dots on minimap
+      this.marbles.forEach(m => {
+        if (m.eliminated) return;
+        const pct = Math.min(1, Math.max(0, m.y / finishY));
+        const my = stripY + pct * stripH;
+        ctx.fillStyle = m.finished ? "#10b981" : (m.country.color || "#ffffff");
+        ctx.fillRect(stripX + 4, my - 1.5, stripW - 8, 3);
+      });
+
       // Update Top HUD
       document.getElementById("hudTitle").textContent =
         `${this.session.modeTitle} • Rd ${this.session.currentRound}/${this.session.totalRounds}`;
       document.getElementById("hudTrackName").textContent =
-        `Track: ${this.getTrackDisplayName(this.currentTrackId)} (${this.finishedOrder.length}/${this.marbles.length} finished)`;
+        `${this.getTrackDisplayName(this.currentTrackId)} (${this.finishedOrder.length}/${this.marbles.length} Fin)`;
       if (liveRanking[0]) {
         document.getElementById("hudSub").textContent =
-          `Leader: ${liveRanking[0].country.flag} ${liveRanking[0].country.name}`;
+          `1st: ${liveRanking[0].country.flag} ${liveRanking[0].country.name}`;
       }
-      document.getElementById("hudStandings").innerHTML = liveRanking.slice(0, 6)
-        .map((m, idx) => `${idx + 1}. ${m.country.flag} ${m.country.name.slice(0, 9)}`)
-        .join(" • ");
+      document.getElementById("hudStandings").innerHTML = liveRanking.slice(0, 5)
+        .map((m, idx) => `<strong>#${idx + 1}</strong> ${m.country.flag} ${m.country.name.slice(0, 10)}`)
+        .join(" &nbsp;");
     },
 
     skipToResult() {
-      if (!this.session) return;
-      const canvas = document.getElementById("raceCanvas");
-      const W = canvas.width || 360;
-      const lenMap = { short: 4.0, medium: 6.5, long: 9.5, marathon: 13.5 };
-      const trackHeight = Math.round((canvas.height || 640) * (lenMap[this.session.length] || 6.5));
-      const finishY = trackHeight - 120;
+      if (!this.session || !this.worldData) return;
       let guard = 0;
-      while (!this.checkRaceFinished() && guard < 5500) {
-        this.stepPhysics(W, trackHeight, finishY);
+      while (!this.checkRaceFinished() && guard < 4500) {
+        this.stepPhysicsSubStep();
         guard++;
       }
       const rem = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y);
       rem.forEach((m, idx) => {
         m.finished = true;
-        m.finishTimeMs = Math.round(performance.now() - this.raceStartTime) + idx * 55;
+        m.finishTimeMs = Math.round(performance.now() - this.raceStartTime) + idx * 45;
         this.finishedOrder.push(m);
       });
       if (this.animId) cancelAnimationFrame(this.animId);
@@ -1557,7 +2387,6 @@
       const winner = finalOrder[0];
       const isGrandPrix = this.session.format === "grandprix";
 
-      // Check closest finish record
       if (finalOrder.length >= 2 && finalOrder[0].finishTimeMs && finalOrder[1].finishTimeMs) {
         const delta = Math.abs(finalOrder[1].finishTimeMs - finalOrder[0].finishTimeMs);
         if (delta <= 60) UI.unlockAchievement("photofinish");
@@ -1570,16 +2399,16 @@
       }
 
       const gained = (winner.midRank || 1) - 1;
-      if (gained >= 5) UI.unlockAchievement("comeback");
+      if (gained >= 10) UI.unlockAchievement("comeback");
       if (gained > State.records.bestComeback.gained) {
         State.records.bestComeback = { country: `${winner.country.flag} ${winner.country.name}`, gained };
       }
 
       UI.unlockAchievement("first_win");
       if (winner.country.small || winner.country.isCustom) UI.unlockAchievement("underdog");
-      State.coins += 25;
+      State.coins += 30;
 
-      // Update stats: GP Points ONLY added in Grand Prix mode!
+      // Update stats: GP Points ONLY added in Grand Prix mode
       finalOrder.forEach((m, idx) => {
         const pos = idx + 1;
         const st = ensureCountryStat(m.country.code);
@@ -1593,7 +2422,6 @@
           st.points += gp;
           this.session.seriesScores[m.country.code] = (this.session.seriesScores[m.country.code] || 0) + gp;
         } else {
-          // Non-GP modes track round victories (1st place = 1 win)
           if (idx === 0) {
             this.session.seriesScores[m.country.code] = (this.session.seriesScores[m.country.code] || 0) + 1;
           }
@@ -1625,7 +2453,7 @@
         const knocked = finalOrder.slice(-cut).map(m => m.country);
         knockedCodes = new Set(knocked.map(c => c.code));
         this.session.activeCountries = this.session.activeCountries.filter(c => !knockedCodes.has(c.code));
-        elimNote = `Eliminated (${cut}): ${knocked.map(c => c.flag + " " + c.name).join(", ")}`;
+        elimNote = `Eliminated (${cut} Marbles): ${knocked.slice(0, 6).map(c => c.flag + " " + c.name).join(", ")}${knocked.length > 6 ? "..." : ""}`;
       }
 
       saveState();
@@ -1665,7 +2493,7 @@
 
       const leaderMs = finalOrder[0]?.finishTimeMs || 1000;
 
-      // Render 100% of all marbles in the race (No top-10 slice!)
+      // Full standings from #1 to Last Place
       document.getElementById("winPodiumList").innerHTML = finalOrder.map((m, idx) => {
         const isElim = m.eliminated || (knockedCodes && knockedCodes.has(m.country.code));
         const timeStr = m.eliminated
@@ -1686,7 +2514,7 @@
         } else if (idx <= 2) {
           extraCol = `<span style="color:#38bdf8;">🏅 Podium</span>`;
         } else {
-          extraCol = `<span style="color:var(--muted);">Finished</span>`;
+          extraCol = `<span style="color:var(--muted);">#${idx + 1}</span>`;
         }
 
         return `
@@ -1714,10 +2542,9 @@
       document.getElementById("winnerModal").classList.remove("active");
       if (!this.session) return;
 
-      // Career check
       if (this.session.isCareer) {
         const myRank = this.finishedOrder.findIndex(m => m.country.code === this.session.careerCode) + 1;
-        const passRanks = [5, 4, 3, 1];
+        const passRanks = [10, 6, 3, 1];
         const passRank = passRanks[State.career.stage] || 1;
         if (myRank > 0 && myRank <= passRank) {
           if (State.career.stage < 3) {
@@ -1729,7 +2556,7 @@
             ensureCountryStat(this.session.careerCode).cups += 1;
             UI.unlockAchievement("world_champ");
             saveState();
-            alert("🏆 WORLD CUP CAREER CHAMPION! You conquered all 4 tracks!");
+            alert("🏆 WORLD CUP CAREER CHAMPION! You conquered all 4 huge tracks!");
           }
         } else {
           alert(`Finished #${myRank} (Needed Top ${passRank}). Try this stage again!`);
@@ -1738,7 +2565,6 @@
         return;
       }
 
-      // Rivalry check
       if (this.session.isRivalry) {
         const needed = Math.ceil(this.session.bestOf / 2);
         const [cA, cB] = this.session.activeCountries;
@@ -1750,12 +2576,10 @@
         }
       }
 
-      // Advance to next round on a new track
       if (this.session.currentRound < this.session.totalRounds && this.session.activeCountries.length >= 2) {
         this.session.currentRound += 1;
         this.launchRound();
       } else {
-        // Crown overall winner
         let champ = null;
         if (this.session.format === "grandprix") {
           const topCode = Object.entries(this.session.seriesScores)
@@ -1777,12 +2601,12 @@
     },
 
     cycleSpeed() {
-      this.speedMult = this.speedMult === 1 ? 2 : this.speedMult === 2 ? 3 : 1;
+      this.speedMult = this.speedMult === 1 ? 2 : 1;
       this.updateHUDButtons();
     },
 
     cycleCamera() {
-      const modes = ["leader", "cinematic", "overview"];
+      const modes = ["leader", "pack", "overview"];
       const idx = (modes.indexOf(this.cameraMode) + 1) % modes.length;
       this.cameraMode = modes[idx];
       this.updateHUDButtons();
