@@ -1,0 +1,16 @@
+{
+  "name": "country-marble-race",
+  "version": "1.0.0",
+  "description": "Offline Country Flag Marble Racing Game with Matter.js and Capacitor",
+  "main": "www/index.html",
+  "scripts": {
+    "prepare-assets": "cp node_modules/matter-js/build/matter.min.js www/matter.min.js",
+    "build": "npm run prepare-assets"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "matter-js": "^0.19.0"
+  }
+}
