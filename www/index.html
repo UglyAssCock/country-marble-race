@@ -40,7 +40,7 @@
     }
     header {
       background: var(--panel);
-      padding: 8px 12px;
+      padding: 6px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -50,7 +50,7 @@
     }
     .brand {
       font-weight: 800;
-      font-size: 1.05rem;
+      font-size: 1rem;
       color: var(--accent);
       display: flex;
       align-items: center;
@@ -68,7 +68,7 @@
       font-weight: 700;
       color: #fbbf24;
       border: 1px solid #fbbf24;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
     }
     main {
       flex: 1;
@@ -80,7 +80,7 @@
       display: none;
       padding: 12px;
       padding-bottom: 85px;
-      max-width: 620px;
+      max-width: 860px;
       margin: 0 auto;
     }
     .screen.active {
@@ -101,9 +101,9 @@
     }
     .hud-overlay {
       position: absolute;
-      top: 8px;
+      top: 6px;
       left: 8px;
-      right: 32px;
+      right: 28px;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -111,25 +111,27 @@
       z-index: 5;
     }
     .hud-box {
-      background: rgba(10, 14, 26, 0.88);
+      background: rgba(10, 14, 26, 0.86);
       border: 2px solid #000000;
       padding: 6px 10px;
       border-radius: 8px;
       pointer-events: auto;
-      max-width: 68%;
+      max-width: 66%;
       box-shadow: 0 3px 0 #000;
     }
     .hud-controls {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 5px;
+      max-width: 165px;
       pointer-events: auto;
     }
     .hud-bottom {
       position: absolute;
-      bottom: 10px;
+      bottom: 8px;
       left: 8px;
-      right: 32px;
+      right: 28px;
       display: flex;
       justify-content: space-between;
       gap: 6px;
@@ -148,12 +150,12 @@
       background: none;
       border: none;
       color: var(--muted);
-      padding: 8px 2px;
-      font-size: 0.72rem;
+      padding: 6px 2px;
+      font-size: 0.7rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       cursor: pointer;
       font-weight: 600;
     }
@@ -162,7 +164,7 @@
       background: rgba(245, 158, 11, 0.12);
     }
     nav button span.icon {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
     }
     .card {
       background: var(--panel);
@@ -191,12 +193,29 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 5px;
     }
+    @media (orientation: landscape) {
+      .grid-2 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      header {
+        padding: 4px 12px;
+      }
+      nav button {
+        flex-direction: row;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px;
+      }
+      .hud-controls {
+        max-width: 320px;
+      }
+    }
     label {
       display: block;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--muted);
-      margin-bottom: 4px;
-      margin-top: 8px;
+      margin-bottom: 3px;
+      margin-top: 6px;
     }
     select, input[type="number"], input[type="text"], input[type="range"], input[type="color"] {
       width: 100%;
@@ -205,21 +224,21 @@
       border: 1px solid #475569;
       background: #0f172a;
       color: var(--text);
-      font-size: 0.92rem;
+      font-size: 0.9rem;
     }
     input[type="color"] {
-      height: 38px;
+      height: 36px;
       padding: 2px;
     }
     .btn {
       background: var(--accent);
       color: #0f172a;
       border: none;
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-radius: 8px;
       font-weight: 800;
       cursor: pointer;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       text-align: center;
       display: inline-flex;
       align-items: center;
@@ -248,15 +267,15 @@
       color: #fff;
     }
     .btn-sm {
-      padding: 6px 8px;
-      font-size: 0.78rem;
+      padding: 5px 8px;
+      font-size: 0.76rem;
     }
     .tag {
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
       background: var(--card);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       margin: 2px;
     }
     .country-chip {
@@ -268,7 +287,7 @@
       border: 1px solid #334155;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
     }
     .country-chip.selected {
       border-color: var(--accent);
@@ -277,12 +296,12 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.84);
+      background: rgba(0, 0, 0, 0.85);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 50;
-      padding: 12px;
+      padding: 10px;
     }
     .modal-backdrop.active {
       display: flex;
@@ -293,23 +312,23 @@
       border-radius: 16px;
       padding: 14px;
       width: 100%;
-      max-width: 460px;
-      max-height: 90vh;
+      max-width: 520px;
+      max-height: 92vh;
       overflow-y: auto;
       text-align: center;
     }
     .big-flag {
-      font-size: 4rem;
+      font-size: 3.8rem;
       line-height: 1.1;
-      margin: 6px 0;
+      margin: 4px 0;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
     }
     th, td {
-      padding: 6px 4px;
+      padding: 5px 4px;
       border-bottom: 1px solid #334155;
       text-align: start;
     }
@@ -326,7 +345,7 @@
     }
     .editor-canvas-wrap {
       flex: 1;
-      height: 360px;
+      height: 340px;
       background: #92a8d8;
       border: 3px solid #000000;
       border-radius: 10px;
@@ -351,9 +370,10 @@
 <body>
 <div id="app">
   <header>
-    <div class="brand">🌍 <span data-i18n="title">Country Marble Race</span></div>
+    <div class="brand">🌍 <span data-i18n="title">Country Marble Race</span> <span class="tag" id="totalCountriesBadge">250+ Flags</span></div>
     <div class="top-bar-right">
       <div class="coin-badge">🪙 <span id="coinCount">0</span></div>
+      <button class="btn btn-sm btn-sec" onclick="UI.toggleOrientation()" title="Switch Portrait / Landscape">🔄 Rotate</button>
       <button class="btn btn-sm btn-sec" onclick="UI.WatchRewardedAd('coins')">🎥 +50</button>
       <button class="btn btn-sm btn-sec" onclick="UI.openSettings()">⚙️</button>
     </div>
@@ -363,7 +383,7 @@
     <!-- SCREEN 1: CUSTOM RACE CREATOR -->
     <section id="screen-creator" class="screen active">
       <div class="card">
-        <h2 data-i18n="customCreator">Huge Track Marble Race Creator</h2>
+        <h2 data-i18n="customCreator">Mega-World Marble Race Creator</h2>
         <div class="grid-2">
           <div>
             <label data-i18n="numCountries">Marbles (2-300)</label>
@@ -387,25 +407,27 @@
             </select>
           </div>
           <div>
-            <label data-i18n="regionFilter">Region / Pool</label>
+            <label data-i18n="regionFilter">World Region / Territory Pool (250+)</label>
             <select id="crRegion">
-              <option value="ALL">All World + Custom (Duplicates Allowed for 100-300)</option>
-              <option value="CUSTOM">Custom Marbles Only</option>
-              <option value="Africa">Africa</option>
-              <option value="Europe">Europe</option>
-              <option value="Asia">Asia</option>
-              <option value="Arab">Arab World</option>
-              <option value="SouthAmerica">South America</option>
-              <option value="NorthAmerica">North America</option>
-              <option value="Oceania">Oceania</option>
+              <option value="ALL">🌍 All 250+ World Countries & Territories</option>
+              <option value="CUSTOM">✨ Custom Marbles Only</option>
+              <option value="Africa">🦁 Africa (All States & Islands)</option>
+              <option value="Arab">🌙 Arab League & Maghreb/Middle East</option>
+              <option value="Europe">🏰 Europe (All States & Territories)</option>
+              <option value="Asia">🐉 Asia (East, South, Central & SE)</option>
+              <option value="NorthAmerica">🦅 North & Central America</option>
+              <option value="Caribbean">🌴 Caribbean Islands & Territories</option>
+              <option value="SouthAmerica">☀️ South America & Territories</option>
+              <option value="Oceania">🌊 Oceania & Pacific Islands</option>
+              <option value="Territories">🏝️ World Territories & Dependencies Only</option>
             </select>
           </div>
           <div>
-            <label data-i18n="trackSelect">Huge Track Preset (1200x15,000-40,000px)</label>
+            <label data-i18n="trackSelect">24 Mega Tracks (1600px Wide x up to 65,000px Tall)</label>
             <select id="crTrack" onchange="UI.onTrackChange()">
-              <option value="rotate" selected>🔄 Rotate Huge Track Every Round (12 Tracks)</option>
-              <option value="seeded_random">🎲 Generate Huge Track (Seeded Random)</option>
-              <option value="colossus_odyssey">1. Colossus 16-Section Odyssey</option>
+              <option value="rotate" selected>🔄 Rotate New Mega Track Every Round (24 Tracks)</option>
+              <option value="seeded_random">🎲 Generate Mega Track (Seeded Random)</option>
+              <option value="colossus_odyssey">1. Colossus 20-Section Odyssey</option>
               <option value="serpent_citadel">2. Serpentine Citadel & Capsules</option>
               <option value="hourglass_jam">3. Hourglass Traffic Jam & Bowls</option>
               <option value="pendulum_fortress">4. Pendulum & Slider Fortress</option>
@@ -415,13 +437,25 @@
               <option value="ghost_phantom">8. Phantom No-Collision Ghost Run</option>
               <option value="bubble_basin">9. Scalloped Bubble & Basin Cascade</option>
               <option value="sawtooth_canyon">10. Sawtooth & Narrow Tube Canyon</option>
-              <option value="champions_marathon">11. 40,000px Grand World Marathon</option>
+              <option value="champions_marathon">11. 60,000px Grand World Marathon</option>
               <option value="pinball_matrix">12. Giant Pegboard & Bumper Matrix</option>
+              <option value="atlas_mountains">13. Atlas Mountains Switchback Peaks</option>
+              <option value="sahara_vortex">14. Sahara Sandstorm Funnel Vortex</option>
+              <option value="tokyo_neon">15. Cyber Plinko & Twin Wheel Highway</option>
+              <option value="amazon_rapids">16. Amazon River Basin & S-Curve Rapids</option>
+              <option value="nordic_fjord">17. Nordic Fjord Ice Tubes & Hammers</option>
+              <option value="caribbean_reef">18. Coral Bubble Reef & Capsule Chambers</option>
+              <option value="andes_stairway">19. Andes Stepped Temple & Drop Shafts</option>
+              <option value="olympus_gauntlet">20. Mount Olympus 25-Section Titan Run</option>
+              <option value="mediterranean_derby">21. Mediterranean Goal & Bowl Arena</option>
+              <option value="pacific_trench">22. Mariana Deep Trench Hourglass</option>
+              <option value="supernova_chaos">23. Supernova Cross-Spinner Reactor</option>
+              <option value="world_cup_final">24. Ultimate World Cup Championship Track</option>
               <option value="custom">🛠️ Custom Pro Editor Track</option>
             </select>
           </div>
           <div id="seedInputWrap" style="display:none; grid-column: span 2;">
-            <label>Track Generator Seed (Same seed = exact same huge track)</label>
+            <label>Track Generator Seed (Same seed = exact same giant track)</label>
             <div style="display:flex; gap:6px;">
               <input type="text" id="crTrackSeed" value="ORAN-2026" placeholder="Enter any word or number..." />
               <button class="btn btn-sm btn-sec" onclick="UI.randomizeSeed()">🎲 Random</button>
@@ -430,18 +464,18 @@
           <div>
             <label data-i18n="difficulty">Obstacle Difficulty</label>
             <select id="crDifficulty">
-              <option value="easy">Easy (Wider Funnels)</option>
+              <option value="easy">Easy (Fast Flow)</option>
               <option value="medium" selected>Medium (Balanced Jam)</option>
-              <option value="hard">Hard (Tight Chaos)</option>
+              <option value="hard">Hard (Extreme Chaos)</option>
             </select>
           </div>
           <div>
-            <label data-i18n="raceLength">World Height (Sections)</label>
+            <label data-i18n="raceLength">World Size (Sections & Height)</label>
             <select id="crLength">
-              <option value="short">Short (8 Sections • ~15,000px)</option>
-              <option value="medium" selected>Medium (12 Sections • ~22,500px)</option>
-              <option value="long">Long (16 Sections • ~30,000px)</option>
-              <option value="marathon">Epic (20 Sections • ~38,000px)</option>
+              <option value="short">Short (10 Sections • ~20,000px)</option>
+              <option value="medium">Medium (15 Sections • ~30,000px)</option>
+              <option value="long" selected>Long (20 Sections • ~42,000px)</option>
+              <option value="marathon">Colossal (28 Sections • ~60,000px)</option>
             </select>
           </div>
           <div>
@@ -449,6 +483,7 @@
             <select id="crCamera">
               <option value="leader" selected>Leader Follow</option>
               <option value="pack">Pack Center (Top Crowd)</option>
+              <option value="wide">Landscape Wide View</option>
               <option value="overview">Full Crowd Zoom-Out</option>
             </select>
           </div>
@@ -457,16 +492,16 @@
             <select id="crPhysSpeed">
               <option value="0.85">Slow Motion</option>
               <option value="1" selected>Normal Realistic</option>
-              <option value="1.3">Fast Turbo</option>
+              <option value="1.35">Fast Turbo</option>
             </select>
           </div>
           <div>
             <label data-i18n="numRounds">Number of Rounds (1-20)</label>
-            <input type="number" id="crRounds" min="1" max="20" value="3" />
+            <input type="number" id="crRounds" min="1" max="20" value="4" />
           </div>
           <div>
             <label data-i18n="elimCount">Knockout Cut / Round</label>
-            <input type="number" id="crElim" min="1" max="100" value="10" />
+            <input type="number" id="crElim" min="1" max="150" value="10" />
           </div>
           <div>
             <label data-i18n="countrySelection">Selection Mode</label>
@@ -482,7 +517,7 @@
         </div>
 
         <div id="manualPickerWrap" style="display:none; margin-top:10px;">
-          <button class="btn btn-sec btn-block" onclick="UI.openCountryPicker()">🏳️ Pick Participating Marbles (<span id="manualPickedCount">0</span>)</button>
+          <button class="btn btn-sec btn-block" onclick="UI.openCountryPicker()">🏳️ Pick Participating Countries/Territories (<span id="manualPickedCount">0</span>)</button>
         </div>
 
         <div class="grid-2" style="margin-top:10px;">
@@ -492,7 +527,7 @@
           </select>
         </div>
 
-        <button class="btn btn-block" style="font-size:1.05rem; margin-top:12px;" onclick="Game.startFromCreator()">🏁 LAUNCH HUGE MARBLE RACE</button>
+        <button class="btn btn-block" style="font-size:1.05rem; margin-top:12px;" onclick="Game.startFromCreator()">🏁 LAUNCH MEGA MARBLE RACE</button>
       </div>
     </section>
 
@@ -502,22 +537,24 @@
 
       <div class="hud-overlay">
         <div class="hud-box">
-          <div id="hudTitle" style="font-weight:900; color:var(--accent); font-size:0.88rem;">Round 1/1</div>
-          <div id="hudTrackName" style="font-size:0.74rem; color:#38bdf8; font-weight:700;">Track: Colossus</div>
+          <div id="hudTitle" style="font-weight:900; color:var(--accent); font-size:0.86rem;">Round 1/1</div>
+          <div id="hudTrackName" style="font-size:0.72rem; color:#38bdf8; font-weight:700;">Track: Colossus</div>
           <div id="hudSub" style="font-size:0.78rem; color:#f8fafc; font-weight:700; margin-top:2px;">Leader: --</div>
-          <div id="hudStandings" style="font-size:0.74rem; margin-top:3px; line-height:1.3; color:#cbd5e1;"></div>
+          <div id="hudStandings" style="font-size:0.72rem; margin-top:2px; line-height:1.3; color:#cbd5e1;"></div>
         </div>
         <div class="hud-controls">
           <button class="btn btn-sm" id="btnSpeed" onclick="Game.cycleSpeed()">⏩ 1x</button>
           <button class="btn btn-sm btn-sec" id="btnCam" onclick="Game.cycleCamera()">🎥 leader</button>
+          <button class="btn btn-sm btn-sec" onclick="UI.toggleOrientation()">🔄 Rotate</button>
           <button class="btn btn-sm btn-sec" id="btnAuto" onclick="Game.toggleAutoPlay()">🔄 Auto: OFF</button>
           <button class="btn btn-sm btn-sec" id="btnRec" onclick="Game.toggleRecording()">🔴 Rec</button>
         </div>
       </div>
 
       <div class="hud-bottom">
+        <button class="btn btn-sm btn-sec" onclick="Game.nudgeAllMarbles()">💥 Unstick / Boost Pack</button>
         <button class="btn btn-sm btn-sec" onclick="Game.skipToResult()">⏭️ Skip to Result</button>
-        <button class="btn btn-sm btn-red" onclick="Game.stopAndExit()">✖ Exit Race</button>
+        <button class="btn btn-sm btn-red" onclick="Game.stopAndExit()">✖ Exit</button>
       </div>
     </section>
 
@@ -530,7 +567,7 @@
 
       <div class="card">
         <h2>🌱 Career Mode (Road to World Cup)</h2>
-        <p style="color:var(--muted); margin:4px 0 8px;">Guide any country or custom marble across 4 huge multi-section tracks from Qualifiers to the World Final!</p>
+        <p style="color:var(--muted); margin:4px 0 8px;">Guide any of the 250+ countries, territories, or custom marbles across 4 giant tracks to the World Title!</p>
         <div id="careerStatusBox"></div>
         <div class="grid-2" style="margin-top:8px;">
           <select id="careerCountrySelect"></select>
@@ -568,6 +605,7 @@
               <option value="FR-DE">🇫🇷 France vs 🇩🇪 Germany</option>
               <option value="EG-SN">🇪🇬 Egypt vs 🇸🇳 Senegal</option>
               <option value="JP-KR">🇯🇵 Japan vs 🇰🇷 South Korea</option>
+              <option value="ENG-SCT">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England vs 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</option>
             </select>
           </div>
         </div>
@@ -583,13 +621,13 @@
       </div>
 
       <div class="card">
-        <h2>🔍 Marble / Country Profile</h2>
+        <h2>🔍 Country / Territory Profile (250+)</h2>
         <select id="profileCountrySelect" onchange="UI.renderCountryProfile(this.value)"></select>
         <div id="countryProfileView" style="margin-top:10px;"></div>
       </div>
 
       <div class="card">
-        <h2>🏆 All-Time World Standings (All Entrants)</h2>
+        <h2>🏆 All-Time World Standings (All 250+ Entrants)</h2>
         <div style="max-height:380px; overflow-y:auto;">
           <table>
             <thead>
@@ -608,12 +646,12 @@
       </div>
     </section>
 
-    <!-- SCREEN 5: INTERACTIVE PRO TRACK EDITOR (SECTION & OBSTACLE BUILDER) -->
+    <!-- SCREEN 5: INTERACTIVE PRO TRACK EDITOR -->
     <section id="screen-editor" class="screen">
       <div class="card">
         <h2>🛠️ Interactive Huge Track & Obstacle Editor</h2>
         <p style="font-size:0.78rem; color:var(--muted); margin:0 0 8px;">
-          Place individual obstacles or entire giant sections! Tap <strong>👆 Move/Edit</strong> to drag, rotate, or resize any placed piece.
+          Tap an obstacle button then tap the canvas to place it. Use <strong>👆 Move/Edit</strong> to drag, rotate, or resize any placed piece!
         </p>
 
         <div class="grid-4" style="margin-bottom:8px;">
@@ -633,12 +671,12 @@
 
         <div class="editor-layout">
           <div class="editor-canvas-wrap">
-            <canvas id="editorCanvas" width="360" height="360"></canvas>
+            <canvas id="editorCanvas" width="360" height="340"></canvas>
           </div>
           <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; width:38px; background:#0f172a; border:1px solid #475569; border-radius:8px; padding:6px 2px;">
             <span style="font-size:0.65rem; color:var(--accent);">TOP</span>
             <input type="range" id="editorScroll" min="0" max="2600" value="0"
-              style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; width:24px; height:260px;"
+              style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; width:24px; height:240px;"
               oninput="Editor.setScroll(this.value)" />
             <span style="font-size:0.65rem; color:#10b981;">END</span>
           </div>
@@ -683,7 +721,7 @@
     <section id="screen-shop" class="screen">
       <div class="card">
         <h2>✨ Custom Marble Creator</h2>
-        <p style="font-size:0.8rem; color:var(--muted); margin:0 0 8px;">Create custom marbles, clubs, or countries! They race alongside world flags on all huge tracks.</p>
+        <p style="font-size:0.8rem; color:var(--muted); margin:0 0 8px;">Create custom marbles, clubs, or countries! They race alongside all 250+ world flags.</p>
         <div class="grid-2">
           <div>
             <label>Marble / Team Name</label>
@@ -783,12 +821,13 @@
 <!-- MANUAL COUNTRY PICKER MODAL -->
 <div id="pickerModal" class="modal-backdrop">
   <div class="modal-content">
-    <h3>Select Participating Marbles</h3>
+    <h3>Select Participating Countries & Territories</h3>
+    <input type="text" id="pickerSearch" placeholder="🔍 Search 250+ countries or territories..." oninput="UI.filterCountryPicker(this.value)" style="margin-bottom:8px;" />
     <div style="display:flex; gap:6px; margin-bottom:8px;">
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(true)">Select All</button>
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(false)">Clear All</button>
     </div>
-    <div id="countryPickerGrid" class="grid-2" style="max-height:55vh; overflow-y:auto; text-align:start;"></div>
+    <div id="countryPickerGrid" class="grid-2" style="max-height:50vh; overflow-y:auto; text-align:start;"></div>
     <button class="btn btn-block" onclick="UI.closeCountryPicker()">Done</button>
   </div>
 </div>
@@ -796,7 +835,14 @@
 <!-- SETTINGS MODAL -->
 <div id="settingsModal" class="modal-backdrop">
   <div class="modal-content">
-    <h3>⚙️ Performance & Accessibility</h3>
+    <h3>⚙️ Orientation, Performance & Accessibility</h3>
+    <label>Screen Orientation Mode</label>
+    <select id="optOrientation" onchange="UI.setOrientationPref(this.value)">
+      <option value="any">Auto-Rotate (Portrait & Landscape)</option>
+      <option value="landscape">Lock Landscape (Wide View)</option>
+      <option value="portrait">Lock Portrait (Tall View)</option>
+    </select>
+
     <label>Language / اللغة / Langue / Idioma</label>
     <select id="optLang" onchange="UI.applySettings()">
       <option value="en">English</option>
@@ -807,9 +853,9 @@
 
     <label>Device Performance Quality & Marble Cap</label>
     <select id="optMaxMarbles" onchange="UI.applySettings()">
-      <option value="60">Low-End Phone (Max 60 Marbles • Fastest)</option>
+      <option value="60">Low-End Phone (Max 60 Marbles • Ultra Smooth)</option>
       <option value="150" selected>Medium Phone (Max 150 Marbles • Balanced)</option>
-      <option value="300">High Performance (Max 300 Marbles • Giant Crowd)</option>
+      <option value="300">High Performance (Max 300 Marbles • Full World)</option>
     </select>
 
     <label>Colorblind High-Contrast Outlines</label>
