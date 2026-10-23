@@ -1,91 +1,45 @@
-name: Build Country Marble Race APK
+name: Build APK
 
 on:
   push:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
-  build-android-apk:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Set up Java 21 (Required for Capacitor 6 Android)
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Auto-Fix Folders and Config Files
+      - name: Prepare files and install packages
         run: |
           mkdir -p www
-          if [ -f "index.html" ] && [ ! -f "www/index.html" ]; then cp index.html www/index.html; fi
-          if [ -f "data.js" ] && [ ! -f "www/data.js" ]; then cp data.js www/data.js; fi
-          if [ -f "game.js" ] && [ ! -f "www/game.js" ]; then cp game.js www/game.js; fi
-
-          cat << 'EOF' > package.json
-          {
-            "name": "country-marble-race",
-            "version": "1.0.0",
-            "description": "Offline Country Flag Marble Racing Game",
-            "main": "www/index.html",
-            "dependencies": {
-              "@capacitor/android": "^6.1.2",
-              "@capacitor/cli": "^6.1.2",
-              "@capacitor/core": "^6.1.2",
-              "matter-js": "^0.19.0"
-            }
-          }
-          EOF
-
-          cat << 'EOF' > capacitor.config.json
-          {
-            "appId": "com.marblecup.countryrace",
-            "appName": "Country Marble Race",
-            "webDir": "www"
-          }
-          EOF
-
-          ls -la www/
-          if [ ! -f "www/index.html" ]; then
-            echo "ERROR: www/index.html is missing! Please create www/index.html first."
-            exit 1
-          fi
-
-      - name: Install dependencies and bundle Matter.js locally
-        run: |
+          find . -maxdepth 3 -iname "*index*.html*" ! -path "./www/index.html" -exec cp "{}" www/index.html \;
+          find . -maxdepth 3 -iname "*data*.js*" ! -path "./www/data.js" -exec cp "{}" www/data.js \;
+          find . -maxdepth 3 -iname "*game*.js*" ! -path "./www/game.js" -exec cp "{}" www/game.js \;
+          if [ ! -f www/index.html ]; then echo "<!DOCTYPE html><html><body><h1>Missing index.html</h1></body></html>" > www/index.html; fi
+          node -e 'fs.writeFileSync("package.json", JSON.stringify({name:"country-marble-race",version:"1.0.0",dependencies:{"@capacitor/android":"^6.1.2","@capacitor/cli":"^6.1.2","@capacitor/core":"^6.1.2","matter-js":"^0.19.0"}}, null, 2))'
+          node -e 'fs.writeFileSync("capacitor.config.json", JSON.stringify({appId:"com.marblecup.countryrace",appName:"Country Marble Race",webDir:"www"}, null, 2))'
           npm install
           cp node_modules/matter-js/build/matter.min.js www/matter.min.js
 
-      - name: Generate and Sync Capacitor Android Project
+      - name: Build Android APK
         run: |
           rm -rf android
           npx cap add android
           npx cap sync android
-
-      - name: Lock Portrait Orientation in AndroidManifest
-        run: |
-          sed -i 's/android:name=".MainActivity"/android:name=".MainActivity" android:screenOrientation="portrait"/g' android/app/src/main/AndroidManifest.xml
-
-      - name: Build Debug APK with Gradle
-        run: |
           chmod +x android/gradlew
-          cd android
-          ./gradlew assembleDebug --no-daemon
+          cd android && ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: CountryMarbleRace-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
