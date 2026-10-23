@@ -1,0 +1,12 @@
+{
+  "appId": "com.marblecup.countryrace",
+  "appName": "Country Marble Race",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "buildOptions": {
+      "keystorePath": null,
+      "keystoreAlias": null
+    }
+  }
+}
