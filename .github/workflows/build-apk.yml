@@ -19,17 +19,110 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Prepare files, generate 50MB Color Rush HD Offline Asset Pack, and install packages
+      - name: Prepare files, generate Custom App Icon & 50MB Offline Asset Pack
         run: |
+          sudo apt-get update && sudo apt-get install -y imagemagick librsvg2-bin
           mkdir -p www/assets
           find . -maxdepth 3 -iname "*index*.html*" ! -path "./www/index.html" -exec cp "{}" www/index.html \;
           find . -maxdepth 3 -iname "*data*.js*" ! -path "./www/data.js" -exec cp "{}" www/data.js \;
           find . -maxdepth 3 -iname "*game*.js*" ! -path "./www/game.js" -exec cp "{}" www/game.js \;
+
+          cat << 'EOF' > icon_fallback.svg
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+            <defs>
+              <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#060711"/>
+                <stop offset="60%" stop-color="#0d0b26"/>
+                <stop offset="100%" stop-color="#05060d"/>
+              </linearGradient>
+              <linearGradient id="pwall" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#8b5cf6"/>
+                <stop offset="100%" stop-color="#4c1d95"/>
+              </linearGradient>
+              <linearGradient id="goldGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fffbeb"/>
+                <stop offset="50%" stop-color="#facc15"/>
+                <stop offset="100%" stop-color="#ca8a04"/>
+              </linearGradient>
+              <linearGradient id="blueTrail" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <rect x="8" y="8" width="496" height="496" rx="110" fill="url(#bg)" stroke="#7c3aed" stroke-width="14"/>
+            <!-- Perspective Purple Track Walls -->
+            <path d="M 30 200 L 210 135 L 210 155 L 30 230 Z" fill="url(#pwall)"/>
+            <path d="M 30 270 L 215 155 L 215 175 L 30 310 Z" fill="url(#pwall)"/>
+            <path d="M 482 200 L 302 135 L 302 155 L 482 230 Z" fill="url(#pwall)"/>
+            <path d="M 320 265 L 482 340 L 482 375 L 305 290 Z" fill="url(#pwall)"/>
+            <path d="M 285 280 L 410 490 L 375 495 L 260 295 Z" fill="url(#pwall)"/>
+            <path d="M 35 450 L 235 280 L 235 315 L 55 480 Z" fill="url(#pwall)"/>
+            <!-- Golden Crown & Finish Gate Arch -->
+            <polygon points="232,68 242,46 256,60 270,46 280,68" fill="url(#goldGlow)"/>
+            <line x1="205" y1="45" x2="220" y2="58" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+            <line x1="307" y1="45" x2="292" y2="58" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+            <line x1="190" y1="72" x2="210" y2="75" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+            <line x1="322" y1="72" x2="302" y2="75" stroke="#facc15" stroke-width="5" stroke-linecap="round"/>
+            <rect x="215" y="78" width="82" height="58" rx="8" fill="none" stroke="url(#goldGlow)" stroke-width="9"/>
+            <rect x="221" y="84" width="70" height="22" fill="#ffffff"/>
+            <rect x="221" y="84" width="14" height="11" fill="#000"/><rect x="249" y="84" width="14" height="11" fill="#000"/><rect x="277" y="84" width="14" height="11" fill="#000"/>
+            <rect x="235" y="95" width="14" height="11" fill="#000"/><rect x="263" y="95" width="14" height="11" fill="#000"/>
+            <!-- Green Boost Pads & Chevrons -->
+            <polygon points="90,340 120,315 150,340 140,350 120,332 100,350" fill="#00f566"/>
+            <polygon points="82,368 120,338 158,368 146,380 120,358 94,380" fill="#00f566"/>
+            <polygon points="365,360 405,360 445,455 395,455" fill="#00f566"/>
+            <!-- Pink X-Spinner & Pink Pyramids -->
+            <g transform="translate(145, 240) rotate(35)">
+              <rect x="-58" y="-11" width="116" height="22" rx="6" fill="#ff2a5f"/>
+              <rect x="-11" y="-58" width="22" height="116" rx="6" fill="#ff2a5f"/>
+              <circle cx="0" cy="0" r="15" fill="#1e1b4b"/>
+            </g>
+            <polygon points="135,148 122,178 148,178" fill="#ff2a5f"/>
+            <polygon points="345,405 320,460 370,460" fill="#ff2a5f"/>
+            <polygon points="58,390 36,435 80,435" fill="#ff2a5f"/>
+            <!-- Racing Flag Marbles -->
+            <!-- Germany -->
+            <circle cx="218" cy="172" r="24" fill="#dd0000" stroke="#000" stroke-width="3"/>
+            <path d="M 196 164 A 24 24 0 0 1 240 164 Z" fill="#000000"/>
+            <path d="M 196 180 A 24 24 0 0 0 240 180 Z" fill="#ffce00"/>
+            <!-- Brazil -->
+            <circle cx="262" cy="212" r="25" fill="#009c3b" stroke="#000" stroke-width="3"/>
+            <polygon points="262,195 280,212 262,229 244,212" fill="#ffdf00"/>
+            <circle cx="262" cy="212" r="8" fill="#002776"/>
+            <!-- France -->
+            <circle cx="328" cy="182" r="25" fill="#ffffff" stroke="#000" stroke-width="3"/>
+            <path d="M 318 159 A 25 25 0 0 0 318 205 Z" fill="#002395"/>
+            <path d="M 338 159 A 25 25 0 0 1 338 205 Z" fill="#ed2939"/>
+            <!-- Spain -->
+            <circle cx="405" cy="268" r="30" fill="#f1bf00" stroke="#000" stroke-width="3"/>
+            <path d="M 378 254 A 30 30 0 0 1 432 254 Z" fill="#aa151b"/>
+            <path d="M 378 282 A 30 30 0 0 0 432 282 Z" fill="#aa151b"/>
+            <!-- USA Foreground Marble + Neon Blue Trail -->
+            <polygon points="210,360 300,360 240,496 140,496" fill="url(#blueTrail)"/>
+            <circle cx="256" cy="360" r="64" fill="#ffffff" stroke="#00e5ff" stroke-width="5"/>
+            <circle cx="256" cy="360" r="61" fill="#b22234" stroke="#000" stroke-width="4"/>
+            <rect x="200" y="335" width="112" height="10" fill="#fff"/>
+            <rect x="196" y="355" width="120" height="10" fill="#fff"/>
+            <rect x="200" y="375" width="112" height="10" fill="#fff"/>
+            <rect x="206" y="395" width="100" height="10" fill="#fff"/>
+            <path d="M 256 299 A 61 61 0 0 0 195 360 L 256 360 Z" fill="#3c3b6e"/>
+          </svg>
+          EOF
+
+          USER_ICON=$(find . -maxdepth 2 \( -iname "*icon*.png" -o -iname "*1000157888*" -o -iname "*logo*.png" -o -iname "*.webp" \) | head -n 1)
+          if [ -n "$USER_ICON" ]; then
+            echo "Using uploaded user icon: $USER_ICON"
+            convert "$USER_ICON" -resize 512x512! www/assets/icon.png
+          else
+            echo "Generating 512x512 Color Rush icon from embedded SVG..."
+            rsvg-convert -w 512 -h 512 icon_fallback.svg -o www/assets/icon.png
+          fi
+
           node -e '
             const fs = require("fs");
             fs.writeFileSync("package.json", JSON.stringify({
               name: "country-marble-color-rush-4k",
-              version: "6.0.0",
+              version: "6.5.0",
               dependencies: {
                 "@capacitor/android": "^6.1.2",
                 "@capacitor/cli": "^6.1.2",
@@ -43,18 +136,17 @@ jobs:
               webDir: "www"
             }, null, 2));
 
-            // Generate High-Bitrate Stereo 44.1kHz Synthwave Color Rush Audio Tracks (~48MB Offline Asset Pack)
             function writeStereoSynthWav(filename, durationSec, notes) {
               const sampleRate = 44100;
               const numSamples = sampleRate * durationSec;
-              const dataSize = numSamples * 4; // 16-bit Stereo (4 bytes per sample frame)
+              const dataSize = numSamples * 4;
               const buf = Buffer.alloc(44 + dataSize);
               buf.write("RIFF", 0);
               buf.writeUInt32LE(36 + dataSize, 4);
               buf.write("WAVEfmt ", 8);
               buf.writeUInt32LE(16, 16);
               buf.writeUInt16LE(1, 20);
-              buf.writeUInt16LE(2, 22); // 2 channels (Stereo)
+              buf.writeUInt16LE(2, 22);
               buf.writeUInt32LE(sampleRate, 24);
               buf.writeUInt32LE(sampleRate * 4, 28);
               buf.writeUInt16LE(4, 32);
@@ -86,11 +178,25 @@ jobs:
           npm install
           cp node_modules/matter-js/build/matter.min.js www/matter.min.js
 
-      - name: Build Android APK Locked to Full Landscape Mode with Hardware Acceleration
+      - name: Build Android APK with Custom App Icon & Full Landscape Mode
         run: |
           rm -rf android
           npx cap add android
           npx cap sync android
+
+          # Remove default adaptive XML icon overrides so Android uses our custom PNG icons directly
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+
+          # Generate all Android launcher icon sizes from www/assets/icon.png
+          for pair in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            dir="android/app/src/main/res/mipmap-${pair%%:*}"
+            sz="${pair##*:}"
+            mkdir -p "$dir"
+            convert www/assets/icon.png -resize "${sz}x${sz}!" "$dir/ic_launcher.png"
+            convert www/assets/icon.png -resize "${sz}x${sz}!" "$dir/ic_launcher_round.png"
+            convert www/assets/icon.png -resize "${sz}x${sz}!" "$dir/ic_launcher_foreground.png"
+          done
+
           sed -i 's/android:name=".MainActivity"/android:name=".MainActivity" android:screenOrientation="sensorLandscape" android:hardwareAccelerated="true"/g' android/app/src/main/AndroidManifest.xml
           chmod +x android/gradlew
           cd android && ./gradlew assembleDebug --no-daemon
