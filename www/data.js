@@ -1,11 +1,26 @@
-// Complete 255-Country/Territory Database with 3-Letter Broadcast Codes + 16 Algodoo-Style Arena Presets
+// Complete 255-Country/Territory Database with Crisp Vector Flag Color Recipes + 16 Passable Widescreen Arena Presets
 (function () {
-  const palette = [
-    "#16a34a", "#dc2626", "#2563eb", "#eab308", "#f97316", "#0284c7",
-    "#15803d", "#b91c1c", "#7c3aed", "#0d9488", "#e11d48", "#4f46e5"
+  // Primary & Secondary Flag Colors for Crisp Full-Bleed Vector Flag Rendering
+  const flagPalettes = {
+    DZ: ["#006233", "#ffffff", "#d21034"], MA: ["#c1272d", "#006233", "#c1272d"],
+    TN: ["#e70013", "#ffffff", "#e70013"], EG: ["#ce1126", "#ffffff", "#000000"],
+    SA: ["#006c35", "#ffffff", "#006c35"], FR: ["#002395", "#ffffff", "#ed2939"],
+    DE: ["#000000", "#dd0000", "#ffce00"], ES: ["#aa151b", "#f1bf00", "#aa151b"],
+    IT: ["#009246", "#ffffff", "#ce2b37"], GB: ["#012169", "#ffffff", "#c8102e"],
+    PT: ["#006600", "#ff0000", "#ffcc00"], BR: ["#009c3b", "#ffdf00", "#002776"],
+    AR: ["#74acdf", "#ffffff", "#74acdf"], US: ["#b22234", "#ffffff", "#3c3b6e"],
+    CA: ["#ff0000", "#ffffff", "#ff0000"], JP: ["#ffffff", "#bc002d", "#ffffff"],
+    KR: ["#ffffff", "#cd2e3a", "#0047a0"], CN: ["#de2910", "#ffde00", "#de2910"],
+    TR: ["#e30a17", "#ffffff", "#e30a17"], PS: ["#000000", "#ffffff", "#007a3d"],
+    SN: ["#00853f", "#fdef42", "#e31b23"], NG: ["#008751", "#ffffff", "#008751"]
+  };
+
+  const fallbackColors = [
+    ["#16a34a", "#ffffff", "#dc2626"], ["#2563eb", "#ffffff", "#ef4444"],
+    ["#eab308", "#000000", "#dc2626"], ["#0284c7", "#ffffff", "#eab308"],
+    ["#dc2626", "#ffffff", "#16a34a"], ["#7c3aed", "#ffffff", "#f97316"]
   ];
 
-  // [iso2, iso3, name, flag, regionsCSV, isSmallOrTerritory]
   const rawList = [
     // AFRICA (58)
     ["DZ","DZA","Algeria","🇩🇿","Africa,Arab",0],
@@ -272,15 +287,17 @@
 
   const countries = rawList.map((row, idx) => {
     const [code, iso3, name, flag, regStr, smallBit] = row;
+    const cols = flagPalettes[code] || fallbackColors[idx % fallbackColors.length];
     return {
       code,
       iso3,
       name,
       flag,
       region: regStr.split(","),
-      color: palette[idx % palette.length],
+      color: cols[0],
+      stripeColors: cols,
       small: smallBit === 1,
-      fact: `${name} (${iso3}) competed in the World Country Marble Broadcast Arena!`
+      fact: `${name} (${iso3}) is a proud contender in the World Country Marble Broadcast Arena!`
     };
   });
 
@@ -297,20 +314,20 @@
 
     tracks: [
       { id: "diamond_grid", name: "Diamond Plinko Lattice", arenas: ["diamondGrid", "circleGearMatrix", "musicalHammers", "capsuleScallopBowl"] },
-      { id: "circle_gear_matrix", name: "Circular Gear Matrix & Gates", arenas: ["circleGearMatrix", "diamondGrid", "starConveyorMaze", "triplePinballLaunchers"] },
+      { id: "circle_gear_matrix", name: "Circular Gear Matrix & Red Gates", arenas: ["circleGearMatrix", "diamondGrid", "starConveyorMaze", "triplePinballLaunchers"] },
       { id: "musical_hammers", name: "Curved Chutes & Note Hammers", arenas: ["musicalHammers", "diamondGrid", "circleGearMatrix", "halfMoonGhostZone"] },
-      { id: "star_conveyor_maze", name: "3-Tier Star Maze & Elevators", arenas: ["starConveyorMaze", "circleGearMatrix", "musicalHammers", "triplePinballLaunchers"] },
-      { id: "triple_pinball_launchers", name: "Triple Pinball Flipper Chambers", arenas: ["triplePinballLaunchers", "diamondGrid", "capsuleScallopBowl", "circleGearMatrix"] },
+      { id: "star_conveyor_maze", name: "3-Tier Sloped Star Maze", arenas: ["starConveyorMaze", "circleGearMatrix", "musicalHammers", "triplePinballLaunchers"] },
+      { id: "triple_pinball_launchers", name: "Wide Triple Pinball Chambers", arenas: ["triplePinballLaunchers", "diamondGrid", "capsuleScallopBowl", "circleGearMatrix"] },
       { id: "capsule_scallop_bowl", name: "4-Story Cross Capsules & Basin", arenas: ["capsuleScallopBowl", "wheelFunnelDrop", "serpentinePlanks", "diamondGrid"] },
       { id: "halfmoon_ghost_zone", name: "Tilted Half-Moons & Ghost Zone", arenas: ["halfMoonGhostZone", "ovalPegChain", "circleGearMatrix", "musicalHammers"] },
-      { id: "oval_peg_chain", name: "Triple Vertical Oval Peg Chain", arenas: ["ovalPegChain", "capsuleScallopBowl", "diamondGrid", "starConveyorMaze"] },
-      { id: "wheel_funnel_drop", name: "Striped Wheel & Funnel Drop", arenas: ["wheelFunnelDrop", "serpentinePlanks", "capsuleScallopBowl", "circleGearMatrix"] },
-      { id: "serpentine_planks", name: "12-Level Serpentine Planks", arenas: ["serpentinePlanks", "wheelFunnelDrop", "diamondGrid", "musicalHammers"] },
+      { id: "oval_peg_chain", name: "Triple Vertical Oval Peg Lanes", arenas: ["ovalPegChain", "capsuleScallopBowl", "diamondGrid", "starConveyorMaze"] },
+      { id: "wheel_funnel_drop", name: "Striped Wheel & Wide Funnel", arenas: ["wheelFunnelDrop", "serpentinePlanks", "capsuleScallopBowl", "circleGearMatrix"] },
+      { id: "serpentine_planks", name: "10-Level Serpentine Planks", arenas: ["serpentinePlanks", "wheelFunnelDrop", "diamondGrid", "musicalHammers"] },
       { id: "zig_zag_sawtooth", name: "Twin Sawtooth Canyons", arenas: ["zigzagSawtooth", "circleGearMatrix", "starConveyorMaze", "capsuleScallopBowl"] },
       { id: "soccer_stadium_gate", name: "Stadium Goal Qualification", arenas: ["soccerGoalArena", "diamondGrid", "musicalHammers", "triplePinballLaunchers"] },
       { id: "algodoo_mega_mix", name: "Ultimate Algodoo Megamix", arenas: ["circleGearMatrix", "diamondGrid", "musicalHammers", "starConveyorMaze"] },
-      { id: "hourglass_bottleneck", name: "Triple Hourglass Jam", arenas: ["hourglassArena", "capsuleScallopBowl", "wheelFunnelDrop", "diamondGrid"] },
-      { id: "pendulum_gauntlet", name: "Swinging Hammers & Bridges", arenas: ["pendulumArena", "musicalHammers", "starConveyorMaze", "circleGearMatrix"] }
+      { id: "hourglass_bottleneck", name: "Triple Hourglass & Red Lasers", arenas: ["hourglassArena", "capsuleScallopBowl", "wheelFunnelDrop", "diamondGrid"] },
+      { id: "pendulum_gauntlet", name: "Swinging Hammers & Red Bumpers", arenas: ["pendulumArena", "musicalHammers", "starConveyorMaze", "circleGearMatrix"] }
     ],
 
     competitions: [
@@ -327,15 +344,15 @@
     skins: [
       { id: "default", name: "Pure Full-Bleed Flag (No Trail)", cost: 0, trail: null },
       { id: "gold", name: "Golden Comet Trail", cost: 100, trail: "#fbbf24" },
-      { id: "neon", name: "Cyber Cyan Trail", cost: 200, trail: "#22d3ee" },
-      { id: "emerald", name: "Emerald Laser Trail", cost: 300, trail: "#22c55e" },
-      { id: "crimson", name: "Crimson Fire Trail", cost: 450, trail: "#ef4444" }
+      { id: "neon", name: "Cyber Cyan Trail", cost: 200, trail: "#00f2fe" },
+      { id: "emerald", name: "Emerald Laser Trail", cost: 300, trail: "#00ff66" },
+      { id: "crimson", name: "Crimson Fire Trail", cost: 450, trail: "#ff1e42" }
     ],
 
     achievements: [
-      { id: "first_win", name: "First Broadcast Victory", desc: "Complete your first marble race.", reward: 50 },
+      { id: "first_win", name: "First Broadcast Victory", desc: "Complete your first widescreen marble race.", reward: 50 },
       { id: "underdog", name: "Giant Slayer", desc: "Win with a territory, island, or custom logo marble.", reward: 100 },
-      { id: "bet_win", name: "Sharp Predictor", desc: "Win a pre-race podium prediction bet.", reward: 150 },
+      { id: "bet_win", name: "Sharp Predictor", desc: "Win a pre-race podium prediction bet.", reward: 200 },
       { id: "photofinish", name: "Photo Finish!", desc: "Finish 1st and 2nd within 60 milliseconds.", reward: 100 },
       { id: "architect", name: "Track Architect", desc: "Save a custom vector track in the Editor.", reward: 80 },
       { id: "world_champ", name: "Cup Champion", desc: "Win any Official or Custom Cup/League.", reward: 200 }
@@ -343,92 +360,16 @@
 
     i18n: {
       en: {
-        title: "Country Marble Race",
-        customCreator: "Algodoo-Style Marble Race Creator",
-        numCountries: "Countries / Marbles (2-300)",
-        raceFormat: "Race Format",
-        regionFilter: "World Pool (255 Countries & Territories)",
-        trackSelect: "Select Arena Track (Crisp Vector Physics)",
-        raceLength: "Track Size Option (Small / Medium / Long)",
-        difficulty: "Obstacle Density",
-        cameraMode: "Camera View",
-        physicsSpeed: "Physics Speed",
-        numRounds: "Laps / Rounds (1-25)",
-        elimCount: "Eliminated Per Lap",
-        countrySelection: "Marble Selection",
-        competitions: "Official World Cups & Leagues",
-        navRace: "Race",
-        navCups: "Cups",
-        navStats: "Stats",
-        navEditor: "Editor",
-        navShop: "Custom",
-        navConfig: "Options"
+        navRace: "RACE", navCups: "CUPS", navStats: "STATS", navEditor: "EDITOR", navShop: "LOGOS", navConfig: "SETUP"
       },
       ar: {
-        title: "سباق كرات الدول (255)",
-        customCreator: "إنشاء سباق كرات احترافي",
-        numCountries: "عدد الدول (2-300)",
-        raceFormat: "نظام السباق",
-        regionFilter: "المنطقة / العالم (255)",
-        trackSelect: "اختيار المضمار",
-        raceLength: "حجم المضمار (صغير / متوسط / طويل)",
-        difficulty: "الصعوبة",
-        cameraMode: "الكاميرا",
-        physicsSpeed: "سرعة الفيزياء",
-        numRounds: "عدد الجولات (1-25)",
-        elimCount: "الإقصاء في كل جولة",
-        countrySelection: "اختيار الدول",
-        competitions: "البطولات العالمية",
-        navRace: "سباق",
-        navCups: "بطولات",
-        navStats: "الترتيب",
-        navEditor: "مضماري",
-        navShop: "تصميم",
-        navConfig: "إعدادات"
+        navRace: "سباق", navCups: "بطولات", navStats: "ترتيب", navEditor: "مضماري", navShop: "شعارات", navConfig: "إعدادات"
       },
       fr: {
-        title: "Course de Billes (255)",
-        customCreator: "Créateur de Course",
-        numCountries: "Pays / Billes (2-300)",
-        raceFormat: "Format de Course",
-        regionFilter: "Pool Mondial (255)",
-        trackSelect: "Sélection de l'Arène",
-        raceLength: "Taille de Piste (Petit / Moyen / Long)",
-        difficulty: "Difficulté",
-        cameraMode: "Caméra",
-        physicsSpeed: "Vitesse Physique",
-        numRounds: "Tours / Manches (1-25)",
-        elimCount: "Éliminés par Tour",
-        countrySelection: "Sélection",
-        competitions: "Coupes et Championnats",
-        navRace: "Course",
-        navCups: "Coupes",
-        navStats: "Stats",
-        navEditor: "Éditeur",
-        navShop: "Custom",
-        navConfig: "Options"
+        navRace: "COURSE", navCups: "COUPES", navStats: "STATS", navEditor: "ÉDITEUR", navShop: "LOGOS", navConfig: "OPTIONS"
       },
       es: {
-        title: "Carrera de Canicas (255)",
-        customCreator: "Creador de Carreras",
-        numCountries: "Países / Canicas (2-300)",
-        raceFormat: "Formato de Carrera",
-        regionFilter: "Grupo Mundial (255)",
-        trackSelect: "Selección de Pista",
-        raceLength: "Tamaño de Pista (Corto / Medio / Largo)",
-        difficulty: "Dificultad",
-        cameraMode: "Cámara",
-        physicsSpeed: "Velocidad Física",
-        numRounds: "Vueltas / Rondas (1-25)",
-        elimCount: "Eliminados por Vuelta",
-        countrySelection: "Selección",
-        competitions: "Copas y Ligas Oficiales",
-        navRace: "Carrera",
-        navCups: "Copas",
-        navStats: "Récords",
-        navEditor: "Editor",
-        navShop: "Crear",
-        navConfig: "Ajustes"
+        navRace: "CARRERA", navCups: "COPAS", navStats: "RÉCORDS", navEditor: "EDITOR", navShop: "LOGOS", navConfig: "AJUSTES"
       }
     },
 
