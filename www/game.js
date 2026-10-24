@@ -1,9 +1,7 @@
-// Complete Algodoo-Style Country Marble Broadcast Engine
-// - Full-Bleed Borderless Flag & Custom Logo Marbles (Offscreen Circular Texture Cache, No Outlines, No Floating Names)
-// - Crisp Vector Geometry matching all 9 Reference Screenshots (Diamond Grid, Circular Gear Matrix, Musical Hammers,
-//   3-Tier Star Conveyor Maze, Triple Pinball Flippers, 4-Story Cross Capsules, Tilted Half-Moons & No-Collision Zone)
-// - Authentic Left Broadcast Sidebar (LAP X, COUNTRIES: Y, Live Rank Delta Arrows ▲/▼, SPOTS LEFT, Bottom Holding Tube)
-// - Small / Medium / Long Track Selector + Custom Tournament/League/Cup Creator + Fixed Android Video Recorder
+// Country Marble Race Pro (v5.0 Landscape Widescreen Edition)
+// - 100% Passable Widescreen Arenas (Sloped Floors + Wide 110px+ Chutes = Zero Impossible Barriers!)
+// - RED ZONE TELEPORT RULE: Any marble touching a Red Zone (#ff1e42) flashes red, spawns particles, and restarts from the top!
+// - Full-Bleed Borderless Vector + Emoji Flag Marbles & Custom Logo Marbles
 (function () {
   function hashSeed(str) {
     const s = String(str || "MARBLE-2026");
@@ -25,10 +23,12 @@
     };
   }
 
-  // Offline Web Audio Synthesizer (Zero external audio files needed)
+  // Offline Web Audio Synthesizer + Stadium BGM Controller
   const SFX = {
     ctx: null,
     enabled: true,
+    musicEnabled: false,
+    trackIdx: 1,
     init() {
       if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
         const Actx = window.AudioContext || window.webkitAudioContext;
@@ -47,13 +47,17 @@
         const gain = this.ctx.createGain();
         osc.type = type || "sine";
         osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        gain.gain.setValueAtTime(vol || 0.08, this.ctx.currentTime);
+        gain.gain.setValueAtTime(vol || 0.07, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + dur);
         osc.connect(gain);
         gain.connect(this.ctx.destination);
         osc.start();
         osc.stop(this.ctx.currentTime + dur);
       } catch (e) {}
+    },
+    redZoneBuzzer() {
+      this.playTone(190, 0.11, "sawtooth", 0.08);
+      setTimeout(() => this.playTone(135, 0.14, "sawtooth", 0.08), 50);
     },
     qualifyDing() {
       this.playTone(660, 0.09, "triangle", 0.07);
@@ -66,9 +70,9 @@
     }
   };
 
-  const STORAGE_KEY = "CMR_SAVE_V5";
+  const STORAGE_KEY = "CMR_SAVE_V6";
   const defaultSave = {
-    coins: 300,
+    coins: 400,
     equippedSkin: "default",
     unlockedSkins: ["default"],
     achievements: [],
@@ -76,25 +80,26 @@
     customMarbles: [],
     customTournaments: [],
     customTrack: [
-      { type: "diamond", x: 120, y: 180, angle: 45, scale: 1 },
-      { type: "diamond", x: 200, y: 180, angle: 45, scale: 1 },
-      { type: "diamond", x: 280, y: 180, angle: 45, scale: 1 },
-      { type: "circleNode", x: 160, y: 340, angle: 0, scale: 1.1 },
-      { type: "circleNode", x: 240, y: 340, angle: 0, scale: 1.1 },
-      { type: "hammer", x: 140, y: 520, angle: -15, scale: 1.1 },
-      { type: "hammer", x: 260, y: 520, angle: 15, scale: 1.1 },
-      { type: "star", x: 200, y: 700, angle: 0, scale: 1.2 },
-      { type: "halfMoon", x: 140, y: 880, angle: 25, scale: 1.1 },
-      { type: "halfMoon", x: 260, y: 880, angle: -25, scale: 1.1 },
-      { type: "ghostZone", x: 200, y: 1060, angle: 0, scale: 1.1 },
-      { type: "bowl", x: 200, y: 1280, angle: 0, scale: 1.2 }
+      { type: "diamond", x: 140, y: 160, angle: 45, scale: 1 },
+      { type: "diamond", x: 260, y: 160, angle: 45, scale: 1 },
+      { type: "diamond", x: 380, y: 160, angle: 45, scale: 1 },
+      { type: "redReset", x: 200, y: 280, angle: 0, scale: 1 },
+      { type: "redReset", x: 320, y: 280, angle: 0, scale: 1 },
+      { type: "circleNode", x: 180, y: 420, angle: 0, scale: 1.1 },
+      { type: "circleNode", x: 340, y: 420, angle: 0, scale: 1.1 },
+      { type: "star", x: 260, y: 600, angle: 0, scale: 1.2 },
+      { type: "halfMoon", x: 160, y: 780, angle: 25, scale: 1.1 },
+      { type: "halfMoon", x: 360, y: 780, angle: -25, scale: 1.1 },
+      { type: "ghostZone", x: 260, y: 960, angle: 0, scale: 1.1 },
+      { type: "redReset", x: 260, y: 1140, angle: 0, scale: 1.2 }
     ],
     settings: {
       lang: "en",
       maxMarbles: 256,
       fontScale: 1,
-      orientation: "any",
-      sound: 1
+      orientation: "landscape",
+      sound: 1,
+      music: 0
     },
     career: {
       countryCode: "DZ",
@@ -111,7 +116,7 @@
   let State = loadState();
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V4");
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V5");
       if (!raw) return JSON.parse(JSON.stringify(defaultSave));
       const parsed = JSON.parse(raw);
       return Object.assign(JSON.parse(JSON.stringify(defaultSave)), parsed);
@@ -144,10 +149,8 @@
   }
 
   // ============================================================================
-  // FULL-BLEED BORDERLESS FLAG & CUSTOM LOGO TEXTURE ENGINE
+  // FULL-BLEED BORDERLESS FLAG & CUSTOM LOGO TEXTURE CACHE
   // ============================================================================
-  // Renders each country flag or uploaded logo so it fills 100% of the circular
-  // marble edge-to-edge with ZERO border/outline and ZERO small-emoji background!
   const MarbleTextureCache = {
     cache: {},
     clear(code) {
@@ -158,14 +161,13 @@
       const key = country.code.split("#")[0];
       if (this.cache[key]) return this.cache[key];
 
-      const size = 72;
+      const size = 80;
       const half = size / 2;
       const cnv = document.createElement("canvas");
       cnv.width = size;
       cnv.height = size;
       const ctx = cnv.getContext("2d");
 
-      // Pure circular mask (No outline!)
       ctx.save();
       ctx.beginPath();
       ctx.arc(half, half, half, 0, Math.PI * 2);
@@ -173,7 +175,6 @@
       ctx.clip();
 
       if (country.logoDataUrl) {
-        // Draw user's custom uploaded logo image full-bleed
         ctx.fillStyle = country.color || "#ef4444";
         ctx.fillRect(0, 0, size, size);
         const img = new Image();
@@ -189,23 +190,25 @@
         };
         img.src = country.logoDataUrl;
       } else if (country.isCustom && !country.flag) {
-        // Custom two-tone striped marble
         ctx.fillStyle = country.color || "#ef4444";
         ctx.fillRect(0, 0, size, size);
         ctx.fillStyle = country.color2 || "#ffffff";
         ctx.fillRect(0, size * 0.32, size, size * 0.36);
       } else {
-        // Base fill matching flag edge + Oversized stretched Flag Emoji so the flag
-        // graphics fill 100% of the circular sphere from edge to edge!
-        ctx.fillStyle = country.color || "#1e293b";
-        ctx.fillRect(0, 0, size, size);
+        // Draw crisp vector tri-band flag base so zero background gaps ever appear,
+        // then overlay edge-to-edge stretched flag emoji!
+        const cols = country.stripeColors || [country.color || "#1e293b", "#ffffff", country.color || "#1e293b"];
+        ctx.fillStyle = cols[0];
+        ctx.fillRect(0, 0, size, size / 3);
+        ctx.fillStyle = cols[1];
+        ctx.fillRect(0, size / 3, size, size / 3);
+        ctx.fillStyle = cols[2];
+        ctx.fillRect(0, (size * 2) / 3, size, size / 3);
 
         ctx.save();
         ctx.translate(half, half + 2);
-        // Flag emojis have a ~4:3 rectangular aspect ratio; scaling X by 1.38 and Y by 1.78
-        // stretches the flag pattern cleanly across the entire 72x72 circle!
-        ctx.scale(1.38, 1.78);
-        ctx.font = "58px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+        ctx.scale(1.42, 1.82);
+        ctx.font = "64px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(country.flag || "🏳️", 0, 0);
@@ -219,11 +222,16 @@
   };
 
   // ============================================================================
-  // ALGODOD-STYLE CRISP VECTOR ARENA BUILDERS (WORLD_W = 1200px)
+  // 100% PASSABLE WIDESCREEN ARENA BUILDERS + RED RESET ZONES (ARENA_W = 1280px)
   // ============================================================================
-  const ARENA_W = 1200;
+  // Every single gap is >= 105px wide (marbles are 28px-32px wide) and all horizontal
+  // floors are sloped downward toward the exit so NO marble can ever get blocked!
+  // Red Reset Zones (sec.RedZones) immediately teleport any touching marble back to Start!
+  const ARENA_W = 1280;
   const PERIWINKLE = "#798eff";
   const BLACK = "#000000";
+  const RED_RESET = "#ff1111";
+  const GREEN_SAFE = "#00ff22";
 
   function buildArcWalls(cx, cy, r, aStart, aEnd, steps, thick, color) {
     const list = [];
@@ -235,251 +243,233 @@
         y1: cy + Math.sin(a1) * r,
         x2: cx + Math.cos(a2) * r,
         y2: cy + Math.sin(a2) * r,
-        thick: thick || 24,
+        thick: thick || 22,
         color: color || BLACK
       });
     }
     return list;
   }
 
+  function addRedZonesByDifficulty(sec, y0, h, diff, customSpots) {
+    const count = diff === "hard" ? customSpots.length : diff === "easy" ? Math.max(1, Math.floor(customSpots.length * 0.45)) : Math.max(2, Math.floor(customSpots.length * 0.75));
+    for (let i = 0; i < count; i++) {
+      const sp = customSpots[i];
+      sec.RedZones.push({
+        x: sp.x,
+        y: sp.y,
+        w: sp.w || 64,
+        h: sp.h || 22
+      });
+    }
+  }
+
   const ARENA_BUILDERS = {
-    // 1. IMAGE 1 STYLE: Interlocking Black & Blue Diamond Grid Lattice + Green Entry Laser
+    // 1. Diamond Plinko Lattice (Wide 145px spacing so marbles flow smoothly + Red Reset Diamonds)
     diamondGrid(sec, y0, h, diff) {
       const cx = ARENA_W / 2;
-      // Green top entry split laser bar
-      sec.Banners.push({ x: 30, y: y0 + 25, w: cx - 50, h: 18, color: "#00ff22" });
-      sec.Banners.push({ x: cx + 20, y: y0 + 25, w: cx - 50, h: 18, color: "#00ff22" });
+      sec.Banners.push({ x: 30, y: y0 + 20, w: cx - 70, h: 18, color: GREEN_SAFE });
+      sec.Banners.push({ x: cx + 40, y: y0 + 20, w: cx - 70, h: 18, color: GREEN_SAFE });
 
-      // Side zig-zag diamond notches
-      const rows = 9;
-      const startY = y0 + 140;
-      const spacingY = (h - 280) / rows;
-      const spacingX = 126;
-      const diamondSize = diff === "hard" ? 64 : 58;
+      const rows = 8;
+      const startY = y0 + 135;
+      const spacingY = (h - 270) / rows;
+      const spacingX = 148;
+      const diamondSize = 52; // Leaves 96px+ diagonal channel everywhere!
 
+      const redCandidates = [];
       for (let r = 0; r < rows; r++) {
         const ry = startY + r * spacingY;
         const isOdd = r % 2 === 1;
-        const cols = isOdd ? 8 : 9;
-        const offsetX = isOdd ? 155 : 92;
+        const cols = isOdd ? 7 : 8;
+        const offsetX = isOdd ? 195 : 122;
 
-        // Side wall triangular teeth
         if (!isOdd) {
-          sec.Polys.push({
-            pts: [{ x: 25, y: ry - 60 }, { x: 85, y: ry }, { x: 25, y: ry + 60 }],
-            color: BLACK
-          });
-          sec.Polys.push({
-            pts: [{ x: ARENA_W - 25, y: ry - 60 }, { x: ARENA_W - 85, y: ry }, { x: ARENA_W - 25, y: ry + 60 }],
-            color: BLACK
-          });
+          sec.Polys.push({ pts: [{ x: 25, y: ry - 55 }, { x: 80, y: ry }, { x: 25, y: ry + 55 }], color: BLACK });
+          sec.Polys.push({ pts: [{ x: ARENA_W - 25, y: ry - 55 }, { x: ARENA_W - 80, y: ry }, { x: ARENA_W - 25, y: ry + 55 }], color: BLACK });
         }
 
         for (let c = 0; c < cols; c++) {
           const dx = offsetX + c * spacingX;
-          // Create the 3-peak diamond mountain silhouette from Image 1
-          if (r === 0 && (c === 3 || c === 4 || c === 5)) continue;
-          const isBlueAccent = (r + c) % 7 === 0;
+          if (r === 0 && (c === 3 || c === 4)) continue;
+
+          // Red Reset trap blocks on lower rows
+          if (r >= 2 && (r + c) % 6 === 0) {
+            redCandidates.push({ x: dx - 24, y: ry - 12, w: 48, h: 24 });
+            continue;
+          }
+
+          const isBlue = (r + c) % 5 === 0;
           sec.Boxes.push({
             x: dx,
             y: ry,
-            w: isBlueAccent ? diamondSize * 0.68 : diamondSize,
-            h: isBlueAccent ? diamondSize * 0.68 : diamondSize,
+            w: isBlue ? diamondSize * 0.72 : diamondSize,
+            h: isBlue ? diamondSize * 0.72 : diamondSize,
             angle: Math.PI / 4,
-            color: isBlueAccent ? "#0018ff" : BLACK,
-            restitution: isBlueAccent ? 0.95 : 0.45
+            color: isBlue ? "#0018ff" : BLACK,
+            restitution: isBlue ? 0.95 : 0.55
           });
         }
       }
+      addRedZonesByDifficulty(sec, y0, h, diff, redCandidates);
     },
 
-    // 2. IMAGE 2 & 6 STYLE: Circular Gear Matrix with Black Center Dots & Red/Green Bottom Gates
+    // 2. Circular Gear Matrix & Red Reset Bottom Gates (Matches Screenshot 2 & 6!)
     circleGearMatrix(sec, y0, h, diff) {
       const rows = 5;
-      const cols = 9;
-      const startY = y0 + 150;
+      const cols = 8;
+      const startY = y0 + 145;
       const stepY = (h - 310) / rows;
-      const stepX = 120;
-      const startX = 120;
+      const stepX = 142; // Wide 142px spacing so marbles never jam between gears!
+      const startX = 142;
 
-      // Top funnel shoulders
-      sec.Walls.push({ x1: 25, y1: y0 + 50, x2: 95, y2: startY, thick: 36, color: BLACK });
-      sec.Walls.push({ x1: ARENA_W - 25, y1: y0 + 50, x2: ARENA_W - 95, y2: startY, thick: 36, color: BLACK });
+      sec.Walls.push({ x1: 25, y1: y0 + 45, x2: 105, y2: startY, thick: 32, color: BLACK });
+      sec.Walls.push({ x1: ARENA_W - 25, y1: y0 + 45, x2: ARENA_W - 105, y2: startY, thick: 32, color: BLACK });
 
       for (let r = 0; r < rows; r++) {
         const ry = startY + r * stepY;
         for (let c = 0; c < cols; c++) {
           const cx = startX + c * stepX;
-          // Center solid black peg inside each circular chamber
-          sec.Pegs.push({ x: cx, y: ry, r: 22, color: BLACK, restitution: 0.65 });
+          sec.Pegs.push({ x: cx, y: ry, r: 18, color: BLACK, restitution: 0.75 });
 
-          // 4 curved/angled petal walls around the peg forming the circular gear lattice
-          if (c < cols - 1) {
+          if (c < cols - 1 && r < rows - 1) {
             const midX = cx + stepX / 2;
             const midY = ry + stepY / 2;
-            // Diamond / X-bridge between circular chambers
             sec.Boxes.push({
               x: midX,
-              y: ry,
-              w: 26,
-              h: 26,
+              y: midY,
+              w: 32,
+              h: 32,
               angle: Math.PI / 4,
               color: BLACK,
-              restitution: 0.5
+              restitution: 0.65
             });
-            if (r < rows - 1) {
-              sec.Boxes.push({
-                x: cx,
-                y: midY,
-                w: 26,
-                h: 26,
-                angle: Math.PI / 4,
-                color: BLACK,
-                restitution: 0.5
-              });
-              sec.Boxes.push({
-                x: midX,
-                y: midY,
-                w: 36,
-                h: 36,
-                angle: Math.PI / 4,
-                color: BLACK,
-                restitution: 0.5
-              });
-            }
           }
         }
       }
 
-      // Bottom row of alternating Green (open/boost) and Red (blocker/bounce) gates from Image 2
+      // Bottom Alternating GREEN (Pass) & RED (Reset to Start!) Gates from Screenshot 2 & 6
       const gateY = y0 + h - 95;
+      const redGates = [];
       for (let c = 0; c < cols; c++) {
         const gx = startX + c * stepX;
-        const isGreen = c % 3 === 0;
-        sec.Banners.push({
-          x: gx - 16,
-          y: gateY,
-          w: 32,
-          h: 22,
-          color: isGreen ? "#00ff22" : "#ff1111"
-        });
-        if (!isGreen && diff === "hard") {
-          sec.Pegs.push({ x: gx, y: gateY - 12, r: 13, color: "#ff1111", restitution: 0.9 });
+        const isGreen = c % 2 === 0 || (diff === "easy" && c !== 3);
+        if (isGreen) {
+          sec.Banners.push({ x: gx - 22, y: gateY, w: 44, h: 24, color: GREEN_SAFE });
+        } else {
+          redGates.push({ x: gx - 24, y: gateY, w: 48, h: 24 });
         }
       }
+      addRedZonesByDifficulty(sec, y0, h, diff, redGates);
     },
 
-    // 3. IMAGE 3 STYLE: Curved Side Chutes, Central Green/Yellow Spine & Musical Note Hammers
+    // 3. Curved Chutes, Musical Note Hammers & Red Reset Hazards (Matches Screenshot 3!)
     musicalHammers(sec, y0, h, diff) {
       const cx = ARENA_W / 2;
 
-      // Central Green-to-Yellow vertical laser spine
-      sec.Banners.push({ x: cx - 10, y: y0 + 40, w: 20, h: (h - 140) * 0.5, color: "#00ff22" });
-      sec.Banners.push({ x: cx - 10, y: y0 + 40 + (h - 140) * 0.5, w: 20, h: (h - 140) * 0.45, color: "#eeff00" });
+      sec.Banners.push({ x: cx - 10, y: y0 + 40, w: 20, h: (h - 160) * 0.5, color: GREEN_SAFE });
+      sec.Banners.push({ x: cx - 10, y: y0 + 40 + (h - 160) * 0.5, w: 20, h: (h - 160) * 0.45, color: "#eeff00" });
 
-      // 3 Central Black Diamond Splitters with Side Wings along the spine
       for (let i = 0; i < 3; i++) {
-        const sy = y0 + 240 + i * ((h - 460) / 3);
-        sec.Boxes.push({ x: cx, y: sy, w: 54, h: 54, angle: Math.PI / 4, color: BLACK });
-        sec.Walls.push({ x1: cx - 75, y1: sy + 18, x2: cx - 32, y2: sy + 42, thick: 16, color: BLACK });
-        sec.Walls.push({ x1: cx + 75, y1: sy + 18, x2: cx + 32, y2: sy + 42, thick: 16, color: BLACK });
+        const sy = y0 + 230 + i * ((h - 460) / 3);
+        sec.Boxes.push({ x: cx, y: sy, w: 48, h: 48, angle: Math.PI / 4, color: BLACK });
       }
 
-      // 4 Curved Black Side Chutes on Left and Right (from Image 3)
-      for (let i = 0; i < 4; i++) {
-        const chuteY = y0 + 160 + i * ((h - 380) / 4);
-        sec.Walls.push({ x1: 65 + i * 18, y1: y0 + 30, x2: 65 + i * 18, y2: chuteY, thick: 16, color: BLACK });
-        sec.Walls.push(...buildArcWalls(175 + i * 18, chuteY, 110, Math.PI * 0.5, Math.PI, 7, 18, BLACK));
-
-        sec.Walls.push({ x1: ARENA_W - 65 - i * 18, y1: y0 + 30, x2: ARENA_W - 65 - i * 18, y2: chuteY, thick: 16, color: BLACK });
-        sec.Walls.push(...buildArcWalls(ARENA_W - 175 - i * 18, chuteY, 110, 0, Math.PI * 0.5, 7, 18, BLACK));
+      // Wide Curved Side Chutes (110px wide lanes so marbles never jam!)
+      for (let i = 0; i < 3; i++) {
+        const chuteY = y0 + 220 + i * 310;
+        sec.Walls.push(...buildArcWalls(210, chuteY, 130, Math.PI * 0.45, Math.PI * 0.92, 6, 18, BLACK));
+        sec.Walls.push(...buildArcWalls(ARENA_W - 210, chuteY, 130, Math.PI * 0.08, Math.PI * 0.55, 6, 18, BLACK));
       }
 
-      // Staggered Musical-Note Hammer Levers (tilted bar + stem + round note head)
-      const noteCoords = [
-        { x: 430, y: y0 + 260, dir: -1 }, { x: 770, y: y0 + 260, dir: 1 },
-        { x: 350, y: y0 + 480, dir: -1 }, { x: 480, y: y0 + 480, dir: -1 },
-        { x: 720, y: y0 + 480, dir: 1 },  { x: 850, y: y0 + 480, dir: 1 },
-        { x: 340, y: y0 + 710, dir: -1 }, { x: 475, y: y0 + 710, dir: -1 },
-        { x: 725, y: y0 + 710, dir: 1 },  { x: 860, y: y0 + 710, dir: 1 },
-        { x: 290, y: y0 + 930, dir: -1 }, { x: 410, y: y0 + 930, dir: -1 }, { x: 525, y: y0 + 930, dir: -1 },
-        { x: 675, y: y0 + 930, dir: 1 },  { x: 790, y: y0 + 930, dir: 1 },  { x: 910, y: y0 + 930, dir: 1 }
+      // Musical Note Hammers
+      const notes = [
+        { x: 420, y: y0 + 270, dir: -1 }, { x: 860, y: y0 + 270, dir: 1 },
+        { x: 330, y: y0 + 520, dir: -1 }, { x: 490, y: y0 + 520, dir: -1 },
+        { x: 790, y: y0 + 520, dir: 1 },  { x: 950, y: y0 + 520, dir: 1 },
+        { x: 350, y: y0 + 780, dir: -1 }, { x: 500, y: y0 + 780, dir: -1 },
+        { x: 780, y: y0 + 780, dir: 1 },  { x: 930, y: y0 + 780, dir: 1 }
       ];
-      noteCoords.forEach((nc, idx) => {
-        const tilt = nc.dir * 0.24;
+      notes.forEach(nc => {
+        const tilt = nc.dir * 0.28;
         sec.Walls.push({
-          x1: nc.x - Math.cos(tilt) * 38,
-          y1: nc.y - Math.sin(tilt) * 38,
-          x2: nc.x + Math.cos(tilt) * 38,
-          y2: nc.y + Math.sin(tilt) * 38,
+          x1: nc.x - Math.cos(tilt) * 36,
+          y1: nc.y - Math.sin(tilt) * 36,
+          x2: nc.x + Math.cos(tilt) * 36,
+          y2: nc.y + Math.sin(tilt) * 36,
           thick: 14,
           color: BLACK
         });
-        const stemX = nc.x + nc.dir * -24;
-        sec.Walls.push({ x1: stemX, y1: nc.y, x2: stemX, y2: nc.y + 38, thick: 10, color: BLACK });
-        sec.Pegs.push({ x: stemX - nc.dir * 4, y: nc.y + 42, r: 14, color: BLACK, restitution: 0.85 });
+        sec.Pegs.push({ x: nc.x - nc.dir * 22, y: nc.y + 36, r: 13, color: BLACK, restitution: 0.85 });
       });
+
+      // Red Reset Laser Segments at the bottom flanks
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 180, y: y0 + h - 105, w: 95, h: 20 },
+        { x: ARENA_W - 275, y: y0 + h - 105, w: 95, h: 20 },
+        { x: cx - 180, y: y0 + 640, w: 65, h: 20 },
+        { x: cx + 115, y: y0 + 640, w: 65, h: 20 }
+      ]);
     },
 
-    // 4. IMAGE 4 STYLE: 3-Tier Horizontal Chamber Maze with Rotating 4-Point Stars & Side Conveyor Tubes
+    // 4. 3-Tier Sloped Star Maze & Side Elevators (FIXED: Sloped floors + 160px center gaps so 100% passable!)
     starConveyorMaze(sec, y0, h, diff) {
       const tiers = 3;
       const tierH = (h - 180) / tiers;
+      const cx = ARENA_W / 2;
 
       for (let t = 0; t < tiers; t++) {
         const ty = y0 + 60 + t * tierH;
         const botY = ty + tierH;
 
-        // Horizontal floor with gaps so marbles weave through the spiked chambers
+        // Angled Sloped Floors (12° downward slope toward a wide 190px center opening!)
         if (t < tiers - 1) {
-          sec.Walls.push({ x1: 110, y1: botY, x2: 520, y2: botY, thick: 32, color: BLACK });
-          sec.Walls.push({ x1: 680, y1: botY, x2: ARENA_W - 110, y2: botY, thick: 32, color: BLACK });
+          sec.Walls.push({ x1: 110, y1: botY - 55, x2: cx - 95, y2: botY + 15, thick: 26, color: BLACK });
+          sec.Walls.push({ x1: ARENA_W - 110, y1: botY - 55, x2: cx + 95, y2: botY + 15, thick: 26, color: BLACK });
         }
 
-        // Vertical spiked dividers along the tier
-        for (let c = 1; c <= 6; c++) {
-          const vx = 140 + c * 135;
-          sec.Walls.push({ x1: vx, y1: ty + 15, x2: vx, y2: ty + 95, thick: 22, color: BLACK });
-          sec.Walls.push({ x1: vx, y1: botY - 95, x2: vx, y2: botY - 15, thick: 22, color: BLACK });
-        }
-
-        // Rotating 4-Point Black Stars inside the tier
-        const starCols = t % 2 === 0 ? [280, 600, 920] : [360, 520, 680, 840];
+        // Rotating 4-Point Black Stars with plenty of clearance
+        const starCols = t % 2 === 0 ? [310, 640, 970] : [260, 510, 770, 1020];
         starCols.forEach((sx, idx) => {
           sec.Spinners.push({
             x: sx,
-            y: ty + tierH * 0.5,
-            len: 95,
-            thick: 22,
+            y: ty + tierH * 0.45,
+            len: 105,
+            thick: 20,
             speed: (idx % 2 === 0 ? 1 : -1) * 0.05,
             color: BLACK,
             style: "star4"
           });
         });
 
-        // Side Conveyor / Boost Tubes with Directional Arrows (↑↑ / ↓↓)
+        // Side Boost Tubes
         sec.Zones.push({
           x: 35,
-          y: ty + 20,
-          w: 52,
-          h: tierH - 40,
+          y: ty + 15,
+          w: 58,
+          h: tierH - 30,
           kind: "conveyorDown",
-          color: "#2b2b2e",
-          arrowColor: t === 0 ? "#22c55e" : "#ec4899"
+          color: "#22242a",
+          arrowColor: t === 0 ? GREEN_SAFE : "#ec4899"
         });
         sec.Zones.push({
-          x: ARENA_W - 87,
-          y: ty + 20,
-          w: 52,
-          h: tierH - 40,
+          x: ARENA_W - 93,
+          y: ty + 15,
+          w: 58,
+          h: tierH - 30,
           kind: "conveyorDown",
-          color: "#2b2b2e",
-          arrowColor: t === 2 ? "#eab308" : "#f8fafc"
+          color: "#22242a",
+          arrowColor: t === 2 ? "#eab308" : "#00f2fe"
         });
       }
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 200, y: y0 + tierH * 0.82, w: 68, h: 20 },
+        { x: ARENA_W - 268, y: y0 + tierH * 0.82, w: 68, h: 20 },
+        { x: cx - 35, y: y0 + tierH * 1.85, w: 70, h: 20 }
+      ]);
     },
 
-    // 5. IMAGE 5 BOTTOM-LEFT STYLE: Triple Rounded Pinball Chambers with Flipper Launchers
+    // 5. Wide Triple Pinball Flipper Chambers (FIXED: Open bottom chutes so no marble is ever trapped!)
     triplePinballLaunchers(sec, y0, h, diff) {
       const chambers = 3;
       const chW = (ARENA_W - 120) / chambers;
@@ -487,59 +477,53 @@
       for (let i = 0; i < chambers; i++) {
         const cx = 60 + chW * (i + 0.5);
         const topY = y0 + 70;
-        const bowlY = y0 + h * 0.62;
-        const rad = chW * 0.43;
+        const midY = y0 + h * 0.55;
+        const rad = chW * 0.42;
 
-        // Top entry drop shaft walls
-        sec.Walls.push({ x1: cx - 55, y1: topY, x2: cx - 55, y2: topY + 260, thick: 24, color: BLACK });
-        sec.Walls.push({ x1: cx + 55, y1: topY, x2: cx + 55, y2: topY + 460, thick: 24, color: BLACK });
+        // Wide 140px entry funnel into each pinball chamber
+        sec.Walls.push({ x1: cx - rad, y1: topY, x2: cx - 75, y2: topY + 180, thick: 24, color: BLACK });
+        sec.Walls.push({ x1: cx + rad, y1: topY, x2: cx + 75, y2: topY + 180, thick: 24, color: BLACK });
 
-        // Left upper shoulder arc
-        sec.Walls.push(...buildArcWalls(cx - rad + 55, topY + 340, 95, Math.PI, Math.PI * 1.5, 6, 26, BLACK));
-        sec.Walls.push({ x1: cx - rad - 40, y1: topY + 340, x2: cx - rad - 40, y2: bowlY, thick: 28, color: BLACK });
+        // Curved outer chamber walls with a wide 140px bottom exit chute
+        sec.Walls.push(...buildArcWalls(cx, midY, rad, Math.PI * 0.62, Math.PI * 1.38, 7, 24, BLACK));
+        sec.Walls.push(...buildArcWalls(cx, midY, rad, -Math.PI * 0.38, Math.PI * 0.38, 7, 24, BLACK));
 
-        // Bottom U-basin arc with exit gap on the right
-        sec.Walls.push(...buildArcWalls(cx, bowlY, rad + 25, Math.PI * 0.22, Math.PI, 9, 28, BLACK));
-
-        // Angled Flipper / Launcher Bar inside the chamber + Green Gate
-        sec.Walls.push({ x1: cx - 45, y1: bowlY + rad - 15, x2: cx + 35, y2: bowlY - 60, thick: 20, color: BLACK });
-        sec.Spinners.push({ x: cx + 10, y: bowlY - 95, len: 130, thick: 20, speed: 0.055, color: BLACK, style: "bar" });
-        sec.Banners.push({ x: cx + rad - 5, y: bowlY - 120, w: 22, h: 52, color: "#00ff22" });
+        // Rotating pinball flipper paddle in the center of each chamber
+        sec.Spinners.push({ x: cx, y: midY + 20, len: 155, thick: 20, speed: (i % 2 === 0 ? 1 : -1) * 0.055, color: BLACK, style: "bar" });
+        sec.Banners.push({ x: cx - 50, y: midY + rad + 10, w: 100, h: 18, color: GREEN_SAFE });
       }
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 240, y: y0 + h - 120, w: 65, h: 20 },
+        { x: ARENA_W / 2 - 32, y: y0 + h - 120, w: 65, h: 20 },
+        { x: ARENA_W - 305, y: y0 + h - 120, w: 65, h: 20 }
+      ]);
     },
 
-    // 6. IMAGE 7 LEFT & IMAGE 9 RIGHT STYLE: 4-Story Cross-Spinner Capsules above Scalloped Basin
+    // 6. 4-Story Sloped Cross Capsules & Scalloped Basin (FIXED: Sloped floors & 180px exit gaps!)
     capsuleScallopBowl(sec, y0, h, diff) {
       const stories = 4;
-      const capH = 195;
-      const startY = y0 + 90;
+      const capH = 190;
+      const startY = y0 + 80;
 
       for (let s = 0; s < stories; s++) {
         const cy = startY + s * capH;
         const gapOnRight = s % 2 === 0;
 
-        // Rounded capsule ends
-        sec.Walls.push(...buildArcWalls(180, cy + capH / 2, capH / 2, Math.PI * 0.5, Math.PI * 1.5, 6, 24, BLACK));
-        sec.Walls.push(...buildArcWalls(ARENA_W - 180, cy + capH / 2, capH / 2, -Math.PI * 0.5, Math.PI * 0.5, 6, 24, BLACK));
-
-        // Top & Bottom capsule bars with alternating pass-through gap
-        if (s === 0) {
-          sec.Walls.push({ x1: 180, y1: cy, x2: ARENA_W / 2 - 90, y2: cy, thick: 22, color: BLACK });
-          sec.Walls.push({ x1: ARENA_W / 2 + 90, y1: cy, x2: ARENA_W - 180, y2: cy, thick: 22, color: BLACK });
-        }
+        // Sloped capsule floor (tilted 50px downward toward the 220px wide exit gap!)
         if (gapOnRight) {
-          sec.Walls.push({ x1: 180, y1: cy + capH, x2: ARENA_W - 310, y2: cy + capH, thick: 22, color: BLACK });
+          sec.Walls.push({ x1: 120, y1: cy + capH - 35, x2: ARENA_W - 340, y2: cy + capH + 15, thick: 22, color: BLACK });
         } else {
-          sec.Walls.push({ x1: 310, y1: cy + capH, x2: ARENA_W - 180, y2: cy + capH, thick: 22, color: BLACK });
+          sec.Walls.push({ x1: ARENA_W - 120, y1: cy + capH - 35, x2: 340, y2: cy + capH + 15, thick: 22, color: BLACK });
         }
 
-        // Row of 6 rotating X / + spinners inside each capsule story
-        for (let c = 0; c < 6; c++) {
-          const sx = 240 + c * 144;
+        // Row of 5 rotating X spinners inside each capsule
+        for (let c = 0; c < 5; c++) {
+          const sx = 240 + c * 200;
           sec.Spinners.push({
             x: sx,
-            y: cy + capH / 2,
-            len: 128,
+            y: cy + capH * 0.45,
+            len: 125,
             thick: 18,
             speed: ((s + c) % 2 === 0 ? 1 : -1) * 0.05,
             color: BLACK,
@@ -548,234 +532,213 @@
         }
       }
 
-      // Deep Scalloped Bumpy Bowl underneath the 4 capsules
-      const bowlCenterY = startY + stories * capH + 160;
-      const bowlR = 450;
-      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlCenterY - 80, bowlR, Math.PI * 0.14, Math.PI * 0.44, 7, 34, BLACK));
-      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlCenterY - 80, bowlR, Math.PI * 0.56, Math.PI * 0.86, 7, 34, BLACK));
+      // Scalloped Basin below with wide 190px center drain + spinner agitator
+      const bowlY = startY + stories * capH + 150;
+      const bowlR = 460;
+      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlY - 90, bowlR, Math.PI * 0.14, Math.PI * 0.41, 6, 30, BLACK));
+      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlY - 90, bowlR, Math.PI * 0.59, Math.PI * 0.86, 6, 30, BLACK));
+      sec.Spinners.push({ x: ARENA_W / 2, y: bowlY + 260, len: 170, thick: 20, speed: 0.05, color: BLACK, style: "cross" });
 
-      // Bumpy scalloped teeth along the inside of the bowl
-      for (let b = 0; b < 8; b++) {
-        if (b === 3 || b === 4) continue;
-        const ang = Math.PI * (0.16 + (b / 7) * 0.68);
-        sec.Pegs.push({
-          x: ARENA_W / 2 + Math.cos(ang) * (bowlR - 24),
-          y: bowlCenterY - 80 + Math.sin(ang) * (bowlR - 24),
-          r: 28,
-          color: BLACK,
-          restitution: 0.8
-        });
-      }
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 180, y: bowlY + 110, w: 68, h: 22 },
+        { x: ARENA_W - 248, y: bowlY + 110, w: 68, h: 22 }
+      ]);
     },
 
-    // 7. IMAGE 8 RIGHT STYLE: Tilted Black Half-Moons & Brown Grid "NO COLLISION ZONE"
+    // 7. Tilted Half-Moons & Brown No-Collision Zone (Matches Screenshot 8!)
     halfMoonGhostZone(sec, y0, h, diff) {
-      const drawHalfMoonRow = (rowY, tiltDir) => {
+      const drawRow = (ry, dir) => {
         for (let c = 0; c < 4; c++) {
-          const hx = 220 + c * 250 + (tiltDir > 0 ? -30 : 30);
-          sec.HalfMoons.push({
-            x: hx,
-            y: rowY,
-            r: 58,
-            angle: tiltDir * 0.65,
-            color: BLACK
-          });
+          const hx = 230 + c * 270 + (dir > 0 ? -30 : 30);
+          sec.HalfMoons.push({ x: hx, y: ry, r: 54, angle: dir * 0.65, color: BLACK });
         }
       };
+      drawRow(y0 + 170, 1);
+      drawRow(y0 + 350, -1);
+      drawRow(y0 + 530, 1);
 
-      drawHalfMoonRow(y0 + 170, 1);
-      drawHalfMoonRow(y0 + 340, -1);
-      drawHalfMoonRow(y0 + 510, 1);
-
-      // Brown Grid "NO COLLISION ZONE" Band in the middle (from Image 8)
-      const gzY = y0 + 640;
-      const gzH = 220;
       sec.Zones.push({
         x: 40,
-        y: gzY,
+        y: y0 + 660,
         w: ARENA_W - 80,
-        h: gzH,
+        h: 210,
         kind: "ghost",
         label: "NO COLLISION ZONE"
       });
 
-      drawHalfMoonRow(y0 + 980, -1);
-      drawHalfMoonRow(y0 + 1160, 1);
+      drawRow(y0 + 1000, -1);
+      drawRow(y0 + 1180, 1);
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 350, y: y0 + 1290, w: 75, h: 22 },
+        { x: ARENA_W - 425, y: y0 + 1290, w: 75, h: 22 }
+      ]);
     },
 
-    // 8. IMAGE 9 LEFT STYLE: 3 Parallel Vertical Columns (Dashes + Oval Peg Chain + Spinner Chute)
+    // 8. Triple Vertical Oval Peg Lanes (Wide 400px lanes so marbles flow freely!)
     ovalPegChain(sec, y0, h, diff) {
-      const col1W = 380;
-      const col2W = 420;
-      // Vertical dividing walls creating 3 distinct Algodoo challenge lanes
-      sec.Walls.push({ x1: col1W, y1: y0 + 90, x2: col1W, y2: y0 + h - 140, thick: 28, color: BLACK });
-      sec.Walls.push({ x1: col1W + col2W, y1: y0 + 90, x2: col1W + col2W, y2: y0 + h - 140, thick: 28, color: BLACK });
+      const laneW = ARENA_W / 3;
+      sec.Walls.push({ x1: laneW, y1: y0 + 110, x2: laneW, y2: y0 + h - 150, thick: 24, color: BLACK });
+      sec.Walls.push({ x1: laneW * 2, y1: y0 + 110, x2: laneW * 2, y2: y0 + h - 150, thick: 24, color: BLACK });
+      // Splitter triangles on top of dividing walls so no marble sits on top of a vertical wall!
+      sec.Boxes.push({ x: laneW, y: y0 + 110, w: 36, h: 36, angle: Math.PI / 4, color: BLACK });
+      sec.Boxes.push({ x: laneW * 2, y: y0 + 110, w: 36, h: 36, angle: Math.PI / 4, color: BLACK });
 
-      // Lane 1 (Left): Top X+X spinners + Vertical chain of black pegs & slanted dashes
-      for (let i = 0; i < 3; i++) {
-        sec.Spinners.push({ x: 110 + i * 85, y: y0 + 140, len: 68, thick: 12, speed: 0.05 * (i % 2 === 0 ? 1 : -1), color: BLACK, style: "cross" });
-      }
-      for (let r = 0; r < 7; r++) {
-        const py = y0 + 250 + r * 155;
-        sec.Pegs.push({ x: col1W / 2, y: py, r: 24, color: BLACK, restitution: 0.8 });
-        sec.Walls.push({ x1: 65, y1: py - 35, x2: 135, y2: py - 15, thick: 12, color: BLACK });
-        sec.Walls.push({ x1: col1W - 135, y1: py + 15, x2: col1W - 65, y2: py + 35, thick: 12, color: BLACK });
-      }
-
-      // Lane 2 (Center): 3 Stacked Oval Peg Chambers
-      for (let ov = 0; ov < 3; ov++) {
-        const oy = y0 + 260 + ov * 410;
-        const cx = col1W + col2W / 2;
-        sec.Walls.push(...buildArcWalls(cx, oy, 165, Math.PI * 0.58, Math.PI * 1.42, 7, 22, BLACK));
-        sec.Walls.push(...buildArcWalls(cx, oy, 165, -Math.PI * 0.42, Math.PI * 0.42, 7, 22, BLACK));
-        for (let pr = -1; pr <= 1; pr++) {
-          for (let pc = -1; pc <= 1; pc++) {
-            sec.Pegs.push({ x: cx + pc * 52, y: oy + pr * 55, r: 12, color: BLACK, restitution: 0.75 });
-          }
+      for (let lane = 0; lane < 3; lane++) {
+        const lx = lane * laneW + laneW / 2;
+        for (let r = 0; r < 6; r++) {
+          const py = y0 + 220 + r * 180;
+          sec.Pegs.push({ x: lx - 75, y: py, r: 16, color: BLACK, restitution: 0.8 });
+          sec.Pegs.push({ x: lx + 75, y: py, r: 16, color: BLACK, restitution: 0.8 });
+          sec.Spinners.push({ x: lx, y: py + 90, len: 115, thick: 16, speed: ((lane + r) % 2 === 0 ? 1 : -1) * 0.05, color: BLACK, style: "cross" });
         }
       }
 
-      // Lane 3 (Right): Row of Cross Spinners + Slanted Planks + Bumpy Catch Bar
-      const rStart = col1W + col2W;
-      for (let i = 0; i < 4; i++) {
-        sec.Spinners.push({ x: rStart + 75 + i * 82, y: y0 + 180, len: 74, thick: 16, speed: -0.05, color: BLACK, style: "cross" });
-      }
-      for (let p = 0; p < 5; p++) {
-        const py = y0 + 340 + p * 185;
-        if (p % 2 === 0) {
-          sec.Walls.push({ x1: rStart + 20, y1: py, x2: ARENA_W - 95, y2: py + 45, thick: 18, color: BLACK });
-        } else {
-          sec.Walls.push({ x1: ARENA_W - 30, y1: py, x2: rStart + 95, y2: py + 45, thick: 18, color: BLACK });
-        }
-      }
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: laneW * 0.5 - 30, y: y0 + h - 105, w: 60, h: 22 },
+        { x: laneW * 1.5 - 30, y: y0 + h - 105, w: 60, h: 22 },
+        { x: laneW * 2.5 - 30, y: y0 + h - 105, w: 60, h: 22 }
+      ]);
     },
 
-    // 9. IMAGE 7 RIGHT STYLE: Pink/Blue Striped Wheel, Scalloped Funnel & Dash Bowl
+    // 9. Giant Pinwheel & Wide Funnel Drop (FIXED: Open wheel housing with 160px side channels!)
     wheelFunnelDrop(sec, y0, h, diff) {
       const cx = ARENA_W / 2;
-      // Top box housing the giant Pink/Blue 16-slice wheel
-      sec.Walls.push({ x1: cx - 180, y1: y0 + 60, x2: cx - 180, y2: y0 + 390, thick: 22, color: BLACK });
-      sec.Walls.push({ x1: cx + 180, y1: y0 + 60, x2: cx + 180, y2: y0 + 390, thick: 22, color: BLACK });
       sec.Spinners.push({
         x: cx,
-        y: y0 + 230,
-        len: 310,
+        y: y0 + 260,
+        len: 320,
         thick: 24,
-        speed: 0.035,
+        speed: 0.038,
         color: "#ff00aa",
         style: "pinwheel"
       });
 
-      // Stepped Scalloped Funnel walls converging toward the center throat
-      for (let s = 0; s < 3; s++) {
-        const sy = y0 + 240 + s * 170;
-        sec.Walls.push(...buildArcWalls(240 + s * 110, sy, 120, Math.PI * 0.15, Math.PI * 0.85, 6, 24, BLACK));
-        sec.Walls.push(...buildArcWalls(ARENA_W - 240 - s * 110, sy, 120, Math.PI * 0.15, Math.PI * 0.85, 6, 24, BLACK));
-      }
+      // Wide angled funnel ramps guiding marbles into a 210px wide throat
+      sec.Walls.push({ x1: 40, y1: y0 + 380, x2: cx - 105, y2: y0 + 680, thick: 28, color: BLACK });
+      sec.Walls.push({ x1: ARENA_W - 40, y1: y0 + 380, x2: cx + 105, y2: y0 + 680, thick: 28, color: BLACK });
 
-      // Lower Giant Circular Dash Bowl
-      const bowlY = y0 + 1040;
-      sec.Walls.push(...buildArcWalls(cx, bowlY, 370, -Math.PI * 0.35, Math.PI * 0.42, 10, 28, BLACK));
+      // Lower Dash & Spinner Field
       for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          const dx = cx - 220 + c * 135;
-          const dy = bowlY - 140 + r * 95;
-          sec.Walls.push({ x1: dx - 28, y1: dy + 10, x2: dx + 28, y2: dy - 10, thick: 12, color: BLACK });
+        const ry = y0 + 820 + r * 140;
+        for (let c = 0; c < 5; c++) {
+          const dx = 220 + c * 210 + (r % 2) * 55;
+          sec.Walls.push({ x1: dx - 32, y1: ry - 12, x2: dx + 32, y2: ry + 12, thick: 14, color: BLACK });
         }
       }
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 180, y: y0 + 960, w: 75, h: 22 },
+        { x: ARENA_W - 255, y: y0 + 960, w: 75, h: 22 }
+      ]);
     },
 
-    // 10. 12-Level Serpentine Slanted Planks (Image 7 Middle Style)
+    // 10. Serpentine Slanted Planks (Wide 195px drop gaps + steep 15° slope!)
     serpentinePlanks(sec, y0, h, diff) {
-      const planks = 9;
+      const planks = 7;
       const stepY = (h - 220) / planks;
-      const gap = diff === "hard" ? 135 : 165;
+      const gap = 215;
 
       for (let i = 0; i < planks; i++) {
-        const py = y0 + 100 + i * stepY;
+        const py = y0 + 110 + i * stepY;
         if (i % 2 === 0) {
-          sec.Walls.push({ x1: 30, y1: py - 25, x2: ARENA_W - gap, y2: py + 45, thick: 20, color: BLACK });
+          sec.Walls.push({ x1: 30, y1: py - 35, x2: ARENA_W - gap, y2: py + 55, thick: 22, color: BLACK });
         } else {
-          sec.Walls.push({ x1: ARENA_W - 30, y1: py - 25, x2: gap, y2: py + 45, thick: 20, color: BLACK });
+          sec.Walls.push({ x1: ARENA_W - 30, y1: py - 35, x2: gap, y2: py + 55, thick: 22, color: BLACK });
         }
       }
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: ARENA_W - 160, y: y0 + 110 + stepY * 1.4, w: 58, h: 20 },
+        { x: 100, y: y0 + 110 + stepY * 4.4, w: 58, h: 20 }
+      ]);
     },
 
-    // 11. Twin Sawtooth Canyons & Star Wheel (Image 8 Middle Style)
+    // 11. Twin Sawtooth Canyons & Star Wheel
     zigzagSawtooth(sec, y0, h, diff) {
-      const teeth = 9;
+      const teeth = 8;
       const stepY = (h - 240) / teeth;
       for (let i = 0; i < teeth; i++) {
         const ty = y0 + 100 + i * stepY;
-        sec.Polys.push({
-          pts: [{ x: 30, y: ty }, { x: 145, y: ty + stepY * 0.5 }, { x: 30, y: ty + stepY }],
-          color: BLACK
-        });
-        sec.Polys.push({
-          pts: [{ x: ARENA_W - 30, y: ty }, { x: ARENA_W - 145, y: ty + stepY * 0.5 }, { x: ARENA_W - 30, y: ty + stepY }],
-          color: BLACK
-        });
+        sec.Polys.push({ pts: [{ x: 25, y: ty }, { x: 135, y: ty + stepY * 0.5 }, { x: 25, y: ty + stepY }], color: BLACK });
+        sec.Polys.push({ pts: [{ x: ARENA_W - 25, y: ty }, { x: ARENA_W - 135, y: ty + stepY * 0.5 }, { x: ARENA_W - 25, y: ty + stepY }], color: BLACK });
       }
-      // Center peg field + bottom spiked star wheel
-      for (let r = 0; r < 6; r++) {
+      for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 6; c++) {
-          sec.Pegs.push({
-            x: 280 + c * 128 + (r % 2) * 45,
-            y: y0 + 180 + r * 145,
-            r: 16,
-            color: BLACK,
-            restitution: 0.75
-          });
+          sec.Pegs.push({ x: 260 + c * 150 + (r % 2) * 55, y: y0 + 180 + r * 185, r: 18, color: BLACK, restitution: 0.8 });
         }
       }
-      sec.Spinners.push({ x: ARENA_W / 2, y: y0 + h - 220, len: 220, thick: 26, speed: 0.045, color: BLACK, style: "star4" });
+      sec.Spinners.push({ x: ARENA_W / 2, y: y0 + h - 220, len: 230, thick: 24, speed: 0.048, color: BLACK, style: "star4" });
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 280, y: y0 + h - 110, w: 72, h: 22 },
+        { x: ARENA_W - 352, y: y0 + h - 110, w: 72, h: 22 }
+      ]);
     },
 
-    // 12. Stadium Goal Qualification Arena
+    // 12. Stadium Goal Qualification Arena (Pass goal mouth or avoid Red Side Penalties!)
     soccerGoalArena(sec, y0, h, diff) {
       const cx = ARENA_W / 2;
       ARENA_BUILDERS.diamondGrid(sec, y0, h * 0.65, diff);
       const goalY = y0 + h * 0.78;
-      sec.Walls.push({ x1: cx - 220, y1: goalY - 70, x2: cx - 220, y2: goalY + 70, thick: 26, color: "#ffffff" });
-      sec.Walls.push({ x1: cx + 220, y1: goalY - 70, x2: cx + 220, y2: goalY + 70, thick: 26, color: "#ffffff" });
-      sec.Spinners.push({ x: cx, y: goalY, len: 180, thick: 22, speed: 0.055, color: "#ef4444", style: "bar" });
-      sec.Banners.push({ x: cx - 205, y: goalY + 45, w: 410, h: 24, color: "#00ff22" });
+      sec.Walls.push({ x1: cx - 250, y1: goalY - 70, x2: cx - 250, y2: goalY + 70, thick: 24, color: "#ffffff" });
+      sec.Walls.push({ x1: cx + 250, y1: goalY - 70, x2: cx + 250, y2: goalY + 70, thick: 24, color: "#ffffff" });
+      sec.Spinners.push({ x: cx, y: goalY, len: 170, thick: 22, speed: 0.055, color: BLACK, style: "bar" });
+      sec.Banners.push({ x: cx - 230, y: goalY + 45, w: 460, h: 22, color: GREEN_SAFE });
+
+      // Red Reset Penalty Zones outside the goalposts!
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 90, y: goalY + 45, w: 120, h: 22 },
+        { x: ARENA_W - 210, y: goalY + 45, w: 120, h: 22 }
+      ]);
     },
 
-    // 13. Triple Hourglass Bottleneck
+    // 13. Triple Hourglass & Red Reset Bumpers
     hourglassArena(sec, y0, h, diff) {
       const cx = ARENA_W / 2;
-      const gap = diff === "hard" ? 105 : 135;
+      const gap = 165; // Wide 165px hourglass throat!
       [0.28, 0.58, 0.85].forEach((pct, idx) => {
         const py = y0 + h * pct;
-        sec.Walls.push({ x1: 30, y1: py - 190, x2: cx - gap / 2, y2: py, thick: 32, color: BLACK });
-        sec.Walls.push({ x1: ARENA_W - 30, y1: py - 190, x2: cx + gap / 2, y2: py, thick: 32, color: BLACK });
-        sec.Spinners.push({ x: cx, y: py + 85, len: 185, thick: 20, speed: (idx % 2 === 0 ? 1 : -1) * 0.05, color: BLACK, style: "cross" });
+        sec.Walls.push({ x1: 30, y1: py - 180, x2: cx - gap / 2, y2: py, thick: 30, color: BLACK });
+        sec.Walls.push({ x1: ARENA_W - 30, y1: py - 180, x2: cx + gap / 2, y2: py, thick: 30, color: BLACK });
+        sec.Spinners.push({ x: cx, y: py + 95, len: 190, thick: 20, speed: (idx % 2 === 0 ? 1 : -1) * 0.05, color: BLACK, style: "cross" });
       });
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: cx - 240, y: y0 + h * 0.44, w: 70, h: 22 },
+        { x: cx + 170, y: y0 + h * 0.44, w: 70, h: 22 },
+        { x: cx - 240, y: y0 + h * 0.72, w: 70, h: 22 },
+        { x: cx + 170, y: y0 + h * 0.72, w: 70, h: 22 }
+      ]);
     },
 
-    // 14. Swinging Pendulums & Moving Bridges
+    // 14. Swinging Hammers & Red Reset Traps
     pendulumArena(sec, y0, h, diff) {
       for (let r = 0; r < 4; r++) {
-        const ry = y0 + 220 + r * 310;
-        [320, 600, 880].forEach((px, i) => {
+        const ry = y0 + 210 + r * 310;
+        [320, 640, 960].forEach((px, i) => {
           sec.Spinners.push({
             x: px,
             y: ry,
-            len: 210,
+            len: 215,
             thick: 22,
-            speed: ((r + i) % 2 === 0 ? 1 : -1) * 0.045,
+            speed: ((r + i) % 2 === 0 ? 1 : -1) * 0.048,
             color: BLACK,
             style: "cross"
           });
         });
-        sec.Pegs.push({ x: 460, y: ry + 140, r: 34, color: BLACK, restitution: 0.9 });
-        sec.Pegs.push({ x: 740, y: ry + 140, r: 34, color: BLACK, restitution: 0.9 });
+        sec.Pegs.push({ x: 480, y: ry + 145, r: 30, color: BLACK, restitution: 0.9 });
+        sec.Pegs.push({ x: 800, y: ry + 145, r: 30, color: BLACK, restitution: 0.9 });
       }
+
+      addRedZonesByDifficulty(sec, y0, h, diff, [
+        { x: 140, y: y0 + 520, w: 75, h: 22 },
+        { x: ARENA_W - 215, y: y0 + 520, w: 75, h: 22 },
+        { x: ARENA_W / 2 - 40, y: y0 + 1140, w: 80, h: 22 }
+      ]);
     }
   };
 
-  // Builds a complete stacked world from 1 (Small), 2 (Medium), or 4 (Long) Arenas
   const WORLD_BUILDER = {
     buildWorld(trackId, lengthOption, difficulty, rng) {
       const numArenas = lengthOption === "small" ? 1 : lengthOption === "long" ? 4 : 2;
@@ -796,7 +759,7 @@
       }
 
       const sections = [];
-      let curY = 260;
+      let curY = 250;
       const arenaH = 1480;
 
       chosenTypes.forEach((type, idx) => {
@@ -814,33 +777,33 @@
           Spinners: [],
           Banners: [],
           Zones: [],
+          RedZones: [],
           dynamicItems: []
         };
         const fn = ARENA_BUILDERS[type] || ARENA_BUILDERS.diamondGrid;
         fn(sec, curY, arenaH, difficulty);
 
-        // Smooth exit funnel into next section or finish line
         const exitY = curY + arenaH - 35;
-        sec.Walls.push({ x1: 25, y1: exitY - 85, x2: 155, y2: exitY, thick: 32, color: BLACK });
-        sec.Walls.push({ x1: ARENA_W - 25, y1: exitY - 85, x2: ARENA_W - 155, y2: exitY, thick: 32, color: BLACK });
+        sec.Walls.push({ x1: 25, y1: exitY - 85, x2: 145, y2: exitY, thick: 30, color: BLACK });
+        sec.Walls.push({ x1: ARENA_W - 25, y1: exitY - 85, x2: ARENA_W - 145, y2: exitY, thick: 30, color: BLACK });
 
         sections.push(sec);
         curY += arenaH;
       });
 
       const finishY = curY + 40;
-      const totalHeight = finishY + 260;
+      const totalHeight = finishY + 240;
       return { sections, finishY, totalHeight };
     },
 
     buildCustomWorld(customItems) {
-      const h = 1800;
+      const h = 1600;
       const sec = {
         index: 1,
         total: 1,
         type: "custom",
-        yStart: 260,
-        yEnd: 260 + h,
+        yStart: 250,
+        yEnd: 250 + h,
         Walls: [],
         Boxes: [],
         Pegs: [],
@@ -849,22 +812,25 @@
         Spinners: [],
         Banners: [],
         Zones: [],
+        RedZones: [],
         dynamicItems: []
       };
 
-      const scaleX = ARENA_W / 400;
+      const scaleX = ARENA_W / 520;
       customItems.forEach(item => {
         const x = item.x * scaleX;
-        const y = 260 + item.y;
+        const y = 250 + item.y;
         const scl = item.scale || 1;
         const rad = ((item.angle || 0) * Math.PI) / 180;
 
-        if (item.type === "diamond") {
-          sec.Boxes.push({ x, y, w: 68 * scl, h: 68 * scl, angle: rad || Math.PI / 4, color: BLACK });
+        if (item.type === "redReset") {
+          sec.RedZones.push({ x: x - 55 * scl, y: y - 12 * scl, w: 110 * scl, h: 24 * scl });
+        } else if (item.type === "diamond") {
+          sec.Boxes.push({ x, y, w: 58 * scl, h: 58 * scl, angle: rad || Math.PI / 4, color: BLACK });
         } else if (item.type === "circleNode") {
-          sec.Pegs.push({ x, y, r: 24 * scl, color: BLACK, restitution: 0.7 });
-          sec.Boxes.push({ x: x - 55 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
-          sec.Boxes.push({ x: x + 55 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
+          sec.Pegs.push({ x, y, r: 20 * scl, color: BLACK, restitution: 0.75 });
+          sec.Boxes.push({ x: x - 65 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
+          sec.Boxes.push({ x: x + 65 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
         } else if (item.type === "hammer") {
           sec.Walls.push({
             x1: x - Math.cos(rad) * 48 * scl,
@@ -874,18 +840,16 @@
             thick: 16 * scl,
             color: BLACK
           });
-          sec.Pegs.push({ x, y: y + 36 * scl, r: 16 * scl, color: BLACK, restitution: 0.85 });
+          sec.Pegs.push({ x, y: y + 36 * scl, r: 15 * scl, color: BLACK, restitution: 0.85 });
         } else if (item.type === "star") {
-          sec.Spinners.push({ x, y, len: 120 * scl, thick: 22 * scl, speed: 0.05, color: BLACK, style: "star4" });
+          sec.Spinners.push({ x, y, len: 120 * scl, thick: 20 * scl, speed: 0.05, color: BLACK, style: "star4" });
         } else if (item.type === "halfMoon") {
-          sec.HalfMoons.push({ x, y, r: 58 * scl, angle: rad, color: BLACK });
+          sec.HalfMoons.push({ x, y, r: 54 * scl, angle: rad, color: BLACK });
         } else if (item.type === "cross") {
-          sec.Spinners.push({ x, y, len: 165 * scl, thick: 20 * scl, speed: 0.05, color: BLACK, style: "cross" });
+          sec.Spinners.push({ x, y, len: 160 * scl, thick: 20 * scl, speed: 0.05, color: BLACK, style: "cross" });
         } else if (item.type === "funnel") {
-          sec.Walls.push({ x1: x - 180 * scl, y1: y - 70 * scl, x2: x - 55 * scl, y2: y + 70 * scl, thick: 28, color: BLACK });
-          sec.Walls.push({ x1: x + 180 * scl, y1: y - 70 * scl, x2: x + 55 * scl, y2: y + 70 * scl, thick: 28, color: BLACK });
-        } else if (item.type === "bowl") {
-          sec.Walls.push(...buildArcWalls(x, y, 180 * scl, Math.PI * 0.15, Math.PI * 0.85, 8, 28, BLACK));
+          sec.Walls.push({ x1: x - 190 * scl, y1: y - 70 * scl, x2: x - 75 * scl, y2: y + 70 * scl, thick: 26, color: BLACK });
+          sec.Walls.push({ x1: x + 190 * scl, y1: y - 70 * scl, x2: x + 75 * scl, y2: y + 70 * scl, thick: 26, color: BLACK });
         } else if (item.type === "ghostZone") {
           sec.Zones.push({ x: x - 220 * scl, y: y - 60 * scl, w: 440 * scl, h: 120 * scl, kind: "ghost", label: "NO COLLISION ZONE" });
         } else {
@@ -895,19 +859,19 @@
             y1: y - Math.sin(rad) * half,
             x2: x + Math.cos(rad) * half,
             y2: y + Math.sin(rad) * half,
-            thick: 24,
+            thick: 22,
             color: BLACK
           });
         }
       });
 
-      const finishY = 260 + h + 40;
-      return { sections: [sec], finishY, totalHeight: finishY + 260 };
+      const finishY = 250 + h + 40;
+      return { sections: [sec], finishY, totalHeight: finishY + 240 };
     }
   };
 
   // ============================================================================
-  // UI CONTROLLER & CUSTOM TOURNAMENT / LOGO CREATOR
+  // UI CONTROLLER
   // ============================================================================
   const UI = {
     manualSelected: new Set(["DZ", "MA", "TN", "EG", "SA", "FR", "BR", "AR", "DE", "JP", "ES", "SN"]),
@@ -929,13 +893,13 @@
       Editor.init();
 
       const badge = document.getElementById("totalCountriesBadge");
-      if (badge) badge.textContent = `${getAllMarblesPool().length} Flags`;
+      if (badge) badge.textContent = `${getAllMarblesPool().length} FLAGS`;
 
       window.addEventListener("resize", () => {
         const canvas = document.getElementById("raceCanvas");
         if (canvas && document.getElementById("screen-race").classList.contains("active")) {
-          canvas.width = canvas.clientWidth || window.innerWidth || 360;
-          canvas.height = canvas.clientHeight || window.innerHeight || 640;
+          canvas.width = canvas.clientWidth || window.innerWidth || 640;
+          canvas.height = canvas.clientHeight || window.innerHeight || 360;
         }
       });
     },
@@ -944,6 +908,8 @@
       document.getElementById("coinCount").textContent = State.coins;
       const sb = document.getElementById("btnSound");
       if (sb) sb.textContent = SFX.enabled ? "🔊 SFX" : "🔇 Mute";
+      const mb = document.getElementById("btnMusic");
+      if (mb) mb.textContent = SFX.musicEnabled ? "🎵 BGM: ON" : "🎵 BGM";
     },
 
     toggleSound() {
@@ -953,25 +919,25 @@
       if (SFX.enabled) SFX.qualifyDing();
     },
 
-    async toggleOrientation() {
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          const cur = screen.orientation.type || "";
-          if (cur.includes("portrait")) await screen.orientation.lock("landscape");
-          else await screen.orientation.lock("portrait");
-          return;
-        }
-      } catch (e) {}
-      alert("Rotate your phone sideways for Wide Broadcast Landscape View!");
+    toggleMusic() {
+      const audio = document.getElementById("bgmAudio");
+      if (!audio) return;
+      SFX.musicEnabled = !SFX.musicEnabled;
+      if (SFX.musicEnabled) {
+        audio.volume = 0.28;
+        audio.play().catch(() => {});
+      } else {
+        audio.pause();
+      }
+      this.refreshHeader();
     },
 
     async setOrientationPref(mode) {
       State.settings.orientation = mode;
       saveState();
       try {
-        if (screen.orientation) {
-          if (mode === "any" && screen.orientation.unlock) screen.orientation.unlock();
-          else if (screen.orientation.lock) await screen.orientation.lock(mode);
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock(mode === "any" ? "landscape" : mode);
         }
       } catch (e) {}
     },
@@ -995,7 +961,7 @@
       document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
       document.getElementById("screen-" + id).classList.add("active");
       if (btn) {
-        document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".rail-nav button").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
       }
       if (id === "stats") this.renderStatsScreen();
@@ -1019,7 +985,7 @@
       });
       const betEl = document.getElementById("crBetCountry");
       if (betEl) {
-        betEl.innerHTML = `<option value="">-- Optional: Pick Podium Bet (+150 🪙) --</option>` + opts;
+        betEl.innerHTML = `<option value="">-- Optional: Pick Podium Bet (+200 🪙) --</option>` + opts;
       }
 
       document.getElementById("careerCountrySelect").value = State.career.countryCode || "DZ";
@@ -1030,7 +996,6 @@
       this.updateManualCount();
     },
 
-    // Custom Logo File Upload -> Circular Resized DataURL
     handleLogoUpload(input) {
       const file = input.files && input.files[0];
       if (!file) return;
@@ -1039,14 +1004,14 @@
         const img = new Image();
         img.onload = () => {
           const cnv = document.createElement("canvas");
-          cnv.width = 72;
-          cnv.height = 72;
+          cnv.width = 80;
+          cnv.height = 80;
           const ctx = cnv.getContext("2d");
           ctx.beginPath();
-          ctx.arc(36, 36, 36, 0, Math.PI * 2);
+          ctx.arc(40, 40, 40, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
-          ctx.drawImage(img, 0, 0, 72, 72);
+          ctx.drawImage(img, 0, 0, 80, 80);
           this.uploadedLogoDataUrl = cnv.toDataURL("image/png");
           document.getElementById("cmLogoPreview").src = this.uploadedLogoDataUrl;
         };
@@ -1067,10 +1032,10 @@
       const color = document.getElementById("cmColor").value || "#ef4444";
       const color2 = document.getElementById("cmColor2").value || "#ffffff";
       const region = document.getElementById("cmRegion").value || "Custom";
-      const fact = document.getElementById("cmFact").value.trim() || `${name} (${iso3}) is a custom-created contender!`;
+      const fact = document.getElementById("cmFact").value.trim() || `${name} (${iso3}) is a custom contender!`;
 
       if (!name) {
-        alert("Please enter a Marble or Team Name!");
+        alert("Please enter a Team or Country Name!");
         return;
       }
       const code = "CM_" + Date.now().toString(36).toUpperCase();
@@ -1081,6 +1046,7 @@
         flag: "",
         color,
         color2,
+        stripeColors: [color, color2, color],
         logoDataUrl: this.uploadedLogoDataUrl || null,
         region: [region, "CUSTOM"],
         small: true,
@@ -1095,7 +1061,7 @@
       this.renderCustomMarblesList();
       document.getElementById("cmName").value = "";
       this.clearUploadedLogo();
-      alert(`Custom Marble "${name} (${iso3})" added!`);
+      alert(`Custom Marble "${name} (${iso3})" created!`);
     },
 
     deleteCustomMarble(code) {
@@ -1112,13 +1078,13 @@
       if (!wrap) return;
       const list = State.customMarbles || [];
       if (!list.length) {
-        wrap.innerHTML = `<div style="font-size:0.78rem; color:var(--muted);">No custom marbles yet. Upload a logo or pick colors above!</div>`;
+        wrap.innerHTML = `<div style="font-size:0.76rem; color:var(--muted);">No custom marbles yet. Upload a 2D logo above!</div>`;
         return;
       }
       wrap.innerHTML = list.map(m => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#090d16; padding:6px 10px; border-radius:8px; margin-bottom:6px; border-left:5px solid ${m.color};">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:6px; border-left:4px solid ${m.color};">
           <div style="display:flex; align-items:center; gap:8px;">
-            ${m.logoDataUrl ? `<img src="${m.logoDataUrl}" style="width:28px;height:28px;border-radius:50%;" />` : `<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:${m.color};"></span>`}
+            ${m.logoDataUrl ? `<img src="${m.logoDataUrl}" style="width:26px;height:26px;border-radius:50%;" />` : `<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${m.color};"></span>`}
             <strong>${m.name} (${m.iso3})</strong> <span class="tag">${m.region[0]}</span>
           </div>
           <button class="btn btn-sm btn-red" onclick="UI.deleteCustomMarble('${m.code}')">Delete</button>
@@ -1126,7 +1092,6 @@
       `).join("");
     },
 
-    // Custom Tournament / League / Cup Builder
     saveCustomTournament(playImmediately) {
       const name = document.getElementById("ctName").value.trim() || ("Custom Cup #" + ((State.customTournaments?.length || 0) + 1));
       const rawFmt = document.getElementById("ctFormat").value;
@@ -1171,19 +1136,18 @@
         wrap.innerHTML = "";
         return;
       }
-      wrap.innerHTML = `<div style="font-size:0.8rem; font-weight:800; color:var(--gold); margin-bottom:6px;">📂 Your Saved Custom Cups & Leagues:</div>` +
-        list.map(c => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#090d16; padding:8px 10px; border-radius:8px; margin-bottom:6px; border:1px solid #334155;">
-            <div>
-              <strong>${c.name}</strong>
-              <div style="font-size:0.72rem; color:var(--muted);">${c.count} Marbles • ${c.rounds} Laps • ${c.length.toUpperCase()} Track</div>
-            </div>
-            <div style="display:flex; gap:5px;">
-              <button class="btn btn-sm btn-green" onclick="Game.startCup('${c.id}')">▶ Play</button>
-              <button class="btn btn-sm btn-red" onclick="UI.deleteCustomTournament('${c.id}')">🗑️</button>
-            </div>
+      wrap.innerHTML = list.map(c => `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:6px; border:1px solid #334155;">
+          <div>
+            <strong>${c.name}</strong>
+            <span style="font-size:0.72rem; color:var(--muted); margin-left:6px;">${c.count} Flags • ${c.rounds} Laps • ${c.length.toUpperCase()}</span>
           </div>
-        `).join("");
+          <div style="display:flex; gap:5px;">
+            <button class="btn btn-sm btn-green" onclick="Game.startCup('${c.id}')">▶ Play</button>
+            <button class="btn btn-sm btn-red" onclick="UI.deleteCustomTournament('${c.id}')">🗑️</button>
+          </div>
+        </div>
+      `).join("");
     },
 
     toggleManualPicker() {
@@ -1233,7 +1197,7 @@
     },
 
     savePreset() {
-      const name = prompt("Preset Name:", "Broadcast Setup " + (State.presets.length + 1));
+      const name = prompt("Preset Name:", "Widescreen Setup " + (State.presets.length + 1));
       if (!name) return;
       State.presets.push({
         name,
@@ -1281,10 +1245,10 @@
     renderCups() {
       const wrap = document.getElementById("cupsList");
       wrap.innerHTML = window.GAME_DATA.competitions.map(c => `
-        <div style="background:#090d16; padding:10px; border-radius:8px; border:1px solid #334155;">
-          <div style="font-weight:800; margin-bottom:4px;">${c.name}</div>
-          <div style="font-size:0.72rem; color:var(--muted); margin-bottom:8px;">
-            ${c.count} Marbles • ${c.rounds} Laps • ${c.length.toUpperCase()} Track
+        <div style="background:#070b16; padding:10px; border-radius:10px; border:1px solid #1e293b;">
+          <div style="font-weight:800; margin-bottom:4px; font-size:0.84rem;">${c.name}</div>
+          <div style="font-size:0.7rem; color:var(--muted); margin-bottom:8px;">
+            ${c.count} Flags • ${c.rounds} Laps • ${c.length.toUpperCase()}
           </div>
           <button class="btn btn-sm btn-block" onclick="Game.startCup('${c.id}')">Start Cup</button>
         </div>
@@ -1293,16 +1257,16 @@
 
     renderCareerBox() {
       const stages = [
-        "Stage 1/4: Regional Qualifier (Top 15 Advance - Diamond Lattice)",
-        "Stage 2/4: Continental Group Stage (Top 10 Advance - Circular Gear Matrix)",
-        "Stage 3/4: World Cup Semi-Final (Top 5 Advance - Star Conveyor Maze)",
-        "Stage 4/4: World Marble Cup Final (Win 1st Place - Algodoo Megamix)"
+        "Stage 1/4: Regional Qualifier (Top 15 Advance)",
+        "Stage 2/4: Continental Group Stage (Top 10 Advance)",
+        "Stage 3/4: World Cup Semi-Final (Top 5 Advance)",
+        "Stage 4/4: World Marble Cup Final (Win 1st Place!)"
       ];
       const cObj = findMarbleByCode(State.career.countryCode);
       document.getElementById("careerStatusBox").innerHTML = `
-        <div style="background:#090d16; padding:10px; border-radius:8px; border:1px solid #22c55e;">
-          <strong>Nation:</strong> ${cObj.flag || "🔵"} ${cObj.name} (${cObj.iso3})<br/>
-          <strong>Stage:</strong> ${stages[State.career.stage] || stages[0]}
+        <div style="background:#070b16; padding:8px 12px; border-radius:8px; border:1px solid var(--neon-green);">
+          <strong>Nation:</strong> ${cObj.flag || "🔵"} ${cObj.name} (${cObj.iso3}) &nbsp;|&nbsp;
+          <strong>${stages[State.career.stage] || stages[0]}</strong>
         </div>
       `;
     },
@@ -1310,9 +1274,9 @@
     renderStatsScreen() {
       const rec = State.records;
       document.getElementById("recordsSummary").innerHTML = `
-        <div class="tag">🔥 Win Streak: <strong>${rec.longestStreak.country} (${rec.longestStreak.streak})</strong></div>
-        <div class="tag">🚀 Best Comeback: <strong>${rec.bestComeback.country} (+${rec.bestComeback.gained})</strong></div>
-        <div class="tag">⏱️ Closest Finish: <strong>${rec.closestFinish.ms < 90000 ? rec.closestFinish.pair + " (" + rec.closestFinish.ms + "ms)" : "--"}</strong></div>
+        <div class="tag">🔥 Streak: <strong>${rec.longestStreak.country} (${rec.longestStreak.streak})</strong></div>
+        <div class="tag">🚀 Comeback: <strong>${rec.bestComeback.country} (+${rec.bestComeback.gained})</strong></div>
+        <div class="tag">⏱️ Closest: <strong>${rec.closestFinish.ms < 90000 ? rec.closestFinish.pair + " (" + rec.closestFinish.ms + "ms)" : "--"}</strong></div>
         <div class="tag">🪙 Coins: <strong>${State.coins}</strong></div>
       `;
 
@@ -1342,9 +1306,8 @@
       const avg = s.races > 0 ? (s.posSum / s.races).toFixed(1) : "N/A";
       const recentStr = s.recent.length ? s.recent.map(p => "#" + p).join(", ") : "No races yet";
       document.getElementById("countryProfileView").innerHTML = `
-        <div style="background:#090d16; padding:10px; border-radius:8px; border-left:5px solid ${c.color};">
-          <div style="font-size:1.2rem; font-weight:800;">${c.flag || "🔵"} ${c.name} (${c.iso3 || c.code})</div>
-          <p style="font-size:0.78rem; color:var(--muted); margin:6px 0;">${c.fact}</p>
+        <div style="background:#070b16; padding:10px; border-radius:8px; border-left:4px solid ${c.color};">
+          <div style="font-size:1.05rem; font-weight:800;">${c.flag || "🔵"} ${c.name} (${c.iso3 || c.code})</div>
           <div class="grid-3" style="margin-top:6px;">
             <div class="tag">Races: <strong>${s.races}</strong></div>
             <div class="tag">Wins: <strong>${s.wins}</strong></div>
@@ -1353,7 +1316,7 @@
             <div class="tag">Cups: <strong>${s.cups}</strong></div>
             <div class="tag">Avg Pos: <strong>${avg}</strong></div>
           </div>
-          <div style="font-size:0.78rem; margin-top:6px; color:var(--gold);">Recent Finishes: ${recentStr}</div>
+          <div style="font-size:0.75rem; margin-top:6px; color:var(--gold);">Recent Finishes: ${recentStr}</div>
         </div>
       `;
     },
@@ -1364,9 +1327,9 @@
         const owned = State.unlockedSkins.includes(sk.id);
         const equipped = State.equippedSkin === sk.id;
         return `
-          <div style="background:#090d16; padding:10px; border-radius:8px; border:1px solid ${equipped ? 'var(--gold)' : '#334155'};">
-            <div style="font-weight:700;">${sk.name}</div>
-            <div style="font-size:0.78rem; color:var(--muted); margin:4px 0;">${owned ? "Unlocked" : "Cost: 🪙 " + sk.cost}</div>
+          <div style="background:#070b16; padding:8px; border-radius:8px; border:1px solid ${equipped ? 'var(--neon-cyan)' : '#1e293b'};">
+            <div style="font-weight:700; font-size:0.8rem;">${sk.name}</div>
+            <div style="font-size:0.72rem; color:var(--muted); margin:3px 0;">${owned ? "Unlocked" : "Cost: 🪙 " + sk.cost}</div>
             <button class="btn btn-sm btn-block ${equipped ? 'btn-green' : ''}" onclick="UI.buyOrEquipSkin('${sk.id}')">
               ${equipped ? "✓ Equipped" : owned ? "Equip" : "Unlock"}
             </button>
@@ -1378,12 +1341,12 @@
       al.innerHTML = window.GAME_DATA.achievements.map(a => {
         const done = State.achievements.includes(a.id);
         return `
-          <div style="background:#090d16; padding:8px 10px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${done ? '#22c55e' : '#475569'};">
+          <div style="background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${done ? '#00ff66' : '#334155'};">
             <div>
-              <div style="font-weight:700;">${done ? "✅" : "🔒"} ${a.name}</div>
-              <div style="font-size:0.75rem; color:var(--muted);">${a.desc}</div>
+              <div style="font-weight:700; font-size:0.78rem;">${done ? "✅" : "🔒"} ${a.name}</div>
+              <div style="font-size:0.7rem; color:var(--muted);">${a.desc}</div>
             </div>
-            <div class="coin-badge">+${a.reward}</div>
+            <div class="coin-pill">+${a.reward}</div>
           </div>
         `;
       }).join("");
@@ -1416,7 +1379,7 @@
     },
 
     openSettings() {
-      document.getElementById("optOrientation").value = State.settings.orientation || "any";
+      document.getElementById("optOrientation").value = State.settings.orientation || "landscape";
       document.getElementById("optLang").value = State.settings.lang;
       document.getElementById("optMaxMarbles").value = State.settings.maxMarbles;
       document.getElementById("optFontScale").value = State.settings.fontScale;
@@ -1447,22 +1410,22 @@
         document.getElementById("winnerModal").classList.remove("active");
         Game.reRunCurrentRound();
       } else {
-        State.coins += 50;
+        State.coins += 100;
         saveState();
-        alert("+50 Coins added!");
+        alert("+100 Coins added!");
       }
     }
   };
 
   // ============================================================================
-  // UPGRADED VECTOR TRACK EDITOR (WITH GRID SNAP & ALGODOD OBSTACLES)
+  // WIDESCREEN VECTOR TRACK EDITOR (WITH RED RESET ZONE PLACEMENT!)
   // ============================================================================
   const Editor = {
     tool: "select",
     canvas: null,
     ctx: null,
     scrollY: 0,
-    virtualHeight: 1800,
+    virtualHeight: 1600,
     selectedIndex: -1,
     isDragging: false,
     snapGrid: true,
@@ -1474,13 +1437,13 @@
 
       const getCoords = e => {
         const rect = this.canvas.getBoundingClientRect();
-        let x = Math.round(((e.clientX - rect.left) / rect.width) * 400);
-        let y = Math.round(((e.clientY - rect.top) / rect.height) * 350 + this.scrollY);
+        let x = Math.round(((e.clientX - rect.left) / rect.width) * 520);
+        let y = Math.round(((e.clientY - rect.top) / rect.height) * 290 + this.scrollY);
         if (this.snapGrid) {
           x = Math.round(x / 20) * 20;
           y = Math.round(y / 20) * 20;
         }
-        return { x: Math.max(20, Math.min(380, x)), y: Math.max(60, Math.min(this.virtualHeight - 80, y)) };
+        return { x: Math.max(24, Math.min(496, x)), y: Math.max(60, Math.min(this.virtualHeight - 80, y)) };
       };
 
       this.canvas.addEventListener("pointerdown", e => {
@@ -1488,7 +1451,7 @@
         let hitIdx = -1;
         for (let i = State.customTrack.length - 1; i >= 0; i--) {
           const ob = State.customTrack[i];
-          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 36 * (ob.scale || 1)) {
+          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 38 * (ob.scale || 1)) {
             hitIdx = i;
             break;
           }
@@ -1504,7 +1467,7 @@
             type: this.tool,
             x: pt.x,
             y: pt.y,
-            angle: this.tool === "diamond" ? 45 : 0,
+            angle: this.tool === "diamond" ? 45 : this.tool === "rampL" ? 18 : 0,
             scale: 1
           };
           State.customTrack.push(newItem);
@@ -1558,7 +1521,7 @@
       const ang = document.getElementById("inspAngle");
       const scl = document.getElementById("inspScale");
       if (!ob) {
-        title.textContent = "Selected: None (Tap any obstacle)";
+        title.textContent = "Selected: None (Tap an obstacle)";
         return;
       }
       title.textContent = `Selected: ${ob.type.toUpperCase()} (${ob.x}, ${ob.y})`;
@@ -1579,7 +1542,7 @@
     duplicateSelected() {
       const ob = State.customTrack[this.selectedIndex];
       if (!ob) return;
-      State.customTrack.push(Object.assign({}, ob, { x: Math.min(360, ob.x + 40), y: Math.min(this.virtualHeight - 80, ob.y + 40) }));
+      State.customTrack.push(Object.assign({}, ob, { x: Math.min(480, ob.x + 40), y: Math.min(this.virtualHeight - 80, ob.y + 40) }));
       this.selectedIndex = State.customTrack.length - 1;
       this.syncInspector();
       this.draw();
@@ -1595,17 +1558,18 @@
 
     loadPresetIntoEditor() {
       State.customTrack = [];
-      for (let r = 0; r < 4; r++) {
+      for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 4; c++) {
-          State.customTrack.push({ type: "diamond", x: 80 + c * 80 + (r % 2) * 30, y: 140 + r * 90, angle: 45, scale: 1 });
+          State.customTrack.push({ type: "diamond", x: 100 + c * 105 + (r % 2) * 35, y: 140 + r * 110, angle: 45, scale: 1 });
         }
       }
-      State.customTrack.push({ type: "star", x: 130, y: 580, angle: 0, scale: 1.2 });
-      State.customTrack.push({ type: "star", x: 270, y: 580, angle: 0, scale: 1.2 });
-      State.customTrack.push({ type: "ghostZone", x: 200, y: 780, angle: 0, scale: 1.1 });
-      State.customTrack.push({ type: "halfMoon", x: 120, y: 980, angle: 25, scale: 1.1 });
-      State.customTrack.push({ type: "halfMoon", x: 280, y: 980, angle: -25, scale: 1.1 });
-      State.customTrack.push({ type: "bowl", x: 200, y: 1240, angle: 0, scale: 1.3 });
+      State.customTrack.push({ type: "redReset", x: 180, y: 500, angle: 0, scale: 1 });
+      State.customTrack.push({ type: "redReset", x: 340, y: 500, angle: 0, scale: 1 });
+      State.customTrack.push({ type: "star", x: 170, y: 660, angle: 0, scale: 1.2 });
+      State.customTrack.push({ type: "star", x: 350, y: 660, angle: 0, scale: 1.2 });
+      State.customTrack.push({ type: "ghostZone", x: 260, y: 860, angle: 0, scale: 1.1 });
+      State.customTrack.push({ type: "halfMoon", x: 160, y: 1060, angle: 25, scale: 1.1 });
+      State.customTrack.push({ type: "halfMoon", x: 360, y: 1060, angle: -25, scale: 1.1 });
       this.selectedIndex = -1;
       this.syncInspector();
       this.draw();
@@ -1655,24 +1619,24 @@
       if (!this.ctx) return;
       const ctx = this.ctx;
       ctx.fillStyle = PERIWINKLE;
-      ctx.fillRect(0, 0, 400, 350);
+      ctx.fillRect(0, 0, 520, 290);
       ctx.save();
       ctx.translate(0, -this.scrollY);
 
       if (this.snapGrid) {
-        ctx.strokeStyle = "rgba(0,0,0,0.1)";
+        ctx.strokeStyle = "rgba(0,0,0,0.12)";
         ctx.lineWidth = 1;
-        for (let x = 20; x < 400; x += 20) {
-          ctx.beginPath(); ctx.moveTo(x, this.scrollY); ctx.lineTo(x, this.scrollY + 350); ctx.stroke();
+        for (let x = 20; x < 520; x += 20) {
+          ctx.beginPath(); ctx.moveTo(x, this.scrollY); ctx.lineTo(x, this.scrollY + 290); ctx.stroke();
         }
-        for (let y = Math.floor(this.scrollY / 20) * 20; y < this.scrollY + 350; y += 20) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(400, y); ctx.stroke();
+        for (let y = Math.floor(this.scrollY / 20) * 20; y < this.scrollY + 290; y += 20) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(520, y); ctx.stroke();
         }
       }
 
       ctx.fillStyle = BLACK;
       ctx.fillRect(0, 0, 12, this.virtualHeight);
-      ctx.fillRect(388, 0, 12, this.virtualHeight);
+      ctx.fillRect(508, 0, 12, this.virtualHeight);
 
       State.customTrack.forEach((item, idx) => {
         const scl = item.scale || 1;
@@ -1683,16 +1647,23 @@
         ctx.scale(scl, scl);
 
         if (idx === this.selectedIndex) {
-          ctx.strokeStyle = "#00ff22";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(-40, -30, 80, 60);
+          ctx.strokeStyle = GREEN_SAFE;
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(-45, -28, 90, 56);
         }
 
         ctx.fillStyle = BLACK;
         ctx.strokeStyle = BLACK;
         ctx.lineWidth = 6;
 
-        if (item.type === "diamond") {
+        if (item.type === "redReset") {
+          ctx.fillStyle = RED_RESET;
+          ctx.fillRect(-36, -8, 72, 16);
+          ctx.fillStyle = "#fff";
+          ctx.font = "900 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("RESET", 0, 3);
+        } else if (item.type === "diamond") {
           ctx.fillRect(-18, -18, 36, 36);
         } else if (item.type === "circleNode") {
           ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
@@ -1705,8 +1676,6 @@
         } else if (item.type === "ghostZone") {
           ctx.fillStyle = "rgba(120, 65, 18, 0.85)";
           ctx.fillRect(-65, -20, 130, 40);
-        } else if (item.type === "bowl") {
-          ctx.beginPath(); ctx.arc(0, -5, 38, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
         } else {
           ctx.fillRect(-35, -4, 70, 8);
         }
@@ -1718,7 +1687,7 @@
   };
 
   // ============================================================================
-  // CORE ALGODOD BROADCAST PHYSICS ENGINE & FIXED VIDEO RECORDER
+  // CORE WIDESCREEN PHYSICS ENGINE (WITH RED ZONE TELEPORT TO START & SPARKS!)
   // ============================================================================
   const Game = {
     session: null,
@@ -1731,6 +1700,9 @@
     camY: 0,
     lavaY: -400,
     simTick: 0,
+    totalRedResets: 0,
+    lastResetBanner: "",
+    resetParticles: [],
     mediaRecorder: null,
     recordedChunks: [],
     lastRecordedBlob: null,
@@ -1811,7 +1783,7 @@
       const gpSystem = document.getElementById("crGpSystem").value || "formula";
       const region = document.getElementById("crRegion").value;
       const track = document.getElementById("crTrack").value;
-      const seedStr = document.getElementById("crTrackSeed").value.trim() || "ALGERIA-2026";
+      const seedStr = document.getElementById("crTrackSeed").value.trim() || "ORAN-PRO-2026";
       const difficulty = document.getElementById("crDifficulty").value;
       const length = document.getElementById("crLength").value;
       const camera = document.getElementById("crCamera").value;
@@ -1917,12 +1889,6 @@
       this.launchRound();
     },
 
-    resetCareer() {
-      State.career.stage = 0;
-      saveState();
-      UI.renderCareerBox();
-    },
-
     startRivalrySeries() {
       const codeA = document.getElementById("rivalA").value;
       const codeB = document.getElementById("rivalB").value;
@@ -1963,8 +1929,8 @@
     launchRound() {
       UI.showScreen("race");
       const canvas = document.getElementById("raceCanvas");
-      canvas.width = canvas.clientWidth || window.innerWidth || 360;
-      canvas.height = canvas.clientHeight || window.innerHeight || 640;
+      canvas.width = canvas.clientWidth || window.innerWidth || 640;
+      canvas.height = canvas.clientHeight || window.innerHeight || 360;
 
       const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "diamond_grid";
       this.currentTrackId = currentTrackId;
@@ -1975,8 +1941,10 @@
       this.lavaY = -400;
       this.camY = 0;
       this.simTick = 0;
+      this.totalRedResets = 0;
+      this.lastResetBanner = "";
+      this.resetParticles = [];
 
-      // Spots left for Knockout mode
       const totalCount = this.session.activeCountries.length;
       this.spotsTotal = this.session.format === "knockout"
         ? Math.max(1, totalCount - this.session.elimPerRound)
@@ -1996,18 +1964,16 @@
         positionIterations: 6,
         velocityIterations: 5
       });
-      this.engine.gravity.y = 0.92 * (this.session.physSpeed || 1);
+      this.engine.gravity.y = 0.94 * (this.session.physSpeed || 1);
 
       const H = this.worldData.totalHeight;
-      // Zero-friction outer containment walls so marbles never stick to boundaries!
-      const wallOpts = { isStatic: true, restitution: 0.55, friction: 0, frictionStatic: 0 };
+      const wallOpts = { isStatic: true, restitution: 0.58, friction: 0, frictionStatic: 0 };
       World.add(this.engine.world, [
         Bodies.rectangle(0, H / 2, 50, H * 2, wallOpts),
         Bodies.rectangle(ARENA_W, H / 2, 50, H * 2, wallOpts),
         Bodies.rectangle(ARENA_W / 2, -80, ARENA_W + 200, 140, wallOpts)
       ]);
 
-      // Build all static and kinematic bodies in the world with zero surface friction
       this.worldData.sections.forEach(sec => {
         sec.dynamicItems = [];
 
@@ -2018,7 +1984,7 @@
           World.add(this.engine.world, Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, len + 6, w.thick || 22, {
             isStatic: true,
             angle: ang,
-            restitution: 0.5,
+            restitution: 0.55,
             friction: 0,
             frictionStatic: 0
           }));
@@ -2028,7 +1994,7 @@
           World.add(this.engine.world, Bodies.rectangle(bx.x, bx.y, bx.w, bx.h, {
             isStatic: true,
             angle: bx.angle || 0,
-            restitution: bx.restitution || 0.55,
+            restitution: bx.restitution || 0.6,
             friction: 0,
             frictionStatic: 0
           }));
@@ -2037,7 +2003,7 @@
         sec.Pegs.forEach(p => {
           World.add(this.engine.world, Bodies.circle(p.x, p.y, p.r, {
             isStatic: true,
-            restitution: p.restitution || 0.75,
+            restitution: p.restitution || 0.78,
             friction: 0,
             frictionStatic: 0
           }));
@@ -2051,7 +2017,7 @@
             World.add(this.engine.world, Bodies.rectangle((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.hypot(dx, dy), 16, {
               isStatic: true,
               angle: Math.atan2(dy, dx),
-              restitution: 0.5,
+              restitution: 0.55,
               friction: 0,
               frictionStatic: 0
             }));
@@ -2059,13 +2025,13 @@
         });
 
         sec.HalfMoons.forEach(hm => {
-          const arcWalls = buildArcWalls(hm.x, hm.y, hm.r * 0.75, hm.angle - Math.PI * 0.45, hm.angle + Math.PI * 0.45, 5, 22, BLACK);
+          const arcWalls = buildArcWalls(hm.x, hm.y, hm.r * 0.75, hm.angle - Math.PI * 0.45, hm.angle + Math.PI * 0.45, 5, 20, BLACK);
           arcWalls.forEach(w => {
             const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
-            World.add(this.engine.world, Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, Math.hypot(dx, dy), 20, {
+            World.add(this.engine.world, Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, Math.hypot(dx, dy), 18, {
               isStatic: true,
               angle: Math.atan2(dy, dx),
-              restitution: 0.65,
+              restitution: 0.68,
               friction: 0,
               frictionStatic: 0
             }));
@@ -2079,7 +2045,7 @@
             const b = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 20, {
               isStatic: true,
               angle: (k * Math.PI) / bladesCount,
-              restitution: 0.75,
+              restitution: 0.78,
               friction: 0,
               frictionStatic: 0
             });
@@ -2098,25 +2064,25 @@
 
       const list = this.session.activeCountries.slice();
       const r = list.length > 180 ? 13 : list.length > 90 ? 15.5 : 18;
-      const usableW = ARENA_W - 160;
-      const cols = Math.max(10, Math.floor(usableW / (r * 2.25)));
+      const usableW = ARENA_W - 180;
+      const cols = Math.max(12, Math.floor(usableW / (r * 2.25)));
 
       list.forEach((country, idx) => {
-        MarbleTextureCache.getTexture(country); // Pre-warm full-bleed circular flag texture
+        MarbleTextureCache.getTexture(country);
         const col = idx % cols;
         const row = Math.floor(idx / cols);
-        const x = 80 + col * (usableW / Math.max(1, cols - 1)) + (rng() - 0.5) * 8;
+        const x = 90 + col * (usableW / Math.max(1, cols - 1)) + (rng() - 0.5) * 8;
         const y = 35 + row * (r * 2.2) + (rng() - 0.5) * 5;
 
         const body = Bodies.circle(x, y, r, {
-          restitution: 0.58,
+          restitution: 0.6,
           friction: 0,
           frictionStatic: 0,
-          frictionAir: 0.002,
-          Slop: 0.02,
+          frictionAir: 0.0018,
+          slop: 0.02,
           density: 0.0025
         });
-        Body.setVelocity(body, { x: (rng() - 0.5) * 4, y: 2.5 + rng() * 2 });
+        Body.setVelocity(body, { x: (rng() - 0.5) * 4.5, y: 2.8 + rng() * 2 });
         World.add(this.engine.world, body);
 
         this.marbles.push({
@@ -2126,6 +2092,7 @@
           x,
           y,
           angle: 0,
+          resets: 0,
           prevRank: idx + 1,
           rankDelta: 0,
           lastPos: { x, y },
@@ -2138,6 +2105,34 @@
           midRank: idx + 1
         });
       });
+    },
+
+    // Spawns red spark burst & teleports marble back to the very beginning of the race!
+    teleportMarbleToStart(m) {
+      const { Body } = window.Matter;
+      for (let i = 0; i < 10; i++) {
+        const ang = (Math.PI * 2 * i) / 10;
+        this.resetParticles.push({
+          x: m.x,
+          y: m.y,
+          vx: Math.cos(ang) * (4 + Math.random() * 4),
+          vy: Math.sin(ang) * (4 + Math.random() * 4),
+          life: 24
+        });
+      }
+      const newX = 110 + Math.random() * (ARENA_W - 220);
+      const newY = 40 + Math.random() * 45;
+      Body.setPosition(m.body, { x: newX, y: newY });
+      Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 4, y: 2.5 });
+      m.x = newX;
+      m.y = newY;
+      m.lastPos = { x: newX, y: newY };
+      m.stuckTicks = 0;
+      m.trail = [];
+      m.resets = (m.resets || 0) + 1;
+      this.totalRedResets += 1;
+      this.lastResetBanner = `🔴 ${m.country.iso3} RESET TO START!`;
+      if (this.simTick % 4 === 0) SFX.redZoneBuzzer();
     },
 
     startLoop(canvas) {
@@ -2172,7 +2167,6 @@
       const finishY = this.worldData.finishY;
       const spd = (this.session.physSpeed || 1) * 0.5;
 
-      // Rotate all spinners
       this.worldData.sections.forEach(sec => {
         sec.dynamicItems.forEach(item => {
           item.angle += item.spec.speed * spd;
@@ -2195,20 +2189,18 @@
         if (m.finished || m.eliminated) return;
 
         if (!Number.isFinite(m.body.position.x) || !Number.isFinite(m.body.position.y)) {
-          Body.setPosition(m.body, { x: ARENA_W / 2, y: (m.lastPos.y || 100) + 40 });
-          Body.setVelocity(m.body, { x: 0, y: 5 });
+          Body.setPosition(m.body, { x: ARENA_W / 2, y: 50 });
+          Body.setVelocity(m.body, { x: 0, y: 4 });
         }
 
-        // Strict horizontal containment
         if (m.body.position.x < 28 + m.r) {
           Body.setPosition(m.body, { x: 30 + m.r, y: m.body.position.y });
-          Body.setVelocity(m.body, { x: Math.abs(m.body.velocity.x) + 1.5, y: m.body.velocity.y });
+          Body.setVelocity(m.body, { x: Math.abs(m.body.velocity.x) + 2, y: m.body.velocity.y });
         } else if (m.body.position.x > ARENA_W - 28 - m.r) {
           Body.setPosition(m.body, { x: ARENA_W - 30 - m.r, y: m.body.position.y });
-          Body.setVelocity(m.body, { x: -Math.abs(m.body.velocity.x) - 1.5, y: m.body.velocity.y });
+          Body.setVelocity(m.body, { x: -Math.abs(m.body.velocity.x) - 2, y: m.body.velocity.y });
         }
 
-        // Speed clamp to prevent tunneling
         const vx = m.body.velocity.x, vy = m.body.velocity.y;
         const maxV = m.r * 0.88;
         const curV = Math.hypot(vx, vy);
@@ -2221,37 +2213,56 @@
         m.angle = m.body.angle;
         if (m.y > maxActiveY) maxActiveY = m.y;
 
-        // Check special zones (No-Collision Ghost Zone & Side Conveyor Tubes)
+        // Check RED RESET ZONES & Special Zones
         let insideGhost = false;
-        this.worldData.sections.forEach(sec => {
-          if (m.y < sec.yStart || m.y > sec.yEnd) return;
+        let hitRedReset = false;
+
+        for (let si = 0; si < this.worldData.sections.length; si++) {
+          const sec = this.worldData.sections[si];
+          if (m.y + m.r < sec.yStart || m.y - m.r > sec.yEnd) continue;
+
+          // Check Red Reset Zones: If marble touches any Red Zone, restart from the beginning!
+          for (let ri = 0; ri < sec.RedZones.length; ri++) {
+            const rz = sec.RedZones[ri];
+            if (m.x + m.r >= rz.x && m.x - m.r <= rz.x + rz.w && m.y + m.r >= rz.y && m.y - m.r <= rz.y + rz.h) {
+              hitRedReset = true;
+              break;
+            }
+          }
+          if (hitRedReset) break;
+
           sec.Zones.forEach(z => {
             if (m.x >= z.x && m.x <= z.x + z.w && m.y >= z.y && m.y <= z.y + z.h) {
               if (z.kind === "ghost") insideGhost = true;
               else if (z.kind === "conveyorDown") {
-                Body.setVelocity(m.body, { x: 0, y: 9.5 });
+                Body.setVelocity(m.body, { x: 0, y: 10 });
               }
             }
           });
-        });
+        }
+
+        if (hitRedReset) {
+          this.teleportMarbleToStart(m);
+          return;
+        }
 
         if (insideGhost !== m.inGhostZone) {
           m.inGhostZone = insideGhost;
           m.body.collisionFilter.group = insideGhost ? -2 : 0;
         }
 
-        // Fast Anti-Stuck System: Micro-impulse after 0.35s, Pop-free after 0.7s, Drop-through after 1.3s
+        // Fast Anti-Stuck System
         const movedDist = Math.hypot(m.x - m.lastPos.x, m.y - m.lastPos.y);
-        if (movedDist < 1.2) {
+        if (movedDist < 1.3) {
           m.stuckTicks += 1;
-          if (m.stuckTicks === 35) {
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 9, y: -5.5 });
-          } else if (m.stuckTicks === 75) {
-            Body.setPosition(m.body, { x: m.x + (Math.random() - 0.5) * 36, y: m.y + 42 });
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 7, y: 6.5 });
-          } else if (m.stuckTicks > 125) {
-            Body.setPosition(m.body, { x: ARENA_W * 0.2 + Math.random() * (ARENA_W * 0.6), y: m.y + 85 });
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 5, y: 7 });
+          if (m.stuckTicks === 30) {
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 10, y: -6 });
+          } else if (m.stuckTicks === 65) {
+            Body.setPosition(m.body, { x: m.x + (Math.random() - 0.5) * 45, y: m.y + 48 });
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 8, y: 7 });
+          } else if (m.stuckTicks > 105) {
+            Body.setPosition(m.body, { x: ARENA_W * 0.2 + Math.random() * (ARENA_W * 0.6), y: m.y + 90 });
+            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 5, y: 7.5 });
             m.stuckTicks = 0;
           }
         } else {
@@ -2265,7 +2276,6 @@
           if (m.trail.length > 6) m.trail.shift();
         }
 
-        // Check Survival Void or Qualification Finish Line
         if (this.session.format === "survival" && m.y < this.lavaY) {
           m.eliminated = true;
           m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
@@ -2280,7 +2290,6 @@
             SFX.qualifyDing();
           }
 
-          // In Knockout "Spots Left" mode, once all qualification spots are filled, eliminate remaining marbles!
           if (this.session.format === "knockout" && this.finishedOrder.length >= this.spotsTotal && this.spotsTotal < this.marbles.length) {
             const stragglers = this.marbles.filter(x => !x.finished && !x.eliminated).sort((a, b) => b.y - a.y);
             stragglers.forEach((st, idx) => {
@@ -2305,7 +2314,7 @@
       const { Body } = window.Matter;
       this.marbles.forEach(m => {
         if (!m.finished && !m.eliminated) {
-          Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 11, y: 8 });
+          Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 12, y: 8.5 });
         }
       });
     },
@@ -2323,9 +2332,6 @@
       return remaining.length === 0;
     },
 
-    // Renders the Authentic Broadcast Layout from Screenshots 1-6:
-    // - Left Sidebar with LAP X, COUNTRIES: Y, Live Rank List with ▲/▼ arrows, and Green SPOTS LEFT box
-    // - Right Crisp Periwinkle & Pitch-Black Arena + Bottom Holding Tube of Qualified Flag Marbles!
     renderBroadcastScene(ctx, canvas, skin) {
       const W = canvas.width;
       const H = canvas.height;
@@ -2342,7 +2348,6 @@
         ...this.eliminatedOrder.slice().reverse()
       ];
 
-      // Update rank delta arrows every 25 ticks
       if (this.simTick % 25 === 0) {
         liveRanking.forEach((m, idx) => {
           const curRank = idx + 1;
@@ -2352,16 +2357,13 @@
         });
       }
 
-      // Responsive Broadcast Sidebar Width
-      const sidebarW = Math.max(105, Math.min(185, Math.round(W * 0.21)));
+      const sidebarW = Math.max(125, Math.min(200, Math.round(W * 0.19)));
       const arenaViewX = sidebarW + 4;
       const arenaViewW = W - arenaViewX - 18;
-      const holdingTubeH = 54;
-      const arenaViewH = H - holdingTubeH - 6;
+      const holdingTubeH = 48;
+      const arenaViewH = H - holdingTubeH - 4;
 
-      // ------------------------------------------------------------------------
-      // 1. RENDER MAIN ARENA VIEWPORT
-      // ------------------------------------------------------------------------
+      // 1. RENDER MAIN ARENA
       ctx.save();
       ctx.beginPath();
       ctx.rect(arenaViewX, 0, arenaViewW, arenaViewH);
@@ -2384,7 +2386,7 @@
         focusY = finishY - visibleWorldH * 0.3;
       }
 
-      const targetCamY = Math.max(0, Math.min( Math.max(0, finishY + 60 - visibleWorldH), focusY - visibleWorldH * 0.5 ));
+      const targetCamY = Math.max(0, Math.min(Math.max(0, finishY + 60 - visibleWorldH), focusY - visibleWorldH * 0.5));
       this.camY += (targetCamY - this.camY) * 0.16;
 
       ctx.translate(arenaViewX, 0);
@@ -2394,20 +2396,16 @@
       const viewTop = this.camY - 200;
       const viewBot = this.camY + visibleWorldH + 200;
 
-      // Crisp Periwinkle Track Interior
       ctx.fillStyle = PERIWINKLE;
       ctx.fillRect(22, 0, ARENA_W - 44, finishY);
 
-      // Pitch-black outer walls with periwinkle outer tube trim
       ctx.fillStyle = BLACK;
       ctx.fillRect(0, 0, 25, finishY + 300);
       ctx.fillRect(ARENA_W - 25, 0, 25, finishY + 300);
 
-      // Draw Sections
       this.worldData.sections.forEach(sec => {
         if (sec.yEnd < viewTop || sec.yStart > viewBot) return;
 
-        // Zones (Brown No-Collision Grid & Side Conveyors)
         sec.Zones.forEach(z => {
           if (z.kind === "ghost") {
             ctx.fillStyle = "#6e3b0c";
@@ -2436,13 +2434,20 @@
           }
         });
 
-        // Banners (Green/Red/Yellow laser bars)
         sec.Banners.forEach(b => {
           ctx.fillStyle = b.color;
           ctx.fillRect(b.x, b.y, b.w, b.h);
         });
 
-        // Polygons
+        // Glowing RED RESET ZONES (Touch = Teleport back to Start!)
+        sec.RedZones.forEach(rz => {
+          ctx.fillStyle = RED_RESET;
+          ctx.fillRect(rz.x, rz.y, rz.w, rz.h);
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(rz.x, rz.y, rz.w, rz.h);
+        });
+
         sec.Polys.forEach(poly => {
           ctx.fillStyle = poly.color;
           ctx.beginPath();
@@ -2454,7 +2459,6 @@
           ctx.fill();
         });
 
-        // Rotated Boxes & Diamonds (Crisp sharp corners!)
         sec.Boxes.forEach(bx => {
           if (bx.y + bx.h < viewTop || bx.y - bx.h > viewBot) return;
           ctx.save();
@@ -2465,7 +2469,6 @@
           ctx.restore();
         });
 
-        // Half-Moons
         sec.HalfMoons.forEach(hm => {
           ctx.save();
           ctx.translate(hm.x, hm.y);
@@ -2478,7 +2481,6 @@
           ctx.restore();
         });
 
-        // Crisp Geometric Walls
         sec.Walls.forEach(w => {
           if (Math.max(w.y1, w.y2) < viewTop || Math.min(w.y1, w.y2) > viewBot) return;
           ctx.strokeStyle = w.color || BLACK;
@@ -2490,7 +2492,6 @@
           ctx.stroke();
         });
 
-        // Pegs
         sec.Pegs.forEach(p => {
           if (p.y + p.r < viewTop || p.y - p.r > viewBot) return;
           ctx.fillStyle = p.color || BLACK;
@@ -2499,7 +2500,6 @@
           ctx.fill();
         });
 
-        // Dynamic Spinners (Crosses, 4-Point Stars, Pinwheels)
         sec.dynamicItems.forEach(item => {
           const sp = item.spec;
           if (sp.y + sp.len < viewTop || sp.y - sp.len > viewBot) return;
@@ -2543,11 +2543,23 @@
         });
       });
 
-      // Bottom Qualification / Finish Laser Bar (Blue/Red/Green like Screenshots 1, 3, 7)
       ctx.fillStyle = "#0018ff";
       ctx.fillRect(25, finishY, ARENA_W - 50, 24);
 
-      // Render Marbles: Pure Full-Bleed Flag Circle (NO Outline, NO Floating Name!)
+      // Render Red Zone Teleport Spark Particles
+      for (let i = this.resetParticles.length - 1; i >= 0; i--) {
+        const pt = this.resetParticles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life -= 1;
+        ctx.fillStyle = pt.life % 2 === 0 ? "#ff1111" : "#fbbf24";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        if (pt.life <= 0) this.resetParticles.splice(i, 1);
+      }
+
+      // Render Marbles: Pure Full-Bleed Flag Circle (Zero Outline, Zero Floating Text)
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
         if (m.y + m.r < viewTop || m.y - m.r > viewBot) return;
@@ -2576,35 +2588,29 @@
 
       ctx.restore();
 
-      // ------------------------------------------------------------------------
-      // 2. RENDER BOTTOM HOLDING / QUALIFICATION TUBE (Like Screenshots 1, 2, 3, 4, 6)
-      // ------------------------------------------------------------------------
+      // 2. BOTTOM QUALIFICATION HOLDING TUBE
       const tubeY = arenaViewH + 2;
       ctx.fillStyle = BLACK;
       ctx.fillRect(arenaViewX, tubeY, arenaViewW, holdingTubeH);
 
-      // Periwinkle double-lane tube tracks
-      const lane1Y = tubeY + 6;
-      const lane2Y = tubeY + 30;
+      const lane1Y = tubeY + 5;
+      const lane2Y = tubeY + 26;
       ctx.fillStyle = PERIWINKLE;
-      ctx.fillRect(arenaViewX + 8, lane1Y, arenaViewW - 16, 18);
-      ctx.fillRect(arenaViewX + 8, lane2Y, arenaViewW - 16, 18);
+      ctx.fillRect(arenaViewX + 8, lane1Y, arenaViewW - 16, 17);
+      ctx.fillRect(arenaViewX + 8, lane2Y, arenaViewW - 16, 17);
 
-      // Draw qualified marbles lined up inside the bottom holding lanes
-      const maxPerLane = Math.floor((arenaViewW - 28) / 18);
+      const maxPerLane = Math.floor((arenaViewW - 28) / 17);
       this.finishedOrder.slice(0, maxPerLane * 2).forEach((m, idx) => {
         const tex = MarbleTextureCache.getTexture(m.country);
         const lane = idx < maxPerLane ? 0 : 1;
         const col = lane === 0 ? idx : idx - maxPerLane;
-        const mx = arenaViewX + 18 + col * 18;
-        const my = (lane === 0 ? lane1Y : lane2Y) + 9;
-        ctx.drawImage(tex, mx - 8, my - 8, 16, 16);
+        const mx = arenaViewX + 18 + col * 17;
+        const my = (lane === 0 ? lane1Y : lane2Y) + 8.5;
+        ctx.drawImage(tex, mx - 7.5, my - 7.5, 15, 15);
       });
 
-      // ------------------------------------------------------------------------
-      // 3. RENDER AUTHENTIC LEFT BROADCAST SIDEBAR (Like Screenshots 1, 2, 3, 4, 6)
-      // ------------------------------------------------------------------------
-      ctx.fillStyle = "#121316";
+      // 3. LEFT BROADCAST SIDEBAR
+      ctx.fillStyle = "#0e1117";
       ctx.fillRect(0, 0, sidebarW, H);
       ctx.strokeStyle = PERIWINKLE;
       ctx.lineWidth = 4;
@@ -2613,94 +2619,86 @@
       ctx.lineTo(sidebarW + 2, H);
       ctx.stroke();
 
-      // Top Header Box: LAP X / COUNTRIES: Y
-      ctx.fillStyle = "#222428";
-      ctx.fillRect(6, 6, sidebarW - 12, 48);
+      ctx.fillStyle = "#1c212b";
+      ctx.fillRect(6, 6, sidebarW - 12, 46);
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(6, 6, sidebarW - 12, 48);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(6, 6, sidebarW - 12, 46);
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 13px sans-serif";
+      ctx.font = "900 12px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(`LAP ${this.session.currentRound}`, sidebarW / 2, 24);
-      ctx.font = "800 11px sans-serif";
-      ctx.fillText(`COUNTRIES: ${this.marbles.length}`, sidebarW / 2, 43);
+      ctx.fillText(`LAP ${this.session.currentRound} • ${this.marbles.length} FLAGS`, sidebarW / 2, 23);
+      ctx.fillStyle = "#ff4d6d";
+      ctx.font = "800 10px sans-serif";
+      ctx.fillText(this.lastResetBanner || `🔴 RESETS: ${this.totalRedResets}`, sidebarW / 2, 42);
 
-      // Middle Live Standings Window (Rank # + Full Flag Icon + 3-Letter Code + ▲/▼ Arrow)
-      const listTop = 62;
-      const listBot = H - 64;
+      const listTop = 58;
+      const listBot = H - 58;
       const listH = listBot - listTop;
-      ctx.fillStyle = "#1d1f23";
+      ctx.fillStyle = "#161a22";
       ctx.fillRect(6, listTop, sidebarW - 12, listH);
 
-      const rowH = 20;
-      const visibleRows = Math.max(5, Math.floor((listH - 6) / rowH));
-      // Auto-scroll leaderboard window to show active pack or latest qualifiers
+      const rowH = 19;
+      const visibleRows = Math.max(4, Math.floor((listH - 6) / rowH));
       const startRankIdx = Math.max(0, Math.min(liveRanking.length - visibleRows, Math.max(0, this.finishedOrder.length - Math.floor(visibleRows * 0.6))));
 
       for (let i = 0; i < visibleRows && (startRankIdx + i) < liveRanking.length; i++) {
         const rankIdx = startRankIdx + i;
         const m = liveRanking[rankIdx];
-        const ry = listTop + 4 + i * rowH;
+        const ry = listTop + 3 + i * rowH;
 
-        // Green rank number (e.g. "13.")
-        ctx.fillStyle = m.eliminated ? "#ef4444" : "#22c55e";
-        ctx.font = "900 12px monospace";
+        ctx.fillStyle = m.eliminated ? "#ef4444" : "#00ff66";
+        ctx.font = "900 11.5px monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`${rankIdx + 1}.`, 10, ry + 14);
+        ctx.fillText(`${rankIdx + 1}.`, 10, ry + 13);
 
-        // Mini flag badge
         const tex = MarbleTextureCache.getTexture(m.country);
-        ctx.drawImage(tex, 42, ry + 2, 15, 15);
+        ctx.drawImage(tex, 42, ry + 2, 14, 14);
 
-        // White 3-letter ISO code
         ctx.fillStyle = "#ffffff";
-        ctx.font = "800 12px sans-serif";
-        ctx.fillText(m.country.iso3 || m.country.code.slice(0, 3), 63, ry + 14);
+        ctx.font = "800 11.5px sans-serif";
+        ctx.fillText(m.country.iso3 || m.country.code.slice(0, 3), 62, ry + 13);
 
-        // Cyan Up ▲ or Orange Down ▼ triangle arrow
         const arrowX = sidebarW - 18;
-        ctx.fillStyle = m.rankDelta >= 0 ? "#22d3ee" : "#f97316";
+        ctx.fillStyle = m.rankDelta >= 0 ? "#00f2fe" : "#f97316";
         ctx.beginPath();
         if (m.rankDelta >= 0) {
           ctx.moveTo(arrowX, ry + 4);
-          ctx.lineTo(arrowX - 5, ry + 14);
-          ctx.lineTo(arrowX + 5, ry + 14);
+          ctx.lineTo(arrowX - 4.5, ry + 13);
+          ctx.lineTo(arrowX + 4.5, ry + 13);
         } else {
-          ctx.moveTo(arrowX - 5, ry + 5);
-          ctx.lineTo(arrowX + 5, ry + 5);
-          ctx.lineTo(arrowX, ry + 15);
+          ctx.moveTo(arrowX - 4.5, ry + 4);
+          ctx.lineTo(arrowX + 4.5, ry + 4);
+          ctx.lineTo(arrowX, ry + 13);
         }
         ctx.closePath();
         ctx.fill();
       }
 
-      // Bottom Neon-Green Box: Latest Qualifier + SPOTS LEFT: X
-      const botBoxY = H - 56;
-      ctx.fillStyle = "#222428";
-      ctx.fillRect(6, botBoxY, sidebarW - 12, 50);
-      ctx.strokeStyle = "#00ff22";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(6, botBoxY, sidebarW - 12, 50);
+      const botBoxY = H - 52;
+      ctx.fillStyle = "#1c212b";
+      ctx.fillRect(6, botBoxY, sidebarW - 12, 46);
+      ctx.strokeStyle = GREEN_SAFE;
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(6, botBoxY, sidebarW - 12, 46);
 
       const latestFin = this.finishedOrder[this.finishedOrder.length - 1] || liveRanking[0];
       if (latestFin) {
         const tex = MarbleTextureCache.getTexture(latestFin.country);
-        ctx.drawImage(tex, sidebarW / 2 - 28, botBoxY + 6, 16, 16);
+        ctx.drawImage(tex, sidebarW / 2 - 28, botBoxY + 5, 15, 15);
         ctx.fillStyle = "#ffffff";
-        ctx.font = "900 12px sans-serif";
+        ctx.font = "900 11.5px sans-serif";
         ctx.textAlign = "left";
-        ctx.fillText(latestFin.country.iso3 || latestFin.country.code.slice(0, 3), sidebarW / 2 - 8, botBoxY + 19);
+        ctx.fillText(latestFin.country.iso3 || latestFin.country.code.slice(0, 3), sidebarW / 2 - 8, botBoxY + 17);
       }
 
       const spotsLeft = Math.max(0, this.spotsTotal - this.finishedOrder.length);
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 11px sans-serif";
+      ctx.font = "900 10.5px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(`SPOTS LEFT: ${spotsLeft}`, sidebarW / 2, botBoxY + 41);
+      ctx.fillText(`SPOTS LEFT: ${spotsLeft}`, sidebarW / 2, botBoxY + 38);
 
-      // Right-Edge Vertical Minimap Strip
       const stripX = W - 12;
       ctx.fillStyle = "#16181d";
       ctx.fillRect(stripX, 4, 10, H - 8);
@@ -2715,7 +2713,7 @@
     skipToResult() {
       if (!this.session || !this.worldData) return;
       let guard = 0;
-      while (!this.checkRaceFinished() && guard < 3500) {
+      while (!this.checkRaceFinished() && guard < 3000) {
         this.stepPhysicsSubStep();
         guard++;
       }
@@ -2763,16 +2761,15 @@
 
       UI.unlockAchievement("first_win");
       if (winner.country.small || winner.country.isCustom) UI.unlockAchievement("underdog");
-      State.coins += 30;
+      State.coins += 40;
 
-      // Check Podium Prediction Bet
       let betMsg = "";
       if (this.session.betCode) {
         const top3Codes = finalOrder.slice(0, 3).map(m => m.country.code.split("#")[0]);
         if (top3Codes.includes(this.session.betCode)) {
-          State.coins += 150;
+          State.coins += 200;
           UI.unlockAchievement("bet_win");
-          betMsg = "🎯 Podium Bet Won! +150 Coins! ";
+          betMsg = "🎯 Podium Bet Won! +200 Coins! ";
         }
       }
 
@@ -2828,14 +2825,13 @@
       document.getElementById("winHeader").textContent =
         `🏆 LAP ${this.session.currentRound}/${this.session.totalRounds} WINNER!`;
       document.getElementById("winTrackSub").textContent =
-        `Arena: ${this.getTrackDisplayName(this.currentTrackId)} (${this.session.length.toUpperCase()})`;
+        `${this.getTrackDisplayName(this.currentTrackId)} • Red Resets: ${this.totalRedResets}`;
 
-      // Render large full-bleed winning marble on the modal canvas
       const wCnv = document.getElementById("winMarbleCanvas");
       if (wCnv) {
         const wCtx = wCnv.getContext("2d");
-        wCtx.clearRect(0, 0, 84, 84);
-        wCtx.drawImage(MarbleTextureCache.getTexture(winCountry), 0, 0, 84, 84);
+        wCtx.clearRect(0, 0, 76, 76);
+        wCtx.drawImage(MarbleTextureCache.getTexture(winCountry), 0, 0, 76, 76);
       }
 
       document.getElementById("winCountryName").textContent = `${winCountry.name} (${winCountry.iso3 || winCountry.code})`;
@@ -2869,11 +2865,11 @@
           const totalPts = this.session.seriesScores[m.country.code] || 0;
           extraCol = `<span style="color:var(--gold); font-weight:700;">+${pts} (${totalPts})</span>`;
         } else if (isElim) {
-          extraCol = `<span style="color:var(--danger); font-weight:700;">❌ OUT</span>`;
+          extraCol = `<span style="color:var(--neon-red); font-weight:700;">❌ OUT</span>`;
         } else if (idx === 0) {
-          extraCol = `<span style="color:var(--accent); font-weight:700;">🥇 1ST</span>`;
+          extraCol = `<span style="color:var(--neon-green); font-weight:700;">🥇 1ST</span>`;
         } else {
-          extraCol = `<span style="color:#22c55e;">✓ SAFE</span>`;
+          extraCol = `<span style="color:#00ff66;">✓ SAFE</span>`;
         }
 
         return `
@@ -2881,6 +2877,7 @@
             <td><strong>#${idx + 1}</strong></td>
             <td>${m.country.flag || "🔵"} ${m.country.name} (${m.country.iso3 || ""})</td>
             <td>${timeStr}</td>
+            <td>${m.resets || 0}</td>
             <td>${extraCol}</td>
           </tr>
         `;
@@ -2979,9 +2976,6 @@
       document.getElementById("btnAuto").textContent = `🔄 Auto: ${this.autoPlay ? "ON" : "OFF"}`;
     },
 
-    // ========================================================================
-    // FIXED ANDROID WEBVIEW VIDEO RECORDER (Probes MimeTypes + In-App Player)
-    // ========================================================================
     toggleRecording() {
       const canvas = document.getElementById("raceCanvas");
       const btn = document.getElementById("btnRec");
@@ -2998,13 +2992,7 @@
         return;
       }
 
-      // Probe supported Android WebView video codecs
-      const mimeTypes = [
-        "video/webm;codecs=vp8",
-        "video/webm;codecs=vp9",
-        "video/webm",
-        "video/mp4"
-      ];
+      const mimeTypes = ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm", "video/mp4"];
       let chosenMime = "";
       for (const m of mimeTypes) {
         if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
@@ -3037,7 +3025,6 @@
           }
         };
 
-        // Request data chunks every 250ms so even short clips always flush data on Android!
         this.mediaRecorder.start(250);
         btn.textContent = "⏹️ STOP REC";
       } catch (e) {
@@ -3062,7 +3049,7 @@
 
     async shareClipOrResult() {
       const winName = document.getElementById("winCountryName").textContent;
-      const shareText = `🏆 ${winName} just won in Country Marble Race! #CountryMarbleRace`;
+      const shareText = `🏆 ${winName} just won in Country Marble Race Pro! #CountryMarbleRace`;
 
       if (navigator.share) {
         try {
@@ -3070,11 +3057,11 @@
             const ext = this.lastRecordedMime.includes("mp4") ? "mp4" : "webm";
             const file = new File([this.lastRecordedBlob], `marble-race.${ext}`, { type: this.lastRecordedMime });
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({ title: "Country Marble Race", text: shareText, files: [file] });
+              await navigator.share({ title: "Country Marble Race Pro", text: shareText, files: [file] });
               return;
             }
           }
-          await navigator.share({ title: "Country Marble Race", text: shareText });
+          await navigator.share({ title: "Country Marble Race Pro", text: shareText });
           return;
         } catch (e) {}
       }
