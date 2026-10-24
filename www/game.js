@@ -1,11 +1,7 @@
-// Country Marble Color Rush 4K (v6.0 Widescreen 16:9 Landscape Architecture)
-// - Matches Reference Image (1000157883_52417a.png) 100%:
-//   * Single-screen 16:9 Widescreen Landscape Arena (1920x1080 UHD Coordinate Space)
-//   * Top Dual Launch Tray with Tilted Green/Pink/Yellow Bars -> Central Green X-Funnel
-//   * Main Wide Obstacle Field: Hollow Purple Diamonds, Segmented Red Hazard Rings, Yellow Peg Chains, Green 4-Blade Spinners, Side Zig-Zag Walls
-//   * Bottom 3-Lane Horizontal Serpentine Finish Track with Green '>>>' Boosters & Checkered Finish Line!
+// Country Marble Color Rush 4K (v6.5 - 22 Genuinely Distinct Widescreen Landscape Tracks!)
+// - Every single track (1 to 22) now has its own unique architectural geometry, wall layout, top launch system, and obstacle course!
 // - Fullscreen Race Mode hides the left app menu completely
-// - 4K Ultra-HD Super-Sampled Canvas + 256x256 Flag Textures + Survival Mode (Touch Red = Instant Elimination!)
+// - 4K Ultra-HD Super-Sampled Canvas + 160x160 Full-Bleed Flag Textures + Survival Mode (Touch Red = Instant Elimination!)
 (function () {
   function hashSeed(str) {
     const s = String(str || "COLOR-RUSH-4K");
@@ -27,7 +23,6 @@
     };
   }
 
-  // Offline Web Audio Synthesizer
   const SFX = {
     ctx: null,
     enabled: true,
@@ -150,7 +145,7 @@
   }
 
   // ============================================================================
-  // 4K ULTRA-HD FULL-BLEED FLAG & CUSTOM LOGO TEXTURE CACHE (192x192 HI-DPI)
+  // 4K ULTRA-HD FULL-BLEED FLAG & CUSTOM LOGO TEXTURE CACHE
   // ============================================================================
   const MarbleTextureCache = {
     cache: {},
@@ -162,7 +157,7 @@
       const key = country.code.split("#")[0];
       if (this.cache[key]) return this.cache[key];
 
-      const size = 160; // Ultra-crisp 4K texture resolution
+      const size = 160;
       const half = size / 2;
       const cnv = document.createElement("canvas");
       cnv.width = size;
@@ -223,39 +218,122 @@
   };
 
   // ============================================================================
-  // WIDESCREEN 16:9 COLOR RUSH LANDSCAPE ARENA BUILDER (1920x1080 UHD SPACE)
+  // 22 GENUINELY DISTINCT WIDESCREEN 16:9 LANDSCAPE TRACK ARCHITECTURES!
   // ============================================================================
-  // Matches the exact layout of Reference Image `1000157883_52417a.png`:
-  // - Left Broadcast Sidebar: X = 0..310, Y = 0..1080
-  // - Widescreen Arena Box: X = 330..1890 (Width = 1560px), Y = 25..1055
-  //   1. Top Launch Tray (Y = 45..215): Left & Right chambers with tilted Green, Pink & Yellow bars feeding into a central Green X-Funnel!
-  //   2. Main Widescreen Obstacle Field (Y = 225..785):
-  //      - Hollow Purple Diamond Frames (#6344f5)
-  //      - Red Segmented Hazard Rings (#ff2a5f) -> Touching Red eliminates in Survival Mode (or resets in Reset Mode)!
-  //      - Vertical Chains of Yellow Pegs (#ffd600)
-  //      - Neon Green 4-Blade Rotating Cross Spinners (#00f566)
-  //      - Side Zig-Zag Purple Bumpers & Chevron Speed Boosts (`>>>`)
-  //   3. Bottom Funnel Throat (Y = 785..825) dropping into the Horizontal Serpentine Sprint Track (Y = 825..1045)
-  //      with 1, 2, or 3 horizontal lanes, Green `>>>` speed boosters, and a Checkered Finish Line!
-
   const PURPLE_MAIN = "#6344f5";
   const PURPLE_DARK = "#3f27b8";
   const NEON_GREEN = "#00f566";
   const NEON_RED = "#ff2a5f";
   const NEON_YELLOW = "#ffd600";
+  const NEON_CYAN = "#00e5ff";
   const DARK_BG = "#070913";
 
+  function addArcSegments(Walls, cx, cy, r, aStart, aEnd, steps, thick, color, isRed) {
+    for (let i = 0; i < steps; i++) {
+      const a1 = aStart + ((aEnd - aStart) * i) / steps;
+      const a2 = aStart + ((aEnd - aStart) * (i + 1)) / steps;
+      Walls.push({
+        x1: cx + Math.cos(a1) * r,
+        y1: cy + Math.sin(a1) * r,
+        x2: cx + Math.cos(a2) * r,
+        y2: cy + Math.sin(a2) * r,
+        thick: thick || 16,
+        color: color || PURPLE_MAIN,
+        isRed: !!isRed
+      });
+    }
+  }
+
   const LANDSCAPE_BUILDER = {
+    // 4 Different Top Launch Tray Architectures so tracks start differently!
+    buildTopTray(world, mode, L, R, CX) {
+      world.Walls.push({ x1: L + 30, y1: 50, x2: R - 30, y2: 50, thick: 18, color: PURPLE_MAIN, stripeGreen: true });
+      world.Walls.push({ x1: L + 30, y1: 50, x2: L + 75, y2: 185, thick: 18, color: PURPLE_MAIN });
+      world.Walls.push({ x1: R - 30, y1: 50, x2: R - 75, y2: 185, thick: 18, color: PURPLE_MAIN });
+
+      if (mode === "dual") {
+        // Classic Color Rush Dual Tray with Central Green X-Funnel & 2 Side Openings
+        world.Walls.push({ x1: L + 75, y1: 185, x2: CX - 210, y2: 195, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: R - 75, y1: 185, x2: CX + 210, y2: 195, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: CX - 42, y1: 50, x2: CX, y2: 100, thick: 14, color: PURPLE_MAIN });
+        world.Walls.push({ x1: CX + 42, y1: 50, x2: CX, y2: 100, thick: 14, color: PURPLE_MAIN });
+        world.Walls.push({ x1: CX, y1: 95, x2: CX, y2: 150, thick: 12, color: NEON_GREEN });
+        world.Walls.push({ x1: CX, y1: 150, x2: CX - 50, y2: 198, thick: 14, color: PURPLE_MAIN });
+        world.Walls.push({ x1: CX, y1: 150, x2: CX + 50, y2: 198, thick: 14, color: PURPLE_MAIN });
+
+        [
+          { x: L + 280, y: 120, ang: -0.28, c: NEON_GREEN, r: false },
+          { x: L + 430, y: 120, ang: -0.28, c: NEON_RED, r: true },
+          { x: L + 580, y: 120, ang: -0.28, c: NEON_YELLOW, r: false },
+          { x: R - 580, y: 120, ang: 0.28, c: NEON_YELLOW, r: false },
+          { x: R - 430, y: 120, ang: 0.28, c: NEON_RED, r: true },
+          { x: R - 280, y: 120, ang: 0.28, c: NEON_GREEN, r: false }
+        ].forEach(b => {
+          const dx = Math.cos(b.ang) * 52, dy = Math.sin(b.ang) * 52;
+          world.Walls.push({ x1: b.x - dx, y1: b.y - dy, x2: b.x + dx, y2: b.y + dy, thick: 13, color: b.c, isRed: b.r });
+        });
+      } else if (mode === "centerFunnel") {
+        // Single Central Volcano Drop Chute (All marbles converge at CX!)
+        world.Walls.push({ x1: L + 75, y1: 185, x2: CX - 95, y2: 205, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: R - 75, y1: 185, x2: CX + 95, y2: 205, thick: 16, color: PURPLE_MAIN });
+        world.Chevrons.push({ x: L + 380, y: 145, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: R - 380, y: 145, dirX: -1, dirY: 0, color: NEON_GREEN });
+        world.GreenSpinners.push({ x: CX, y: 140, len: 78, thick: 12, angle: 0, speed: 0.06 });
+      } else if (mode === "wideRain") {
+        // 5-Gate Wide Rain Shower (Marbles drop evenly across the entire width!)
+        const gates = 5;
+        const span = (R - L - 160) / gates;
+        for (let i = 0; i < gates; i++) {
+          const gx = L + 80 + i * span;
+          world.Walls.push({ x1: gx + 35, y1: 185, x2: gx + span - 35, y2: 185, thick: 16, color: PURPLE_MAIN });
+          world.YellowPegs.push({ x: gx + span / 2, y: 140, r: 9 });
+        }
+      } else if (mode === "sideAccelerators") {
+        // Center blocked; marbles race out the far-left and far-right wings!
+        world.Walls.push({ x1: L + 230, y1: 195, x2: R - 230, y2: 195, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: CX, y1: 70, x2: L + 320, y2: 165, thick: 14, color: NEON_GREEN });
+        world.Walls.push({ x1: CX, y1: 70, x2: R - 320, y2: 165, thick: 14, color: NEON_GREEN });
+        world.Chevrons.push({ x: L + 150, y: 180, dirX: 0, dirY: 1, color: NEON_YELLOW });
+        world.Chevrons.push({ x: R - 150, y: 180, dirX: 0, dirY: 1, color: NEON_YELLOW });
+      }
+    },
+
+    // Outer Arena Side Walls & Funnel Throat
+    buildOuterWalls(world, wallType, L, R, CX) {
+      if (wallType === "curvedBowl") {
+        addArcSegments(world.Walls, CX, 390, 740, Math.PI * 0.56, Math.PI * 0.96, 12, 18, PURPLE_MAIN);
+        addArcSegments(world.Walls, CX, 390, 740, Math.PI * 0.04, Math.PI * 0.44, 12, 18, PURPLE_MAIN);
+      } else if (wallType === "straightStadium") {
+        world.Walls.push({ x1: L + 65, y1: 185, x2: L + 65, y2: 710, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: R - 65, y1: 185, x2: R - 65, y2: 710, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: L + 65, y1: 710, x2: CX - 52, y2: 792, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: R - 65, y1: 710, x2: CX + 52, y2: 792, thick: 18, color: PURPLE_MAIN });
+      } else {
+        // Default Color Rush Zig-Zag Walls
+        const leftZig = [[L + 95, 185], [L + 45, 285], [L + 100, 385], [L + 45, 495], [L + 100, 605], [L + 50, 715], [CX - 52, 792]];
+        const rightZig = [[R - 95, 185], [R - 45, 285], [R - 100, 385], [R - 45, 495], [R - 100, 605], [R - 50, 715], [CX + 52, 792]];
+        for (let i = 0; i < leftZig.length - 1; i++) {
+          world.Walls.push({ x1: leftZig[i][0], y1: leftZig[i][1], x2: leftZig[i + 1][0], y2: leftZig[i + 1][1], thick: 18, color: PURPLE_MAIN });
+          world.Walls.push({ x1: rightZig[i][0], y1: rightZig[i][1], x2: rightZig[i + 1][0], y2: rightZig[i + 1][1], thick: 18, color: PURPLE_MAIN });
+        }
+      }
+
+      // Funnel Throat into Bottom Sprint Track
+      world.Walls.push({ x1: CX - 52, y1: 790, x2: CX - 52, y2: 830, thick: 16, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX + 52, y1: 790, x2: CX + 52, y2: 830, thick: 16, color: PURPLE_MAIN });
+      world.Chevrons.push({ x: CX, y: 805, dirX: 0, dirY: 1, color: NEON_YELLOW });
+    },
+
     buildArena(trackId, lengthOption, difficulty, rng) {
-      const preset = window.GAME_DATA.tracks.find(t => t.id === trackId) || window.GAME_DATA.tracks[0];
       const world = {
-        Walls: [],       // { x1, y1, x2, y2, thick, color, isRed, cap }
-        Diamonds: [],    // Hollow purple diamond frames { x, y, r }
-        RedRings: [],    // Red segmented hazard rings { x, y, r, angle, speed }
-        GreenSpinners: [], // Green 4-blade spinners { x, y, len, thick, angle, speed }
-        YellowPegs: [],  // { x, y, r }
-        Chevrons: [],    // { x, y, dirX, dirY, color }
-        Gates: [],       // Yellow vertical visual gates in bottom tube { x, y, h }
+        trackId,
+        Walls: [],
+        Diamonds: [],
+        RedRings: [],
+        GreenSpinners: [],
+        YellowPegs: [],
+        Chevrons: [],
+        Gates: [],
         dynamicItems: [],
         sprintLanes: lengthOption === "small" ? 1 : lengthOption === "medium" ? 2 : 3,
         finishX: 1835,
@@ -266,239 +344,490 @@
       const L = 355;
       const R = 1865;
       const CX = (L + R) / 2; // 1110
+      const rRing = difficulty === "hard" ? 35 : 31;
 
-      // ----------------------------------------------------------------------
-      // 1. TOP WIDESCREEN LAUNCH TRAY & CENTRAL GREEN X-FUNNEL (Y = 50..210)
-      // ----------------------------------------------------------------------
-      // Top outer roof with green dashed highlights
-      world.Walls.push({ x1: L + 30, y1: 52, x2: CX - 45, y2: 52, thick: 18, color: PURPLE_MAIN, stripeGreen: true });
-      world.Walls.push({ x1: CX + 45, y1: 52, x2: R - 30, y2: 52, thick: 18, color: PURPLE_MAIN, stripeGreen: true });
-
-      // Left & Right angled upper tray walls
-      world.Walls.push({ x1: L + 30, y1: 52, x2: L + 85, y2: 195, thick: 18, color: PURPLE_MAIN });
-      world.Walls.push({ x1: R - 30, y1: 52, x2: R - 85, y2: 195, thick: 18, color: PURPLE_MAIN });
-
-      // Tray floor sloping gently toward two entry openings (Left-Center & Right-Center) + Central X-Splitter
-      world.Walls.push({ x1: L + 85, y1: 195, x2: CX - 190, y2: 202, thick: 18, color: PURPLE_MAIN });
-      world.Walls.push({ x1: R - 85, y1: 195, x2: CX + 190, y2: 202, thick: 18, color: PURPLE_MAIN });
-
-      // Central Green & Purple X-Funnel Divider in the Top Tray (Matches Image!)
-      world.Walls.push({ x1: CX - 45, y1: 52, x2: CX, y2: 105, thick: 14, color: PURPLE_MAIN });
-      world.Walls.push({ x1: CX + 45, y1: 52, x2: CX, y2: 105, thick: 14, color: PURPLE_MAIN });
-      world.Walls.push({ x1: CX, y1: 95, x2: CX, y2: 155, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: CX, y1: 155, x2: CX - 52, y2: 205, thick: 14, color: PURPLE_MAIN });
-      world.Walls.push({ x1: CX, y1: 155, x2: CX + 52, y2: 205, thick: 14, color: PURPLE_MAIN });
-
-      // Tilted Seesaw / Deflector Bars inside the Top Tray (Green, Pink/Red, Yellow)
-      const trayBars = [
-        { x: L + 290, y: 125, len: 110, ang: -0.32, color: NEON_GREEN, isRed: false },
-        { x: L + 440, y: 125, len: 110, ang: -0.32, color: NEON_RED, isRed: true },
-        { x: L + 590, y: 125, len: 110, ang: -0.32, color: NEON_YELLOW, isRed: false },
-        { x: R - 590, y: 125, len: 110, ang: 0.32, color: NEON_YELLOW, isRed: false },
-        { x: R - 440, y: 125, len: 110, ang: 0.32, color: NEON_RED, isRed: true },
-        { x: R - 290, y: 125, len: 110, ang: 0.32, color: NEON_GREEN, isRed: false }
-      ];
-      trayBars.forEach(tb => {
-        const dx = Math.cos(tb.ang) * (tb.len / 2);
-        const dy = Math.sin(tb.ang) * (tb.len / 2);
-        world.Walls.push({
-          x1: tb.x - dx, y1: tb.y - dy,
-          x2: tb.x + dx, y2: tb.y + dy,
-          thick: 14,
-          color: tb.color,
-          isRed: tb.isRed
-        });
-      });
-
-      // ----------------------------------------------------------------------
-      // 2. OUTER ZIG-ZAG WIDESCREEN SIDE WALLS & BOTTOM FUNNEL (Y = 205..815)
-      // ----------------------------------------------------------------------
-      // Left Zig-Zag Purple Wall + Green Chevron Bounce Ribs
-      const leftZig = [
-        [L + 115, 205], [L + 55, 290], [L + 110, 385], [L + 45, 495], [L + 105, 610], [L + 55, 725], [CX - 48, 795]
-      ];
-      for (let i = 0; i < leftZig.length - 1; i++) {
-        world.Walls.push({
-          x1: leftZig[i][0], y1: leftZig[i][1],
-          x2: leftZig[i + 1][0], y2: leftZig[i + 1][1],
-          thick: 18,
-          color: PURPLE_MAIN
-        });
-      }
-      // Right Zig-Zag Purple Wall
-      const rightZig = [
-        [R - 115, 205], [R - 55, 290], [R - 110, 385], [R - 45, 495], [R - 105, 610], [R - 55, 725], [CX + 48, 795]
-      ];
-      for (let i = 0; i < rightZig.length - 1; i++) {
-        world.Walls.push({
-          x1: rightZig[i][0], y1: rightZig[i][1],
-          x2: rightZig[i + 1][0], y2: rightZig[i + 1][1],
-          thick: 18,
-          color: PURPLE_MAIN
-        });
-      }
-
-      // Side Green & Red Bumper Bars along the left and right zig-zag walls
-      world.Walls.push({ x1: L + 85, y1: 325, x2: L + 125, y2: 280, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: L + 110, y1: 445, x2: L + 150, y2: 495, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: L + 150, y1: 495, x2: L + 110, y2: 545, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: L + 85, y1: 650, x2: L + 125, y2: 695, thick: 12, color: NEON_RED, isRed: true });
-
-      world.Walls.push({ x1: R - 85, y1: 325, x2: R - 125, y2: 280, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: R - 110, y1: 445, x2: R - 150, y2: 495, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: R - 150, y1: 495, x2: R - 110, y2: 545, thick: 12, color: NEON_GREEN });
-      world.Walls.push({ x1: R - 85, y1: 650, x2: R - 125, y2: 695, thick: 12, color: NEON_RED, isRed: true });
-
-      // Red Tilted Guard Bars above the central funnel throat (Matches Image!)
-      world.Walls.push({ x1: CX - 165, y1: 710, x2: CX - 85, y2: 755, thick: 15, color: NEON_RED, isRed: true });
-      world.Walls.push({ x1: CX + 165, y1: 710, x2: CX + 85, y2: 755, thick: 15, color: NEON_RED, isRed: true });
-
-      // Central Funnel Throat Chute into Bottom Sprint Track
-      world.Walls.push({ x1: CX - 48, y1: 790, x2: CX - 48, y2: 830, thick: 16, color: PURPLE_MAIN });
-      world.Walls.push({ x1: CX + 48, y1: 790, x2: CX + 48, y2: 830, thick: 16, color: PURPLE_MAIN });
-      world.Chevrons.push({ x: CX, y: 805, dirX: 0, dirY: 1, color: NEON_YELLOW });
-
-      // ----------------------------------------------------------------------
-      // 3. MAIN WIDESCREEN OBSTACLE FIELD (CUSTOM OR 22 PRESET VARIATIONS)
-      // ----------------------------------------------------------------------
       if (trackId === "custom" && State.customTrack.length > 0) {
+        this.buildTopTray(world, "dual", L, R, CX);
+        this.buildOuterWalls(world, "zigzag", L, R, CX);
         const scaleX = (R - L - 240) / 640;
         const scaleY = 520 / 320;
         State.customTrack.forEach(item => {
           const ox = L + 120 + item.x * scaleX;
-          const oy = 230 + item.y * scaleY;
+          const oy = 225 + item.y * scaleY;
           const scl = item.scale || 1;
           const rad = ((item.angle || 0) * Math.PI) / 180;
-
-          if (item.type === "diamond") {
-            world.Diamonds.push({ x: ox, y: oy, r: 44 * scl });
-          } else if (item.type === "redRing") {
-            world.RedRings.push({ x: ox, y: oy, r: 34 * scl, angle: rad, speed: 0.03 });
-          } else if (item.type === "greenSpinner") {
-            world.GreenSpinners.push({ x: ox, y: oy, len: 88 * scl, thick: 14, angle: rad, speed: 0.055 });
-          } else if (item.type === "yellowPegs") {
-            for (let k = -2; k <= 2; k++) {
-              world.YellowPegs.push({ x: ox, y: oy + k * 28 * scl, r: 7 });
-            }
+          if (item.type === "diamond") world.Diamonds.push({ x: ox, y: oy, r: 42 * scl });
+          else if (item.type === "redRing") world.RedRings.push({ x: ox, y: oy, r: 33 * scl, angle: rad, speed: 0.03 });
+          else if (item.type === "greenSpinner") world.GreenSpinners.push({ x: ox, y: oy, len: 88 * scl, thick: 14, angle: rad, speed: 0.055 });
+          else if (item.type === "yellowPegs") {
+            for (let k = -2; k <= 2; k++) world.YellowPegs.push({ x: ox, y: oy + k * 26 * scl, r: 7 });
           } else if (item.type === "pinkBar" || item.type === "greenBar") {
             const isRed = item.type === "pinkBar";
             const half = 55 * scl;
             world.Walls.push({
               x1: ox - Math.cos(rad) * half, y1: oy - Math.sin(rad) * half,
               x2: ox + Math.cos(rad) * half, y2: oy + Math.sin(rad) * half,
-              thick: 14,
-              color: isRed ? NEON_RED : NEON_GREEN,
-              isRed
+              thick: 14, color: isRed ? NEON_RED : NEON_GREEN, isRed
             });
           } else if (item.type === "chevron") {
             world.Chevrons.push({ x: ox, y: oy, dirX: 0, dirY: 1, color: NEON_GREEN });
           }
         });
       } else {
-        // Generate the iconic Color Rush Widescreen Obstacle Matrix (with 22 unique track layouts!)
-        const style = preset.style === "random"
-          ? ["classic", "diamonds", "spinners", "rings", "twinFunnel", "pinball", "plinko", "slalom", "windmills", "speedway"][Math.floor(rng() * 10)]
-          : preset.style;
-
-        // 6 Columns of Hollow Purple Diamonds (Left 3 columns + Right 3 columns)
-        const dColsLeft = [L + 225, L + 415, L + 605];
-        const dColsRight = [R - 605, R - 415, R - 225];
-        const dRows = [275, 415, 555];
-
-        dRows.forEach((ry, rIdx) => {
-          dColsLeft.forEach((cx, cIdx) => {
-            if (style === "spinners" && (rIdx + cIdx) % 2 === 1) {
-              world.GreenSpinners.push({ x: cx, y: ry, len: 86, thick: 14, angle: 0, speed: 0.055 });
-            } else {
-              world.Diamonds.push({ x: cx + (rIdx % 2) * 12, y: ry, r: 44 });
-            }
-          });
-          dColsRight.forEach((cx, cIdx) => {
-            if (style === "spinners" && (rIdx + cIdx) % 2 === 1) {
-              world.GreenSpinners.push({ x: cx, y: ry, len: 86, thick: 14, angle: 0, speed: -0.055 });
-            } else {
-              world.Diamonds.push({ x: cx - (rIdx % 2) * 12, y: ry, r: 44 });
-            }
-          });
-        });
-
-        // 5 Columns of Segmented Red Hazard Rings + Vertical Chains of Yellow Pegs between them!
-        const ringCols = [L + 320, L + 510, CX, R - 510, R - 320];
-        ringCols.forEach((rx, cIdx) => {
-          const isCenterCol = cIdx === 2;
-          const isSpinnerCol = cIdx === 1 || cIdx === 3;
-
-          if (isSpinnerCol && style !== "rings") {
-            // Tilted Green Bar at top + Vertical Yellow Peg Chain + Two Green 4-Blade X-Spinners (Exact Image Match!)
-            const tilt = cIdx === 1 ? 0.55 : -0.55;
-            world.Walls.push({
-              x1: rx - Math.cos(tilt) * 48, y1: 335 - Math.sin(tilt) * 48,
-              x2: rx + Math.cos(tilt) * 48, y2: 335 + Math.sin(tilt) * 48,
-              thick: 14,
-              color: NEON_GREEN
+        // Pick effective track ID (if seeded_random, build a procedural hybrid)
+        switch (trackId) {
+          // TRACK 1: Color Rush Official Arena (Reference Image 1000157883_52417a.png)
+          case "color_rush_classic": {
+            this.buildTopTray(world, "dual", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            const dCols = [L + 225, L + 415, L + 605, R - 605, R - 415, R - 225];
+            [275, 415, 555].forEach(ry => dCols.forEach(dx => world.Diamonds.push({ x: dx, y: ry, r: 42 })));
+            [L + 320, CX, R - 320].forEach((rx, ci) => {
+              const rys = ci === 1 ? [305, 445, 585] : [335, 495, 645];
+              rys.forEach((ry, ri) => {
+                world.RedRings.push({ x: rx, y: ry, r: rRing, angle: ri, speed: 0.025 });
+                if (ri < 2) for (let py = ry + 48; py <= rys[ri + 1] - 48; py += 26) world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+              });
             });
-            for (let py = 385; py <= 665; py += 28) {
-              if (Math.abs(py - 505) > 25 && Math.abs(py - 625) > 25) {
-                world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+            [L + 510, R - 510].forEach((rx, si) => {
+              const tilt = si === 0 ? 0.52 : -0.52;
+              world.Walls.push({ x1: rx - Math.cos(tilt) * 46, y1: 330 - Math.sin(tilt) * 46, x2: rx + Math.cos(tilt) * 46, y2: 330 + Math.sin(tilt) * 46, thick: 14, color: NEON_GREEN });
+              for (let py = 385; py <= 665; py += 28) if (Math.abs(py - 505) > 25 && Math.abs(py - 625) > 25) world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+              world.GreenSpinners.push({ x: rx, y: 505, len: 86, thick: 14, angle: 0.4, speed: 0.055 });
+              world.GreenSpinners.push({ x: rx, y: 625, len: 86, thick: 14, angle: 0.4, speed: -0.055 });
+            });
+            world.Walls.push({ x1: CX - 165, y1: 710, x2: CX - 85, y2: 755, thick: 14, color: NEON_RED, isRed: true });
+            world.Walls.push({ x1: CX + 165, y1: 710, x2: CX + 85, y2: 755, thick: 14, color: NEON_RED, isRed: true });
+            break;
+          }
+
+          // TRACK 2: Giant Pyramid Diamond Lattice (Center Drop into a 5-Row Pyramid of Purple Diamonds)
+          case "neon_diamond_matrix": {
+            this.buildTopTray(world, "centerFunnel", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            for (let row = 0; row < 5; row++) {
+              const ry = 250 + row * 105;
+              const cols = row + 2;
+              const startX = CX - ((cols - 1) * 165) / 2;
+              for (let c = 0; c < cols; c++) {
+                world.Diamonds.push({ x: startX + c * 165, y: ry, r: 44 });
               }
             }
-            world.GreenSpinners.push({ x: rx, y: 505, len: 88, thick: 14, angle: 0.4, speed: cIdx === 1 ? 0.055 : -0.055 });
-            world.GreenSpinners.push({ x: rx, y: 625, len: 88, thick: 14, angle: 0.4, speed: cIdx === 1 ? -0.055 : 0.055 });
-          } else {
-            // Column of 3 Segmented Red Hazard Rings connected by Yellow Peg Dots (Exact Image Match!)
-            const ringYs = isCenterCol ? [305, 445, 585] : [335, 495, 645];
-            ringYs.forEach((ry, rIdx) => {
-              world.RedRings.push({
-                x: rx,
-                y: ry,
-                r: difficulty === "hard" ? 37 : 33,
-                angle: (rIdx * Math.PI) / 3,
-                speed: (rIdx % 2 === 0 ? 1 : -1) * 0.025
-              });
-              if (rIdx < ringYs.length - 1) {
-                const nextY = ringYs[rIdx + 1];
-                for (let py = ry + 48; py <= nextY - 48; py += 26) {
-                  world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+            // Side Red Ring Guards
+            [290, 440, 590].forEach(ry => {
+              world.RedRings.push({ x: L + 185, y: ry, r: rRing, angle: 0, speed: 0.03 });
+              world.RedRings.push({ x: R - 185, y: ry, r: rRing, angle: 0, speed: -0.03 });
+            });
+            break;
+          }
+
+          // TRACK 3: Emerald 12-Spinner Turbine Reactor
+          case "emerald_cross_reactor": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            for (let r = 0; r < 3; r++) {
+              const ry = 280 + r * 170;
+              const cols = r % 2 === 0 ? 5 : 4;
+              const span = 240;
+              const sx0 = CX - ((cols - 1) * span) / 2;
+              for (let c = 0; c < cols; c++) {
+                world.GreenSpinners.push({
+                  x: sx0 + c * span,
+                  y: ry,
+                  len: 108,
+                  thick: 15,
+                  angle: (r + c) * 0.4,
+                  speed: ((r + c) % 2 === 0 ? 1 : -1) * 0.06
+                });
+              }
+            }
+            world.RedRings.push({ x: CX - 140, y: 705, r: rRing, angle: 0, speed: 0.03 });
+            world.RedRings.push({ x: CX + 140, y: 705, r: rRing, angle: 0, speed: -0.03 });
+            break;
+          }
+
+          // TRACK 4: Crimson Ring Survival Minefield (16 Red Hazard Rings in 3 Concentric Arcs)
+          case "crimson_ring_gauntlet": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            for (let row = 0; row < 4; row++) {
+              const ry = 265 + row * 125;
+              const cols = row % 2 === 0 ? 6 : 5;
+              const span = 215;
+              const sx0 = CX - ((cols - 1) * span) / 2;
+              for (let c = 0; c < cols; c++) {
+                world.RedRings.push({ x: sx0 + c * span, y: ry, r: rRing + 2, angle: c, speed: 0.035 });
+                world.YellowPegs.push({ x: sx0 + c * span, y: ry - 58, r: 8 });
+              }
+            }
+            break;
+          }
+
+          // TRACK 5: Twin Widescreen Hourglass Funnels (Split Left & Right Arenas!)
+          case "twin_funnel_symphony": {
+            this.buildTopTray(world, "sideAccelerators", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            // Central dividing wall splitting the arena into Left & Right chambers!
+            world.Walls.push({ x1: CX, y1: 195, x2: CX, y2: 685, thick: 18, color: NEON_GREEN });
+            [L + 380, R - 380].forEach((chamberX, idx) => {
+              // Top Hourglass Pinch
+              world.Walls.push({ x1: chamberX - 280, y1: 280, x2: chamberX - 65, y2: 410, thick: 16, color: PURPLE_MAIN });
+              world.Walls.push({ x1: chamberX + 280, y1: 280, x2: chamberX + 65, y2: 410, thick: 16, color: PURPLE_MAIN });
+              world.GreenSpinners.push({ x: chamberX, y: 465, len: 105, thick: 14, angle: 0, speed: idx === 0 ? 0.06 : -0.06 });
+              world.Diamonds.push({ x: chamberX - 135, y: 580, r: 40 });
+              world.Diamonds.push({ x: chamberX + 135, y: 580, r: 40 });
+              world.RedRings.push({ x: chamberX, y: 615, r: rRing, angle: 0, speed: 0.03 });
+            });
+            break;
+          }
+
+          // TRACK 6: Cyber Pinball Bumper Table & Slingshots
+          case "cyber_pinball_stadium": {
+            this.buildTopTray(world, "centerFunnel", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            // Pinball Bumper Cluster
+            const bumpers = [
+              [CX - 320, 310], [CX, 290], [CX + 320, 310],
+              [CX - 480, 440], [CX - 160, 430], [CX + 160, 430], [CX + 480, 440],
+              [CX - 280, 575], [CX, 560], [CX + 280, 575]
+            ];
+            bumpers.forEach((b, i) => {
+              if (i % 3 === 1) world.RedRings.push({ x: b[0], y: b[1], r: rRing + 6, angle: 0, speed: 0.04 });
+              else world.Diamonds.push({ x: b[0], y: b[1], r: 46 });
+            });
+            // Pinball Slingshot Kickers at bottom
+            world.Walls.push({ x1: L + 220, y1: 580, x2: CX - 190, y2: 715, thick: 16, color: NEON_GREEN });
+            world.Walls.push({ x1: R - 220, y1: 580, x2: CX + 190, y2: 715, thick: 16, color: NEON_GREEN });
+            world.GreenSpinners.push({ x: CX - 110, y: 725, len: 82, thick: 14, angle: 0, speed: 0.065 });
+            world.GreenSpinners.push({ x: CX + 110, y: 725, len: 82, thick: 14, angle: 0, speed: -0.065 });
+            break;
+          }
+
+          // TRACK 7: Starlight 95-Peg Yellow Plinko Forest
+          case "starlight_plinko_wide": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            for (let r = 0; r < 8; r++) {
+              const py = 245 + r * 62;
+              const cols = r % 2 === 0 ? 13 : 12;
+              const span = 96;
+              const x0 = CX - ((cols - 1) * span) / 2;
+              for (let c = 0; c < cols; c++) {
+                const px = x0 + c * span;
+                if ((r === 2 || r === 5) && c % 4 === 1) {
+                  world.RedRings.push({ x: px, y: py, r: 26, angle: 0, speed: 0.03 });
+                } else {
+                  world.YellowPegs.push({ x: px, y: py, r: 9 });
+                }
+              }
+            }
+            break;
+          }
+
+          // TRACK 8: Neon Laser 4-Deck Widescreen Slalom
+          case "laser_slalom_arena": {
+            this.buildTopTray(world, "sideAccelerators", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            // Alternating wide angled slalom shelves
+            world.Walls.push({ x1: L + 70, y1: 250, x2: CX - 120, y2: 335, thick: 16, color: PURPLE_MAIN });
+            world.Walls.push({ x1: R - 70, y1: 250, x2: CX + 120, y2: 335, thick: 16, color: PURPLE_MAIN });
+            world.RedRings.push({ x: CX, y: 345, r: rRing, angle: 0, speed: 0.03 });
+
+            world.Walls.push({ x1: CX - 420, y1: 445, x2: CX + 420, y2: 445, thick: 16, color: NEON_GREEN });
+            world.Diamonds.push({ x: CX - 220, y: 395, r: 36 }, { x: CX + 220, y: 395, r: 36 });
+
+            world.Walls.push({ x1: L + 70, y1: 535, x2: CX - 135, y2: 635, thick: 16, color: PURPLE_MAIN });
+            world.Walls.push({ x1: R - 70, y1: 535, x2: CX + 135, y2: 635, thick: 16, color: PURPLE_MAIN });
+            world.GreenSpinners.push({ x: CX - 220, y: 690, len: 88, thick: 14, angle: 0, speed: 0.06 });
+            world.GreenSpinners.push({ x: CX + 220, y: 690, len: 88, thick: 14, angle: 0, speed: -0.06 });
+            break;
+          }
+
+          // TRACK 9: 8-Windmill Vortex Widescreen Arena
+          case "vortex_windmill_wide": {
+            this.buildTopTray(world, "dual", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            const mills = [
+              [CX - 420, 320], [CX - 140, 320], [CX + 140, 320], [CX + 420, 320],
+              [CX - 420, 540], [CX - 140, 540], [CX + 140, 540], [CX + 420, 540]
+            ];
+            mills.forEach((m, idx) => {
+              world.GreenSpinners.push({ x: m[0], y: m[1], len: 145, thick: 16, angle: idx * 0.3, speed: (idx % 2 === 0 ? 1 : -1) * 0.05 });
+            });
+            [CX - 280, CX, CX + 280].forEach(rx => {
+              world.RedRings.push({ x: rx, y: 430, r: rRing, angle: 0, speed: 0.03 });
+              world.RedRings.push({ x: rx, y: 665, r: rRing, angle: 0, speed: -0.03 });
+            });
+            break;
+          }
+
+          // TRACK 10: Honeycomb Hex Chamber Maze
+          case "honeycomb_hex_rush": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            const hexCenters = [
+              [CX - 360, 330], [CX, 330], [CX + 360, 330],
+              [CX - 180, 520], [CX + 180, 520]
+            ];
+            hexCenters.forEach(hc => {
+              const hx = hc[0], hy = hc[1], hr = 115;
+              world.Walls.push({ x1: hx - hr, y1: hy - 55, x2: hx - 48, y2: hy - 105, thick: 14, color: PURPLE_MAIN });
+              world.Walls.push({ x1: hx + hr, y1: hy - 55, x2: hx + 48, y2: hy - 105, thick: 14, color: PURPLE_MAIN });
+              world.Walls.push({ x1: hx - hr, y1: hy + 55, x2: hx - 48, y2: hy + 105, thick: 14, color: PURPLE_MAIN });
+              world.Walls.push({ x1: hx + hr, y1: hy + 55, x2: hx + 48, y2: hy + 105, thick: 14, color: PURPLE_MAIN });
+              world.RedRings.push({ x: hx, y: hy, r: 28, angle: 0, speed: 0.035 });
+            });
+            break;
+          }
+
+          // TRACK 11: Hyper Chevron 3-Deck Horizontal Speedway
+          case "hyper_chevron_speedway": {
+            this.buildTopTray(world, "sideAccelerators", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            // Deck 1: Left & Right inward raceways
+            world.Walls.push({ x1: L + 65, y1: 330, x2: CX - 110, y2: 360, thick: 16, color: PURPLE_MAIN });
+            world.Walls.push({ x1: R - 65, y1: 330, x2: CX + 110, y2: 360, thick: 16, color: PURPLE_MAIN });
+            world.Chevrons.push({ x: L + 280, y: 295, dirX: 1, dirY: 0, color: NEON_GREEN });
+            world.Chevrons.push({ x: R - 280, y: 295, dirX: -1, dirY: 0, color: NEON_GREEN });
+
+            // Deck 2: Center outward splitter
+            world.Walls.push({ x1: CX, y1: 440, x2: L + 210, y2: 510, thick: 16, color: NEON_GREEN });
+            world.Walls.push({ x1: CX, y1: 440, x2: R - 210, y2: 510, thick: 16, color: NEON_GREEN });
+            world.RedRings.push({ x: CX, y: 415, r: 28, angle: 0, speed: 0.03 });
+
+            // Deck 3: Final inward sprint
+            world.Walls.push({ x1: L + 65, y1: 615, x2: CX - 115, y2: 675, thick: 16, color: PURPLE_MAIN });
+            world.Walls.push({ x1: R - 65, y1: 615, x2: CX + 115, y2: 675, thick: 16, color: PURPLE_MAIN });
+            world.Chevrons.push({ x: L + 320, y: 590, dirX: 1, dirY: 0, color: NEON_GREEN });
+            world.Chevrons.push({ x: R - 320, y: 590, dirX: -1, dirY: 0, color: NEON_GREEN });
+            break;
+          }
+
+          // TRACK 12: 3-Column Vertical Division Shockwave
+          case "pendulum_shockwave": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            // 2 Vertical Dividing Walls creating 3 distinct arenas
+            world.Walls.push({ x1: CX - 240, y1: 210, x2: CX - 240, y2: 675, thick: 16, color: PURPLE_MAIN });
+            world.Walls.push({ x1: CX + 240, y1: 210, x2: CX + 240, y2: 675, thick: 16, color: PURPLE_MAIN });
+            [CX - 460, CX, CX + 460].forEach(colX => {
+              world.GreenSpinners.push({ x: colX, y: 300, len: 115, thick: 15, angle: 0, speed: 0.055 });
+              world.RedRings.push({ x: colX - 70, y: 445, r: 28, angle: 0, speed: 0.03 });
+              world.RedRings.push({ x: colX + 70, y: 445, r: 28, angle: 0, speed: -0.03 });
+              world.GreenSpinners.push({ x: colX, y: 585, len: 115, thick: 15, angle: 0.5, speed: -0.055 });
+            });
+            break;
+          }
+
+          // TRACK 13: Supernova Dual-Ramp Particle Collider
+          case "supernova_collider": {
+            this.buildTopTray(world, "sideAccelerators", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            // Steep left & right acceleration ramps launching marbles head-on into the center!
+            world.Walls.push({ x1: L + 75, y1: 260, x2: CX - 180, y2: 430, thick: 18, color: NEON_GREEN });
+            world.Walls.push({ x1: R - 75, y1: 260, x2: CX + 180, y2: 430, thick: 18, color: NEON_GREEN });
+            // Central Collider Ring of Diamonds & Red Hazard Core
+            for (let i = 0; i < 8; i++) {
+              const a = (i * Math.PI * 2) / 8;
+              world.Diamonds.push({ x: CX + Math.cos(a) * 210, y: 515 + Math.sin(a) * 155, r: 38 });
+            }
+            world.RedRings.push({ x: CX, y: 515, r: 44, angle: 0, speed: 0.045 });
+            world.GreenSpinners.push({ x: CX - 110, y: 515, len: 75, thick: 13, angle: 0, speed: 0.06 });
+            world.GreenSpinners.push({ x: CX + 110, y: 515, len: 75, thick: 13, angle: 0, speed: -0.06 });
+            break;
+          }
+
+          // TRACK 14: Atlas Mountain Peaks (3 Giant Triangular Mountains & 4 Deep Valleys)
+          case "atlas_peaks_landscape": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            [CX - 380, CX, CX + 380].forEach(px => {
+              world.Walls.push({ x1: px, y1: 310, x2: px - 135, y2: 560, thick: 18, color: PURPLE_MAIN });
+              world.Walls.push({ x1: px, y1: 310, x2: px + 135, y2: 560, thick: 18, color: PURPLE_MAIN });
+              world.RedRings.push({ x: px, y: 265, r: 26, angle: 0, speed: 0.03 });
+              world.GreenSpinners.push({ x: px, y: 635, len: 92, thick: 14, angle: 0, speed: 0.055 });
+            });
+            break;
+          }
+
+          // TRACK 15: Sahara Giant Catch Basin & Golden Peg Swirl
+          case "sahara_mirage_rush": {
+            this.buildTopTray(world, "dual", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            // Inner U-Bowl with center gap
+            addArcSegments(world.Walls, CX, 380, 440, Math.PI * 0.12, Math.PI * 0.43, 6, 18, NEON_YELLOW);
+            addArcSegments(world.Walls, CX, 380, 440, Math.PI * 0.57, Math.PI * 0.88, 6, 18, NEON_YELLOW);
+            // Golden peg spiral & spinners inside the bowl
+            for (let r = 160; r <= 340; r += 90) {
+              for (let a = 0.2; a <= Math.PI - 0.2; a += 0.35) {
+                world.YellowPegs.push({ x: CX + Math.cos(a) * r * 1.2, y: 290 + Math.sin(a) * r * 0.85, r: 8 });
+              }
+            }
+            world.RedRings.push({ x: CX - 190, y: 460, r: rRing, angle: 0, speed: 0.035 });
+            world.RedRings.push({ x: CX + 190, y: 460, r: rRing, angle: 0, speed: -0.035 });
+            world.GreenSpinners.push({ x: CX, y: 645, len: 115, thick: 15, angle: 0, speed: 0.06 });
+            break;
+          }
+
+          // TRACK 16: Tokyo Arcade Neon Checkerboard
+          case "tokyo_arcade_matrix": {
+            this.buildTopTray(world, "dual", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            for (let r = 0; r < 4; r++) {
+              const ry = 265 + r * 125;
+              for (let c = 0; c < 7; c++) {
+                const cx = L + 210 + c * 180 + (r % 2) * 45;
+                const mod = (r + c) % 3;
+                if (mod === 0) world.Diamonds.push({ x: cx, y: ry, r: 38 });
+                else if (mod === 1) world.RedRings.push({ x: cx, y: ry, r: 28, angle: 0, speed: 0.03 });
+                else world.GreenSpinners.push({ x: cx, y: ry, len: 76, thick: 12, angle: 0, speed: 0.055 });
+              }
+            }
+            break;
+          }
+
+          // TRACK 17: Mount Olympus Stepped Temple Ziggurat
+          case "olympus_titan_arena": {
+            this.buildTopTray(world, "sideAccelerators", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            // Left & Right Stepped Staircases descending toward the center pit
+            for (let s = 0; s < 4; s++) {
+              const lx = L + 120 + s * 125;
+              const rx = R - 120 - s * 125;
+              const sy = 270 + s * 105;
+              world.Walls.push({ x1: lx, y1: sy, x2: lx + 115, y2: sy + 22, thick: 16, color: PURPLE_MAIN });
+              world.Walls.push({ x1: rx, y1: sy, x2: rx - 115, y2: sy + 22, thick: 16, color: PURPLE_MAIN });
+              world.YellowPegs.push({ x: lx + 95, y: sy - 18, r: 8 }, { x: rx - 95, y: sy - 18, r: 8 });
+            }
+            // Center Gladiator Pit
+            world.RedRings.push({ x: CX, y: 350, r: 36, angle: 0, speed: 0.03 });
+            world.GreenSpinners.push({ x: CX - 95, y: 510, len: 90, thick: 14, angle: 0, speed: 0.06 });
+            world.GreenSpinners.push({ x: CX + 95, y: 510, len: 90, thick: 14, angle: 0, speed: -0.06 });
+            world.Diamonds.push({ x: CX, y: 650, r: 44 });
+            break;
+          }
+
+          // TRACK 18: Caribbean Wave Undulating Channels
+          case "caribbean_wave_basin": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            for (let wv = -2; wv <= 2; wv++) {
+              const baseX = CX + wv * 230;
+              for (let y = 240; y <= 640; y += 36) {
+                const waveX = baseX + Math.sin(y * 0.025 + wv) * 55;
+                world.YellowPegs.push({ x: waveX, y, r: 7.5 });
+              }
+              if (wv !== 0) {
+                world.GreenSpinners.push({ x: baseX, y: 440, len: 88, thick: 14, angle: 0, speed: 0.055 });
+              } else {
+                world.RedRings.push({ x: baseX, y: 360, r: 34, angle: 0, speed: 0.03 });
+                world.RedRings.push({ x: baseX, y: 540, r: 34, angle: 0, speed: -0.03 });
+              }
+            }
+            break;
+          }
+
+          // TRACK 19: Nordic Aurora Triple Nested V-Funnels
+          case "nordic_aurora_grid": {
+            this.buildTopTray(world, "centerFunnel", L, R, CX);
+            this.buildOuterWalls(world, "zigzag", L, R, CX);
+            [290, 465, 640].forEach((vy, idx) => {
+              const span = 480 - idx * 75;
+              world.Walls.push({ x1: CX - span, y1: vy - 75, x2: CX - 75, y2: vy + 25, thick: 16, color: idx % 2 === 0 ? NEON_GREEN : PURPLE_MAIN });
+              world.Walls.push({ x1: CX + span, y1: vy - 75, x2: CX + 75, y2: vy + 25, thick: 16, color: idx % 2 === 0 ? NEON_GREEN : PURPLE_MAIN });
+              world.RedRings.push({ x: CX - span * 0.55, y: vy - 95, r: 28, angle: 0, speed: 0.03 });
+              world.RedRings.push({ x: CX + span * 0.55, y: vy - 95, r: 28, angle: 0, speed: -0.03 });
+              world.GreenSpinners.push({ x: CX, y: vy + 45, len: 84, thick: 13, angle: 0, speed: 0.06 });
+            });
+            break;
+          }
+
+          // TRACK 20: Amazon Serpent 5-Column Vertical Challenge Tubes
+          case "amazon_serpent_lanes": {
+            this.buildTopTray(world, "wideRain", L, R, CX);
+            this.buildOuterWalls(world, "straightStadium", L, R, CX);
+            const dividers = [CX - 420, CX - 140, CX + 140, CX + 420];
+            dividers.forEach(dx => {
+              world.Walls.push({ x1: dx, y1: 215, x2: dx, y2: 650, thick: 16, color: PURPLE_MAIN });
+              world.Diamonds.push({ x: dx, y: 215, r: 24 });
+            });
+            // 5 Distinct Columns
+            const cols = [CX - 560, CX - 280, CX, CX + 280, CX + 560];
+            cols.forEach((cx, ci) => {
+              for (let r = 0; r < 3; r++) {
+                const ry = 300 + r * 145;
+                if (ci % 2 === 0) {
+                  world.GreenSpinners.push({ x: cx, y: ry, len: 92, thick: 14, angle: r, speed: 0.055 });
+                } else {
+                  world.RedRings.push({ x: cx, y: ry, r: 28, angle: 0, speed: 0.03 });
+                  world.Diamonds.push({ x: cx - 55, y: ry + 70, r: 26 }, { x: cx + 55, y: ry + 70, r: 26 });
                 }
               }
             });
+            break;
           }
-        });
 
-        // Style-Specific Extra Obstacles for the 22 Tracks
-        if (style === "twinFunnel" || style === "slalom") {
-          world.Walls.push({ x1: L + 220, y1: 685, x2: CX - 230, y2: 725, thick: 14, color: NEON_GREEN });
-          world.Walls.push({ x1: R - 220, y1: 685, x2: CX + 230, y2: 725, thick: 14, color: NEON_GREEN });
-        } else if (style === "windmills") {
-          world.GreenSpinners.push({ x: L + 320, y: 415, len: 92, thick: 14, angle: 0, speed: 0.06 });
-          world.GreenSpinners.push({ x: R - 320, y: 415, len: 92, thick: 14, angle: 0, speed: -0.06 });
-        } else if (style === "speedway") {
-          world.Chevrons.push({ x: L + 320, y: 260, dirX: 0, dirY: 1, color: NEON_GREEN });
-          world.Chevrons.push({ x: R - 320, y: 260, dirX: 0, dirY: 1, color: NEON_GREEN });
+          // TRACK 21: World Cup Grand Finale Stadium Goal Arena
+          case "world_cup_gran_finale": {
+            this.buildTopTray(world, "dual", L, R, CX);
+            this.buildOuterWalls(world, "curvedBowl", L, R, CX);
+            // Upper Diamond & Spinner Crown
+            [-360, -180, 0, 180, 360].forEach((ox, i) => {
+              world.Diamonds.push({ x: CX + ox, y: 285, r: 40 });
+              if (i % 2 === 1) world.RedRings.push({ x: CX + ox, y: 410, r: 32, angle: 0, speed: 0.035 });
+              else world.GreenSpinners.push({ x: CX + ox, y: 410, len: 90, thick: 14, angle: 0, speed: 0.055 });
+            });
+            // Lower White Soccer Goalposts + Red Spinning Goalkeeper Bar
+            world.Walls.push({ x1: CX - 240, y1: 540, x2: CX - 240, y2: 690, thick: 20, color: "#ffffff" });
+            world.Walls.push({ x1: CX + 240, y1: 540, x2: CX + 240, y2: 690, thick: 20, color: "#ffffff" });
+            world.GreenSpinners.push({ x: CX - 110, y: 615, len: 95, thick: 15, angle: 0, speed: 0.065 });
+            world.GreenSpinners.push({ x: CX + 110, y: 615, len: 95, thick: 15, angle: 0, speed: -0.065 });
+            world.RedRings.push({ x: CX, y: 615, r: 30, angle: 0, speed: 0.04 });
+            break;
+          }
+
+          // TRACK 22: Seeded Random Procedural Generator
+          default: {
+            const trays = ["dual", "centerFunnel", "wideRain", "sideAccelerators"];
+            const walls = ["zigzag", "curvedBowl", "straightStadium"];
+            this.buildTopTray(world, trays[Math.floor(rng() * trays.length)], L, R, CX);
+            this.buildOuterWalls(world, walls[Math.floor(rng() * walls.length)], L, R, CX);
+            for (let r = 0; r < 3; r++) {
+              const ry = 275 + r * 145;
+              const cols = 5 + (r % 2);
+              const span = 210;
+              const x0 = CX - ((cols - 1) * span) / 2;
+              for (let c = 0; c < cols; c++) {
+                const ox = x0 + c * span;
+                const pick = Math.floor(rng() * 4);
+                if (pick === 0) world.Diamonds.push({ x: ox, y: ry, r: 40 });
+                else if (pick === 1) world.RedRings.push({ x: ox, y: ry, r: rRing, angle: 0, speed: 0.03 });
+                else if (pick === 2) world.GreenSpinners.push({ x: ox, y: ry, len: 88, thick: 14, angle: 0, speed: 0.055 });
+                else {
+                  for (let k = -1; k <= 1; k++) world.YellowPegs.push({ x: ox + k * 24, y: ry, r: 8 });
+                }
+              }
+            }
+            break;
+          }
         }
       }
 
       // ----------------------------------------------------------------------
-      // 4. BOTTOM 3-LANE HORIZONTAL SERPENTINE FINISH TRACK (Y = 825..1045)
+      // BOTTOM 3-LANE HORIZONTAL SERPENTINE FINISH TRACK (Y = 830..1034)
       // ----------------------------------------------------------------------
-      // Matches the bottom of `1000157883_52417a.png`:
-      // Marbles exit the central funnel at CX (1110, 825) into Lane 1, get propelled along the horizontal
-      // purple tube lanes with Green `>>>` boosters and Yellow checkpoint gates, turn around the U-bends,
-      // and cross the Checkered Finish Flag!
-      const tL = L + 25;   // 380
-      const tR = R - 25;   // 1840
+      const tL = L + 25;
+      const tR = R - 25;
       const laneH = 68;
       const y0 = 830;
-      const y1 = y0 + laneH;       // 898
-      const y2 = y0 + laneH * 2;   // 966
-      const y3 = y0 + laneH * 3;   // 1034
+      const y1 = y0 + laneH;
+      const y2 = y0 + laneH * 2;
+      const y3 = y0 + laneH * 3;
 
-      // Top ceiling of Lane 1 (with gap at CX-48..CX+48 for marbles entering from the funnel!)
-      world.Walls.push({ x1: tL, y1: y0, x2: CX - 48, y2: y0, thick: 16, color: PURPLE_MAIN });
-      world.Walls.push({ x1: CX + 48, y1: y0, x2: tR, y2: y0, thick: 16, color: PURPLE_MAIN });
+      world.Walls.push({ x1: tL, y1: y0, x2: CX - 52, y2: y0, thick: 16, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX + 52, y1: y0, x2: tR, y2: y0, thick: 16, color: PURPLE_MAIN });
 
       if (world.sprintLanes === 1) {
-        // 1-Lane Fast Sprint: Left wall closed, marbles boost straight right to Finish at tR!
         world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y1, thick: 18, color: PURPLE_MAIN });
         world.Walls.push({ x1: tL, y1: y1, x2: tR, y2: y1, thick: 16, color: PURPLE_MAIN });
         world.Chevrons.push({ x: tL + 180, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
@@ -508,7 +837,6 @@
         world.finishYMin = y0;
         world.finishYMax = y1;
       } else if (world.sprintLanes === 2) {
-        // 2-Lane Serpentine: Lane 1 goes Left -> drops at tL into Lane 2 -> goes Right to Finish!
         world.Walls.push({ x1: tR, y1: y0, x2: tR, y2: y1, thick: 18, color: PURPLE_MAIN });
         world.Walls.push({ x1: tL + 95, y1: y1, x2: tR, y2: y1, thick: 16, color: PURPLE_MAIN });
         world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y2, thick: 18, color: PURPLE_MAIN });
@@ -524,10 +852,6 @@
         world.finishYMin = y1;
         world.finishYMax = y2;
       } else {
-        // 3-Lane Full Serpentine (Exact Match to Reference Image!):
-        // Lane 1 flows Left -> U-turn at Left -> Lane 2 flows Right -> U-turn at Right -> Lane 3 flows Left/Right to Checkered Finish!
-        // Wait: in the reference image, the Checkered Finish Flag is at the bottom-right (`tR`, spanning Lane 2/3), so let's make:
-        // Lane 1 flows Right -> U-bend at Right (`tR`) -> Lane 2 flows Left -> U-bend at Left (`tL`) -> Lane 3 flows Right to the Checkered Finish Flag at Bottom-Right!
         world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y1, thick: 18, color: PURPLE_MAIN });
         world.Walls.push({ x1: tL, y1: y1, x2: tR - 95, y2: y1, thick: 16, color: PURPLE_MAIN });
         world.Walls.push({ x1: tR, y1: y0, x2: tR, y2: y2, thick: 18, color: PURPLE_MAIN });
@@ -535,22 +859,18 @@
         world.Walls.push({ x1: tL, y1: y1, x2: tL, y2: y3, thick: 18, color: PURPLE_MAIN });
         world.Walls.push({ x1: tL, y1: y3, x2: tR, y2: y3, thick: 16, color: PURPLE_MAIN });
 
-        // Lane 1 Boosters (pushing Right toward U-turn 1)
         world.Chevrons.push({ x: tL + 220, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: CX, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: tR - 240, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
 
-        // Lane 2 Boosters (pushing Left toward U-turn 2)
         world.Chevrons.push({ x: tR - 260, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: CX, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: tL + 260, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
 
-        // Lane 3 Boosters (pushing Right into the Bottom-Right Checkered Finish Line!)
         world.Chevrons.push({ x: tL + 240, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: CX, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
         world.Chevrons.push({ x: tR - 260, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
 
-        // Yellow vertical timing gates (exact match to Image!)
         world.Gates.push(
           { x: CX - 130, y: y0, h: laneH },
           { x: CX + 260, y: y0, h: laneH },
@@ -589,6 +909,12 @@
       this.onTrackChange();
       this.applySettings(true);
       Editor.init();
+
+      // Set top-left rail logo to the new custom icon
+      const railLogo = document.querySelector(".rail-logo");
+      if (railLogo) {
+        railLogo.innerHTML = `<img src="assets/icon.png" onerror="this.style.display='none'" style="width:100%;height:100%;border-radius:12px;object-fit:cover;" />`;
+      }
 
       const badge = document.getElementById("totalCountriesBadge");
       if (badge) badge.textContent = `${getAllMarblesPool().length} COUNTRIES`;
@@ -654,7 +980,6 @@
     },
 
     showScreen(id, btn) {
-      // Hide left menu & top bar when in race screen!
       if (id === "race") {
         document.body.classList.add("in-race");
       } else {
@@ -947,7 +1272,7 @@
         <div style="background:#080a17; padding:10px; border-radius:10px; border:1.5px solid #3b308a;">
           <div style="font-weight:800; margin-bottom:4px; font-size:0.84rem;">${c.name}</div>
           <div style="font-size:0.7rem; color:var(--muted); margin-bottom:8px;">
-            ${c.count} Flags • ${c.rounds} Laps • ${c.format.toUpperCase()}
+            ${c.count} Flags • ${c.rounds} Different Tracks • ${c.format.toUpperCase()}
           </div>
           <button class="btn btn-sm btn-block" onclick="Game.startCup('${c.id}')">Start Cup</button>
         </div>
@@ -1299,7 +1624,6 @@
       ctx.fillStyle = DARK_BG;
       ctx.fillRect(0, 0, 640, 320);
 
-      // Widescreen Purple Arena Frame Preview
       ctx.strokeStyle = PURPLE_MAIN;
       ctx.lineWidth = 6;
       ctx.strokeRect(12, 12, 616, 296);
@@ -1367,7 +1691,6 @@
     lastEventBanner: "",
     particles: [],
     dpr: 2.5,
-    // Dual Video + Frame Replay Recorder so recording ALWAYS works on Android APK
     isRecording: false,
     mediaRecorder: null,
     recordedChunks: [],
@@ -1429,7 +1752,7 @@
     },
 
     buildTrackSchedule(selectedTrack, totalRounds) {
-      const allIds = window.GAME_DATA.tracks.map(t => t.id);
+      const allIds = window.GAME_DATA.tracks.map(t => t.id).filter(id => id !== "seeded_random");
       if (selectedTrack === "seeded_random" || selectedTrack === "custom") {
         return Array(totalRounds).fill(selectedTrack);
       }
@@ -1642,7 +1965,6 @@
       const w = this.worldData;
       w.dynamicItems = [];
 
-      // 1. Walls
       w.Walls.forEach(seg => {
         const dx = seg.x2 - seg.x1, dy = seg.y2 - seg.y1;
         const len = Math.hypot(dx, dy);
@@ -1658,7 +1980,6 @@
         World.add(this.engine.world, body);
       });
 
-      // 2. Hollow Purple Diamond Frames (4 angled wall bars per diamond)
       w.Diamonds.forEach(d => {
         const s = d.r * 1.35;
         const body = Bodies.rectangle(d.x, d.y, s, s, {
@@ -1671,7 +1992,6 @@
         World.add(this.engine.world, body);
       });
 
-      // 3. Red Segmented Hazard Rings
       w.RedRings.forEach(rr => {
         const body = Bodies.circle(rr.x, rr.y, rr.r, {
           isStatic: true,
@@ -1683,7 +2003,6 @@
         World.add(this.engine.world, body);
       });
 
-      // 4. Yellow Pegs
       w.YellowPegs.forEach(p => {
         World.add(this.engine.world, Bodies.circle(p.x, p.y, p.r, {
           isStatic: true,
@@ -1693,7 +2012,6 @@
         }));
       });
 
-      // 5. Green 4-Blade Rotating Spinners
       w.GreenSpinners.forEach(sp => {
         const b1 = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 14, {
           isStatic: true, angle: sp.angle, restitution: 0.85, friction: 0
@@ -1705,7 +2023,6 @@
         w.dynamicItems.push({ blades: [b1, b2], spec: sp, angle: sp.angle });
       });
 
-      // Spawn Marbles in the Left & Right Upper Launch Trays (Y = 72..118)
       this.marbles = [];
       this.finishedOrder = [];
       this.eliminatedOrder = [];
@@ -1781,7 +2098,6 @@
 
       this.redEventsCount += 1;
       if (rule === "eliminate") {
-        // SURVIVAL MODE: Touching ANY Red obstacle immediately eliminates the marble!
         this.spawnBurstParticles(m.x, m.y, NEON_RED, 14);
         m.eliminated = true;
         m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
@@ -1790,7 +2106,6 @@
         this.lastEventBanner = `💀 ${m.country.iso3} ELIMINATED BY RED!`;
         if (this.simTick % 3 === 0) SFX.redHitSound(true);
       } else {
-        // RESET MODE: Touching Red teleports the marble back to the top launch tray!
         this.spawnBurstParticles(m.x, m.y, NEON_RED, 10);
         const side = Math.random() < 0.5 ? -1 : 1;
         const nx = side < 0 ? (440 + Math.random() * 500) : (1220 + Math.random() * 500);
@@ -1822,7 +2137,6 @@
           }
           this.render4KColorRushScene(ctx, canvas, skin);
 
-          // Capture frames for built-in fallback video/replay recorder if recording is active
           if (this.isRecording && this.simTick % 4 === 0 && this.capturedFrames.length < 180) {
             try {
               this.capturedFrames.push(canvas.toDataURL("image/webp", 0.72));
@@ -1848,7 +2162,6 @@
       const w = this.worldData;
       const spd = (this.session.physSpeed || 1) * 0.5;
 
-      // Rotate Green Spinners & Red Rings
       w.dynamicItems.forEach(item => {
         item.angle += item.spec.speed * spd;
         Body.setAngle(item.blades[0], item.angle);
@@ -1863,7 +2176,6 @@
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
 
-        // Bounds safety
         if (!Number.isFinite(m.body.position.x) || !Number.isFinite(m.body.position.y) || m.body.position.y > 1075) {
           Body.setPosition(m.body, { x: 1110, y: 855 });
           Body.setVelocity(m.body, { x: 6, y: 0 });
@@ -1873,7 +2185,7 @@
         m.y = m.body.position.y;
         m.angle = m.body.angle;
 
-        // 1. Check Red Hazard Rings & Red Bars proximity for Survival Elimination / Reset
+        // Check Red Hazard Rings & Red Bars proximity
         for (let i = 0; i < w.RedRings.length; i++) {
           const rr = w.RedRings[i];
           if (Math.hypot(m.x - rr.x, m.y - rr.y) <= rr.r + m.r + 2.5) {
@@ -1886,7 +2198,6 @@
         for (let i = 0; i < w.Walls.length; i++) {
           const seg = w.Walls[i];
           if (!seg.isRed) continue;
-          // Point-to-segment distance check
           const l2 = Math.pow(seg.x2 - seg.x1, 2) + Math.pow(seg.y2 - seg.y1, 2);
           if (l2 === 0) continue;
           let t = ((m.x - seg.x1) * (seg.x2 - seg.x1) + (m.y - seg.y1) * (seg.y2 - seg.y1)) / l2;
@@ -1900,7 +2211,7 @@
           }
         }
 
-        // 2. Bottom Horizontal Serpentine Sprint Tube Propulsion
+        // Bottom Horizontal Serpentine Sprint Tube Propulsion
         if (m.y >= 826) {
           const laneIdx = Math.floor((m.y - 830) / 68);
           let dirX = 1;
@@ -1909,13 +2220,11 @@
           } else if (w.sprintLanes === 3) {
             dirX = laneIdx === 1 ? -1 : 1;
           }
-          // Gentle horizontal current inside the bottom sprint tube + stronger boost on Green `>>>` pads
           Body.setVelocity(m.body, {
             x: m.body.velocity.x * 0.96 + dirX * 0.48 * (this.session.physSpeed || 1),
             y: m.body.velocity.y
           });
 
-          // Check Checkered Finish Line at the end of the final sprint lane!
           if (m.y >= w.finishYMin - 10 && m.y <= w.finishYMax + 15 && m.x >= w.finishX) {
             m.finished = true;
             m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
@@ -1923,7 +2232,6 @@
             World.remove(this.engine.world, m.body);
             SFX.qualifyDing();
 
-            // If Knockout "Spots Left" hits 0, eliminate remaining marbles
             if (this.session.format === "knockout" && this.finishedOrder.length >= this.spotsTotal && this.spotsTotal < this.marbles.length) {
               const rem = this.marbles.filter(x => !x.finished && !x.eliminated).sort((a, b) => this.computeProgressScore(b) - this.computeProgressScore(a));
               rem.forEach((st, idx) => {
@@ -1937,17 +2245,15 @@
           }
         }
 
-        // 3. Fast Anti-Stuck System (Zero getting stuck on any obstacle!)
+        // Fast Anti-Stuck System
         const moved = Math.hypot(m.x - m.lastPos.x, m.y - m.lastPos.y);
         if (moved < 1.1) {
           m.stuckTicks += 1;
           if (m.stuckTicks === 28) {
             if (m.y < 215) {
-              // In upper tray, slide toward central funnel openings
               const toCenter = m.x < 1110 ? 6 : -6;
               Body.setVelocity(m.body, { x: toCenter, y: 4 });
             } else if (m.y < 825) {
-              // In main arena, pop toward center funnel (X = 1110)
               const towardFunnel = m.x < 1110 ? 5.5 : -5.5;
               Body.setVelocity(m.body, { x: towardFunnel + (Math.random() - 0.5) * 4, y: -5 });
             } else {
@@ -2014,9 +2320,6 @@
       return remaining.length === 0;
     },
 
-    // ========================================================================
-    // 4K COLOR RUSH WIDESCREEN RENDERER (EXACT MATCH TO 1000157883_52417a.png)
-    // ========================================================================
     render4KColorRushScene(ctx, canvas, skin) {
       const cw = canvas.width;
       const ch = canvas.height;
@@ -2025,12 +2328,10 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // Map 1920x1080 UHD Virtual Space onto the 4K Canvas seamlessly
       const scaleX = cw / 1920;
       const scaleY = ch / 1080;
       ctx.scale(scaleX, scaleY);
 
-      // Deep Navy/Black Color Rush Background with diagonal subtle stadium stripes
       ctx.fillStyle = DARK_BG;
       ctx.fillRect(0, 0, 1920, 1080);
 
@@ -2042,6 +2343,12 @@
         ctx.lineTo(sx + 600, 0);
         ctx.stroke();
       }
+
+      // Subtle Watermark of Current Track Name inside Arena
+      ctx.fillStyle = "rgba(99, 68, 245, 0.14)";
+      ctx.font = "900 44px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(this.getTrackDisplayName(this.currentTrackId).toUpperCase(), 1110, 770);
 
       const activeMarbles = this.marbles
         .filter(m => !m.finished && !m.eliminated)
@@ -2062,10 +2369,7 @@
         });
       }
 
-      // ----------------------------------------------------------------------
-      // 1. LEFT BROADCAST SIDEBAR (X = 24..312, Y = 22..1058) - Exact Image Match
-      // ----------------------------------------------------------------------
-      // Top Card: Neon Green Border (`🏁 LAP X` / `MARBLES: Y`)
+      // 1. LEFT BROADCAST SIDEBAR
       ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
       ctx.strokeStyle = NEON_GREEN;
       ctx.lineWidth = 3.5;
@@ -2075,14 +2379,16 @@
       ctx.stroke();
 
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 32px system-ui, sans-serif";
+      ctx.font = "900 30px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(`🏁  LAP ${this.session.currentRound}`, 167, 68);
+      ctx.fillText(`🏁  LAP ${this.session.currentRound}`, 167, 62);
+      ctx.fillStyle = NEON_CYAN;
+      ctx.font = "800 15px system-ui, sans-serif";
+      ctx.fillText(this.getTrackDisplayName(this.currentTrackId).slice(0, 24), 167, 86);
       ctx.fillStyle = "#cbd5e1";
-      ctx.font = "800 22px system-ui, sans-serif";
-      ctx.fillText(`MARBLES: ${activeMarbles.length + this.finishedOrder.length}`, 167, 106);
+      ctx.font = "800 18px system-ui, sans-serif";
+      ctx.fillText(`MARBLES: ${activeMarbles.length + this.finishedOrder.length}`, 167, 114);
 
-      // Middle Card: Glowing Purple Border (`1. 🇺🇸 USA ▲` .. `20. 🇨🇴 COL ▼`)
       ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
       ctx.strokeStyle = PURPLE_MAIN;
       ctx.lineWidth = 3.5;
@@ -2097,23 +2403,19 @@
         const m = liveRanking[i];
         const ry = 162 + i * rowH;
 
-        // Neon Green Rank Number
         ctx.fillStyle = m.eliminated ? NEON_RED : NEON_GREEN;
         ctx.font = "900 20px system-ui, sans-serif";
         ctx.textAlign = "right";
         ctx.fillText(`${i + 1}.`, 68, ry + 22);
 
-        // Crisp Flag Icon
         const tex = MarbleTextureCache.getTexture(m.country);
         ctx.drawImage(tex, 82, ry + 3, 25, 25);
 
-        // 3-Letter Country Code
         ctx.fillStyle = "#ffffff";
         ctx.font = "800 20px system-ui, sans-serif";
         ctx.textAlign = "left";
         ctx.fillText(m.country.iso3 || m.country.code.slice(0, 3), 120, ry + 22);
 
-        // Up/Down Triangle Indicator (Green/Cyan ▲ or Orange ▼)
         const ax = 278;
         ctx.fillStyle = m.rankDelta > 0 ? NEON_GREEN : m.rankDelta === 0 ? "#00e5ff" : "#f97316";
         ctx.beginPath();
@@ -2130,7 +2432,6 @@
         ctx.fill();
       }
 
-      // Bottom Card: Neon Green Border (`🟢 SPOTS LEFT: X`)
       ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
       ctx.strokeStyle = NEON_GREEN;
       ctx.lineWidth = 3.5;
@@ -2141,9 +2442,9 @@
 
       const spotsLeft = Math.max(0, this.spotsTotal - this.finishedOrder.length);
       ctx.fillStyle = NEON_GREEN;
-      ctx.font = "900 28px system-ui, sans-serif";
+      ctx.font = "900 26px system-ui, sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText(this.session.format === "survival" ? "💀 SURVIVAL MODE" : "🏳️ QUALIFYING", 167, 958);
+      ctx.fillText(this.session.format === "survival" ? "💀 SURVIVAL MODE" : "🏳️ QUALIFYING", 167, 956);
       ctx.fillStyle = "#ffffff";
       ctx.font = "900 26px system-ui, sans-serif";
       ctx.fillText(
@@ -2151,7 +2452,7 @@
           ? `ALIVE: ${activeMarbles.length}`
           : `SPOTS LEFT: ${spotsLeft}`,
         167,
-        1005
+        1002
       );
       if (this.lastEventBanner) {
         ctx.fillStyle = NEON_RED;
@@ -2159,12 +2460,9 @@
         ctx.fillText(this.lastEventBanner, 167, 1034);
       }
 
-      // ----------------------------------------------------------------------
-      // 2. WIDESCREEN COLOR RUSH ARENA (X = 335..1890, Y = 20..1060)
-      // ----------------------------------------------------------------------
+      // 2. WIDESCREEN COLOR RUSH ARENA
       const w = this.worldData;
 
-      // Left & Right Outer Purple Framing Brackets (Matches Image!)
       ctx.strokeStyle = PURPLE_MAIN;
       ctx.lineWidth = 14;
       ctx.lineCap = "round";
@@ -2173,7 +2471,6 @@
       ctx.moveTo(1865, 26); ctx.lineTo(1882, 26); ctx.lineTo(1882, 1048); ctx.lineTo(1865, 1048);
       ctx.stroke();
 
-      // Chevron Boosters (`>>>` in bottom lanes and `⌄⌄⌄` on sides)
       w.Chevrons.forEach(chv => {
         ctx.save();
         ctx.translate(chv.x, chv.y);
@@ -2194,13 +2491,11 @@
         ctx.restore();
       });
 
-      // Yellow Timing Gates in Bottom Serpentine Lanes
       w.Gates.forEach(g => {
         ctx.fillStyle = NEON_YELLOW;
         ctx.fillRect(g.x - 5, g.y + 6, 10, g.h - 12);
       });
 
-      // Checkered Finish Line Banner in Final Sprint Lane
       const sq = 13;
       for (let fy = w.finishYMin + 6; fy < w.finishYMax - 6; fy += sq) {
         const rowIdx = Math.floor((fy - w.finishYMin) / sq);
@@ -2210,7 +2505,6 @@
         ctx.fillRect(w.finishX + sq, fy, sq, sq);
       }
 
-      // Hollow Purple Diamonds (3D Beveled Color Rush Style!)
       w.Diamonds.forEach(d => {
         ctx.save();
         ctx.translate(d.x, d.y);
@@ -2226,13 +2520,11 @@
         ctx.restore();
       });
 
-      // Segmented Red Hazard Rings (With White/Black Inner Spokes like Image!)
       w.RedRings.forEach(rr => {
         ctx.save();
         ctx.translate(rr.x, rr.y);
         ctx.rotate(rr.angle || 0);
 
-        // Outer red ring
         ctx.beginPath();
         ctx.arc(0, 0, rr.r, 0, Math.PI * 2);
         ctx.fillStyle = "#080a14";
@@ -2241,7 +2533,6 @@
         ctx.strokeStyle = NEON_RED;
         ctx.stroke();
 
-        // 3 dark/white segment notches
         for (let k = 0; k < 3; k++) {
           ctx.save();
           ctx.rotate((k * Math.PI * 2) / 3);
@@ -2252,7 +2543,6 @@
         ctx.restore();
       });
 
-      // Yellow Peg Chains
       w.YellowPegs.forEach(p => {
         ctx.fillStyle = NEON_YELLOW;
         ctx.beginPath();
@@ -2260,7 +2550,6 @@
         ctx.fill();
       });
 
-      // Green 4-Blade Rotating Cross Spinners
       w.dynamicItems.forEach(item => {
         const sp = item.spec;
         ctx.save();
@@ -2273,7 +2562,6 @@
         ctx.roundRect(-t / 2, -sp.len / 2, t, sp.len, 6);
         ctx.fill();
 
-        // Dark center hub ring
         ctx.strokeStyle = "#070913";
         ctx.lineWidth = 5;
         ctx.beginPath();
@@ -2282,7 +2570,6 @@
         ctx.restore();
       });
 
-      // Arena Walls & Tilted Bars
       w.Walls.forEach(seg => {
         ctx.strokeStyle = seg.color || PURPLE_MAIN;
         ctx.lineWidth = seg.thick || 16;
@@ -2292,7 +2579,6 @@
         ctx.lineTo(seg.x2, seg.y2);
         ctx.stroke();
 
-        // Top roof green dash highlights (Matches Image!)
         if (seg.stripeGreen) {
           ctx.strokeStyle = NEON_GREEN;
           ctx.lineWidth = 10;
@@ -2305,7 +2591,6 @@
         }
       });
 
-      // Spark Particles
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const pt = this.particles[i];
         pt.x += pt.vx;
@@ -2318,7 +2603,6 @@
         if (pt.life <= 0) this.particles.splice(i, 1);
       }
 
-      // Render Marbles (Razor-Sharp 4K Full-Bleed Flag Circles, Zero Outline, Zero Text!)
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
 
@@ -2606,9 +2890,6 @@
       document.getElementById("btnAuto").textContent = `🔄 Auto: ${this.autoPlay ? "ON" : "OFF"}`;
     },
 
-    // ========================================================================
-    // DUAL-ENGINE SCREEN RECORDER (MediaRecorder + Canvas Frame Replay Backup)
-    // ========================================================================
     toggleRecording() {
       const btn = document.getElementById("btnRec");
       if (this.isRecording) {
@@ -2647,9 +2928,7 @@
           };
           this.mediaRecorder.start(200);
         }
-      } catch (e) {
-        // Even if MediaRecorder fails on an Android WebView, this.capturedFrames records the clip!
-      }
+      } catch (e) {}
     },
 
     stopRecordingInternal() {
@@ -2707,7 +2986,6 @@
       const winName = document.getElementById("winCountryName").textContent;
       const shareText = `🏆 ${winName} won on ${this.getTrackDisplayName(this.currentTrackId)} in Country Marble Color Rush 4K!`;
 
-      // 1. Try Native Android Share Sheet with Video File or Snapshot Image File
       if (navigator.share) {
         try {
           if (this.lastRecordedBlob && this.lastRecordedBlob.size > 0) {
@@ -2732,7 +3010,6 @@
         } catch (e) {}
       }
 
-      // 2. Direct Data-URL / Blob Anchor Download Fallback
       if (this.lastRecordedBlob && this.lastRecordedBlob.size > 0) {
         const reader = new FileReader();
         reader.onload = () => {
