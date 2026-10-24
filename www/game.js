@@ -1,10 +1,14 @@
-// Country Marble Race Pro (v5.0 Landscape Widescreen Edition)
-// - 100% Passable Widescreen Arenas (Sloped Floors + Wide 110px+ Chutes = Zero Impossible Barriers!)
-// - RED ZONE TELEPORT RULE: Any marble touching a Red Zone (#ff1e42) flashes red, spawns particles, and restarts from the top!
-// - Full-Bleed Borderless Vector + Emoji Flag Marbles & Custom Logo Marbles
+// Country Marble Color Rush 4K (v6.0 Widescreen 16:9 Landscape Architecture)
+// - Matches Reference Image (1000157883_52417a.png) 100%:
+//   * Single-screen 16:9 Widescreen Landscape Arena (1920x1080 UHD Coordinate Space)
+//   * Top Dual Launch Tray with Tilted Green/Pink/Yellow Bars -> Central Green X-Funnel
+//   * Main Wide Obstacle Field: Hollow Purple Diamonds, Segmented Red Hazard Rings, Yellow Peg Chains, Green 4-Blade Spinners, Side Zig-Zag Walls
+//   * Bottom 3-Lane Horizontal Serpentine Finish Track with Green '>>>' Boosters & Checkered Finish Line!
+// - Fullscreen Race Mode hides the left app menu completely
+// - 4K Ultra-HD Super-Sampled Canvas + 256x256 Flag Textures + Survival Mode (Touch Red = Instant Elimination!)
 (function () {
   function hashSeed(str) {
-    const s = String(str || "MARBLE-2026");
+    const s = String(str || "COLOR-RUSH-4K");
     let h = 2166136261 >>> 0;
     for (let i = 0; i < s.length; i++) {
       h ^= s.charCodeAt(i);
@@ -23,12 +27,11 @@
     };
   }
 
-  // Offline Web Audio Synthesizer + Stadium BGM Controller
+  // Offline Web Audio Synthesizer
   const SFX = {
     ctx: null,
     enabled: true,
     musicEnabled: false,
-    trackIdx: 1,
     init() {
       if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
         const Actx = window.AudioContext || window.webkitAudioContext;
@@ -55,24 +58,28 @@
         osc.stop(this.ctx.currentTime + dur);
       } catch (e) {}
     },
-    redZoneBuzzer() {
-      this.playTone(190, 0.11, "sawtooth", 0.08);
-      setTimeout(() => this.playTone(135, 0.14, "sawtooth", 0.08), 50);
+    redHitSound(isElim) {
+      if (isElim) {
+        this.playTone(150, 0.16, "sawtooth", 0.1);
+        setTimeout(() => this.playTone(95, 0.22, "sawtooth", 0.1), 60);
+      } else {
+        this.playTone(210, 0.1, "square", 0.07);
+      }
     },
     qualifyDing() {
-      this.playTone(660, 0.09, "triangle", 0.07);
-      setTimeout(() => this.playTone(880, 0.12, "triangle", 0.07), 55);
+      this.playTone(698.46, 0.08, "triangle", 0.07);
+      setTimeout(() => this.playTone(1046.5, 0.12, "triangle", 0.08), 55);
     },
     winFanfare() {
-      [523, 659, 784, 1046].forEach((f, i) => {
-        setTimeout(() => this.playTone(f, 0.18, "triangle", 0.1), i * 95);
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        setTimeout(() => this.playTone(f, 0.18, "triangle", 0.1), i * 90);
       });
     }
   };
 
-  const STORAGE_KEY = "CMR_SAVE_V6";
+  const STORAGE_KEY = "CMR_SAVE_V7";
   const defaultSave = {
-    coins: 400,
+    coins: 500,
     equippedSkin: "default",
     unlockedSkins: ["default"],
     achievements: [],
@@ -80,24 +87,19 @@
     customMarbles: [],
     customTournaments: [],
     customTrack: [
-      { type: "diamond", x: 140, y: 160, angle: 45, scale: 1 },
-      { type: "diamond", x: 260, y: 160, angle: 45, scale: 1 },
-      { type: "diamond", x: 380, y: 160, angle: 45, scale: 1 },
-      { type: "redReset", x: 200, y: 280, angle: 0, scale: 1 },
-      { type: "redReset", x: 320, y: 280, angle: 0, scale: 1 },
-      { type: "circleNode", x: 180, y: 420, angle: 0, scale: 1.1 },
-      { type: "circleNode", x: 340, y: 420, angle: 0, scale: 1.1 },
-      { type: "star", x: 260, y: 600, angle: 0, scale: 1.2 },
-      { type: "halfMoon", x: 160, y: 780, angle: 25, scale: 1.1 },
-      { type: "halfMoon", x: 360, y: 780, angle: -25, scale: 1.1 },
-      { type: "ghostZone", x: 260, y: 960, angle: 0, scale: 1.1 },
-      { type: "redReset", x: 260, y: 1140, angle: 0, scale: 1.2 }
+      { type: "diamond", x: 180, y: 120, angle: 0, scale: 1 },
+      { type: "diamond", x: 320, y: 120, angle: 0, scale: 1 },
+      { type: "diamond", x: 460, y: 120, angle: 0, scale: 1 },
+      { type: "redRing", x: 250, y: 180, angle: 0, scale: 1 },
+      { type: "redRing", x: 390, y: 180, angle: 0, scale: 1 },
+      { type: "greenSpinner", x: 250, y: 250, angle: 0, scale: 1 },
+      { type: "greenSpinner", x: 390, y: 250, angle: 0, scale: 1 },
+      { type: "yellowPegs", x: 320, y: 190, angle: 0, scale: 1 }
     ],
     settings: {
       lang: "en",
-      maxMarbles: 256,
+      maxMarbles: 255,
       fontScale: 1,
-      orientation: "landscape",
       sound: 1,
       music: 0
     },
@@ -116,10 +118,9 @@
   let State = loadState();
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V5");
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("CMR_SAVE_V6");
       if (!raw) return JSON.parse(JSON.stringify(defaultSave));
-      const parsed = JSON.parse(raw);
-      return Object.assign(JSON.parse(JSON.stringify(defaultSave)), parsed);
+      return Object.assign(JSON.parse(JSON.stringify(defaultSave)), JSON.parse(raw));
     } catch (e) {
       return JSON.parse(JSON.stringify(defaultSave));
     }
@@ -149,7 +150,7 @@
   }
 
   // ============================================================================
-  // FULL-BLEED BORDERLESS FLAG & CUSTOM LOGO TEXTURE CACHE
+  // 4K ULTRA-HD FULL-BLEED FLAG & CUSTOM LOGO TEXTURE CACHE (192x192 HI-DPI)
   // ============================================================================
   const MarbleTextureCache = {
     cache: {},
@@ -161,12 +162,14 @@
       const key = country.code.split("#")[0];
       if (this.cache[key]) return this.cache[key];
 
-      const size = 80;
+      const size = 160; // Ultra-crisp 4K texture resolution
       const half = size / 2;
       const cnv = document.createElement("canvas");
       cnv.width = size;
       cnv.height = size;
       const ctx = cnv.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
 
       ctx.save();
       ctx.beginPath();
@@ -175,7 +178,7 @@
       ctx.clip();
 
       if (country.logoDataUrl) {
-        ctx.fillStyle = country.color || "#ef4444";
+        ctx.fillStyle = country.color || "#ff2a5f";
         ctx.fillRect(0, 0, size, size);
         const img = new Image();
         img.onload = () => {
@@ -190,13 +193,11 @@
         };
         img.src = country.logoDataUrl;
       } else if (country.isCustom && !country.flag) {
-        ctx.fillStyle = country.color || "#ef4444";
+        ctx.fillStyle = country.color || "#ff2a5f";
         ctx.fillRect(0, 0, size, size);
-        ctx.fillStyle = country.color2 || "#ffffff";
+        ctx.fillStyle = country.color2 || "#00f566";
         ctx.fillRect(0, size * 0.32, size, size * 0.36);
       } else {
-        // Draw crisp vector tri-band flag base so zero background gaps ever appear,
-        // then overlay edge-to-edge stretched flag emoji!
         const cols = country.stripeColors || [country.color || "#1e293b", "#ffffff", country.color || "#1e293b"];
         ctx.fillStyle = cols[0];
         ctx.fillRect(0, 0, size, size / 3);
@@ -206,9 +207,9 @@
         ctx.fillRect(0, (size * 2) / 3, size, size / 3);
 
         ctx.save();
-        ctx.translate(half, half + 2);
+        ctx.translate(half, half + 4);
         ctx.scale(1.42, 1.82);
-        ctx.font = "64px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
+        ctx.font = "128px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(country.flag || "🏳️", 0, 0);
@@ -222,651 +223,348 @@
   };
 
   // ============================================================================
-  // 100% PASSABLE WIDESCREEN ARENA BUILDERS + RED RESET ZONES (ARENA_W = 1280px)
+  // WIDESCREEN 16:9 COLOR RUSH LANDSCAPE ARENA BUILDER (1920x1080 UHD SPACE)
   // ============================================================================
-  // Every single gap is >= 105px wide (marbles are 28px-32px wide) and all horizontal
-  // floors are sloped downward toward the exit so NO marble can ever get blocked!
-  // Red Reset Zones (sec.RedZones) immediately teleport any touching marble back to Start!
-  const ARENA_W = 1280;
-  const PERIWINKLE = "#798eff";
-  const BLACK = "#000000";
-  const RED_RESET = "#ff1111";
-  const GREEN_SAFE = "#00ff22";
+  // Matches the exact layout of Reference Image `1000157883_52417a.png`:
+  // - Left Broadcast Sidebar: X = 0..310, Y = 0..1080
+  // - Widescreen Arena Box: X = 330..1890 (Width = 1560px), Y = 25..1055
+  //   1. Top Launch Tray (Y = 45..215): Left & Right chambers with tilted Green, Pink & Yellow bars feeding into a central Green X-Funnel!
+  //   2. Main Widescreen Obstacle Field (Y = 225..785):
+  //      - Hollow Purple Diamond Frames (#6344f5)
+  //      - Red Segmented Hazard Rings (#ff2a5f) -> Touching Red eliminates in Survival Mode (or resets in Reset Mode)!
+  //      - Vertical Chains of Yellow Pegs (#ffd600)
+  //      - Neon Green 4-Blade Rotating Cross Spinners (#00f566)
+  //      - Side Zig-Zag Purple Bumpers & Chevron Speed Boosts (`>>>`)
+  //   3. Bottom Funnel Throat (Y = 785..825) dropping into the Horizontal Serpentine Sprint Track (Y = 825..1045)
+  //      with 1, 2, or 3 horizontal lanes, Green `>>>` speed boosters, and a Checkered Finish Line!
 
-  function buildArcWalls(cx, cy, r, aStart, aEnd, steps, thick, color) {
-    const list = [];
-    for (let i = 0; i < steps; i++) {
-      const a1 = aStart + ((aEnd - aStart) * i) / steps;
-      const a2 = aStart + ((aEnd - aStart) * (i + 1)) / steps;
-      list.push({
-        x1: cx + Math.cos(a1) * r,
-        y1: cy + Math.sin(a1) * r,
-        x2: cx + Math.cos(a2) * r,
-        y2: cy + Math.sin(a2) * r,
-        thick: thick || 22,
-        color: color || BLACK
+  const PURPLE_MAIN = "#6344f5";
+  const PURPLE_DARK = "#3f27b8";
+  const NEON_GREEN = "#00f566";
+  const NEON_RED = "#ff2a5f";
+  const NEON_YELLOW = "#ffd600";
+  const DARK_BG = "#070913";
+
+  const LANDSCAPE_BUILDER = {
+    buildArena(trackId, lengthOption, difficulty, rng) {
+      const preset = window.GAME_DATA.tracks.find(t => t.id === trackId) || window.GAME_DATA.tracks[0];
+      const world = {
+        Walls: [],       // { x1, y1, x2, y2, thick, color, isRed, cap }
+        Diamonds: [],    // Hollow purple diamond frames { x, y, r }
+        RedRings: [],    // Red segmented hazard rings { x, y, r, angle, speed }
+        GreenSpinners: [], // Green 4-blade spinners { x, y, len, thick, angle, speed }
+        YellowPegs: [],  // { x, y, r }
+        Chevrons: [],    // { x, y, dirX, dirY, color }
+        Gates: [],       // Yellow vertical visual gates in bottom tube { x, y, h }
+        dynamicItems: [],
+        sprintLanes: lengthOption === "small" ? 1 : lengthOption === "medium" ? 2 : 3,
+        finishX: 1835,
+        finishYMin: 980,
+        finishYMax: 1045
+      };
+
+      const L = 355;
+      const R = 1865;
+      const CX = (L + R) / 2; // 1110
+
+      // ----------------------------------------------------------------------
+      // 1. TOP WIDESCREEN LAUNCH TRAY & CENTRAL GREEN X-FUNNEL (Y = 50..210)
+      // ----------------------------------------------------------------------
+      // Top outer roof with green dashed highlights
+      world.Walls.push({ x1: L + 30, y1: 52, x2: CX - 45, y2: 52, thick: 18, color: PURPLE_MAIN, stripeGreen: true });
+      world.Walls.push({ x1: CX + 45, y1: 52, x2: R - 30, y2: 52, thick: 18, color: PURPLE_MAIN, stripeGreen: true });
+
+      // Left & Right angled upper tray walls
+      world.Walls.push({ x1: L + 30, y1: 52, x2: L + 85, y2: 195, thick: 18, color: PURPLE_MAIN });
+      world.Walls.push({ x1: R - 30, y1: 52, x2: R - 85, y2: 195, thick: 18, color: PURPLE_MAIN });
+
+      // Tray floor sloping gently toward two entry openings (Left-Center & Right-Center) + Central X-Splitter
+      world.Walls.push({ x1: L + 85, y1: 195, x2: CX - 190, y2: 202, thick: 18, color: PURPLE_MAIN });
+      world.Walls.push({ x1: R - 85, y1: 195, x2: CX + 190, y2: 202, thick: 18, color: PURPLE_MAIN });
+
+      // Central Green & Purple X-Funnel Divider in the Top Tray (Matches Image!)
+      world.Walls.push({ x1: CX - 45, y1: 52, x2: CX, y2: 105, thick: 14, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX + 45, y1: 52, x2: CX, y2: 105, thick: 14, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX, y1: 95, x2: CX, y2: 155, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: CX, y1: 155, x2: CX - 52, y2: 205, thick: 14, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX, y1: 155, x2: CX + 52, y2: 205, thick: 14, color: PURPLE_MAIN });
+
+      // Tilted Seesaw / Deflector Bars inside the Top Tray (Green, Pink/Red, Yellow)
+      const trayBars = [
+        { x: L + 290, y: 125, len: 110, ang: -0.32, color: NEON_GREEN, isRed: false },
+        { x: L + 440, y: 125, len: 110, ang: -0.32, color: NEON_RED, isRed: true },
+        { x: L + 590, y: 125, len: 110, ang: -0.32, color: NEON_YELLOW, isRed: false },
+        { x: R - 590, y: 125, len: 110, ang: 0.32, color: NEON_YELLOW, isRed: false },
+        { x: R - 440, y: 125, len: 110, ang: 0.32, color: NEON_RED, isRed: true },
+        { x: R - 290, y: 125, len: 110, ang: 0.32, color: NEON_GREEN, isRed: false }
+      ];
+      trayBars.forEach(tb => {
+        const dx = Math.cos(tb.ang) * (tb.len / 2);
+        const dy = Math.sin(tb.ang) * (tb.len / 2);
+        world.Walls.push({
+          x1: tb.x - dx, y1: tb.y - dy,
+          x2: tb.x + dx, y2: tb.y + dy,
+          thick: 14,
+          color: tb.color,
+          isRed: tb.isRed
+        });
       });
-    }
-    return list;
-  }
 
-  function addRedZonesByDifficulty(sec, y0, h, diff, customSpots) {
-    const count = diff === "hard" ? customSpots.length : diff === "easy" ? Math.max(1, Math.floor(customSpots.length * 0.45)) : Math.max(2, Math.floor(customSpots.length * 0.75));
-    for (let i = 0; i < count; i++) {
-      const sp = customSpots[i];
-      sec.RedZones.push({
-        x: sp.x,
-        y: sp.y,
-        w: sp.w || 64,
-        h: sp.h || 22
-      });
-    }
-  }
-
-  const ARENA_BUILDERS = {
-    // 1. Diamond Plinko Lattice (Wide 145px spacing so marbles flow smoothly + Red Reset Diamonds)
-    diamondGrid(sec, y0, h, diff) {
-      const cx = ARENA_W / 2;
-      sec.Banners.push({ x: 30, y: y0 + 20, w: cx - 70, h: 18, color: GREEN_SAFE });
-      sec.Banners.push({ x: cx + 40, y: y0 + 20, w: cx - 70, h: 18, color: GREEN_SAFE });
-
-      const rows = 8;
-      const startY = y0 + 135;
-      const spacingY = (h - 270) / rows;
-      const spacingX = 148;
-      const diamondSize = 52; // Leaves 96px+ diagonal channel everywhere!
-
-      const redCandidates = [];
-      for (let r = 0; r < rows; r++) {
-        const ry = startY + r * spacingY;
-        const isOdd = r % 2 === 1;
-        const cols = isOdd ? 7 : 8;
-        const offsetX = isOdd ? 195 : 122;
-
-        if (!isOdd) {
-          sec.Polys.push({ pts: [{ x: 25, y: ry - 55 }, { x: 80, y: ry }, { x: 25, y: ry + 55 }], color: BLACK });
-          sec.Polys.push({ pts: [{ x: ARENA_W - 25, y: ry - 55 }, { x: ARENA_W - 80, y: ry }, { x: ARENA_W - 25, y: ry + 55 }], color: BLACK });
-        }
-
-        for (let c = 0; c < cols; c++) {
-          const dx = offsetX + c * spacingX;
-          if (r === 0 && (c === 3 || c === 4)) continue;
-
-          // Red Reset trap blocks on lower rows
-          if (r >= 2 && (r + c) % 6 === 0) {
-            redCandidates.push({ x: dx - 24, y: ry - 12, w: 48, h: 24 });
-            continue;
-          }
-
-          const isBlue = (r + c) % 5 === 0;
-          sec.Boxes.push({
-            x: dx,
-            y: ry,
-            w: isBlue ? diamondSize * 0.72 : diamondSize,
-            h: isBlue ? diamondSize * 0.72 : diamondSize,
-            angle: Math.PI / 4,
-            color: isBlue ? "#0018ff" : BLACK,
-            restitution: isBlue ? 0.95 : 0.55
-          });
-        }
+      // ----------------------------------------------------------------------
+      // 2. OUTER ZIG-ZAG WIDESCREEN SIDE WALLS & BOTTOM FUNNEL (Y = 205..815)
+      // ----------------------------------------------------------------------
+      // Left Zig-Zag Purple Wall + Green Chevron Bounce Ribs
+      const leftZig = [
+        [L + 115, 205], [L + 55, 290], [L + 110, 385], [L + 45, 495], [L + 105, 610], [L + 55, 725], [CX - 48, 795]
+      ];
+      for (let i = 0; i < leftZig.length - 1; i++) {
+        world.Walls.push({
+          x1: leftZig[i][0], y1: leftZig[i][1],
+          x2: leftZig[i + 1][0], y2: leftZig[i + 1][1],
+          thick: 18,
+          color: PURPLE_MAIN
+        });
       }
-      addRedZonesByDifficulty(sec, y0, h, diff, redCandidates);
-    },
+      // Right Zig-Zag Purple Wall
+      const rightZig = [
+        [R - 115, 205], [R - 55, 290], [R - 110, 385], [R - 45, 495], [R - 105, 610], [R - 55, 725], [CX + 48, 795]
+      ];
+      for (let i = 0; i < rightZig.length - 1; i++) {
+        world.Walls.push({
+          x1: rightZig[i][0], y1: rightZig[i][1],
+          x2: rightZig[i + 1][0], y2: rightZig[i + 1][1],
+          thick: 18,
+          color: PURPLE_MAIN
+        });
+      }
 
-    // 2. Circular Gear Matrix & Red Reset Bottom Gates (Matches Screenshot 2 & 6!)
-    circleGearMatrix(sec, y0, h, diff) {
-      const rows = 5;
-      const cols = 8;
-      const startY = y0 + 145;
-      const stepY = (h - 310) / rows;
-      const stepX = 142; // Wide 142px spacing so marbles never jam between gears!
-      const startX = 142;
+      // Side Green & Red Bumper Bars along the left and right zig-zag walls
+      world.Walls.push({ x1: L + 85, y1: 325, x2: L + 125, y2: 280, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: L + 110, y1: 445, x2: L + 150, y2: 495, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: L + 150, y1: 495, x2: L + 110, y2: 545, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: L + 85, y1: 650, x2: L + 125, y2: 695, thick: 12, color: NEON_RED, isRed: true });
 
-      sec.Walls.push({ x1: 25, y1: y0 + 45, x2: 105, y2: startY, thick: 32, color: BLACK });
-      sec.Walls.push({ x1: ARENA_W - 25, y1: y0 + 45, x2: ARENA_W - 105, y2: startY, thick: 32, color: BLACK });
+      world.Walls.push({ x1: R - 85, y1: 325, x2: R - 125, y2: 280, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: R - 110, y1: 445, x2: R - 150, y2: 495, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: R - 150, y1: 495, x2: R - 110, y2: 545, thick: 12, color: NEON_GREEN });
+      world.Walls.push({ x1: R - 85, y1: 650, x2: R - 125, y2: 695, thick: 12, color: NEON_RED, isRed: true });
 
-      for (let r = 0; r < rows; r++) {
-        const ry = startY + r * stepY;
-        for (let c = 0; c < cols; c++) {
-          const cx = startX + c * stepX;
-          sec.Pegs.push({ x: cx, y: ry, r: 18, color: BLACK, restitution: 0.75 });
+      // Red Tilted Guard Bars above the central funnel throat (Matches Image!)
+      world.Walls.push({ x1: CX - 165, y1: 710, x2: CX - 85, y2: 755, thick: 15, color: NEON_RED, isRed: true });
+      world.Walls.push({ x1: CX + 165, y1: 710, x2: CX + 85, y2: 755, thick: 15, color: NEON_RED, isRed: true });
 
-          if (c < cols - 1 && r < rows - 1) {
-            const midX = cx + stepX / 2;
-            const midY = ry + stepY / 2;
-            sec.Boxes.push({
-              x: midX,
-              y: midY,
-              w: 32,
-              h: 32,
-              angle: Math.PI / 4,
-              color: BLACK,
-              restitution: 0.65
+      // Central Funnel Throat Chute into Bottom Sprint Track
+      world.Walls.push({ x1: CX - 48, y1: 790, x2: CX - 48, y2: 830, thick: 16, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX + 48, y1: 790, x2: CX + 48, y2: 830, thick: 16, color: PURPLE_MAIN });
+      world.Chevrons.push({ x: CX, y: 805, dirX: 0, dirY: 1, color: NEON_YELLOW });
+
+      // ----------------------------------------------------------------------
+      // 3. MAIN WIDESCREEN OBSTACLE FIELD (CUSTOM OR 22 PRESET VARIATIONS)
+      // ----------------------------------------------------------------------
+      if (trackId === "custom" && State.customTrack.length > 0) {
+        const scaleX = (R - L - 240) / 640;
+        const scaleY = 520 / 320;
+        State.customTrack.forEach(item => {
+          const ox = L + 120 + item.x * scaleX;
+          const oy = 230 + item.y * scaleY;
+          const scl = item.scale || 1;
+          const rad = ((item.angle || 0) * Math.PI) / 180;
+
+          if (item.type === "diamond") {
+            world.Diamonds.push({ x: ox, y: oy, r: 44 * scl });
+          } else if (item.type === "redRing") {
+            world.RedRings.push({ x: ox, y: oy, r: 34 * scl, angle: rad, speed: 0.03 });
+          } else if (item.type === "greenSpinner") {
+            world.GreenSpinners.push({ x: ox, y: oy, len: 88 * scl, thick: 14, angle: rad, speed: 0.055 });
+          } else if (item.type === "yellowPegs") {
+            for (let k = -2; k <= 2; k++) {
+              world.YellowPegs.push({ x: ox, y: oy + k * 28 * scl, r: 7 });
+            }
+          } else if (item.type === "pinkBar" || item.type === "greenBar") {
+            const isRed = item.type === "pinkBar";
+            const half = 55 * scl;
+            world.Walls.push({
+              x1: ox - Math.cos(rad) * half, y1: oy - Math.sin(rad) * half,
+              x2: ox + Math.cos(rad) * half, y2: oy + Math.sin(rad) * half,
+              thick: 14,
+              color: isRed ? NEON_RED : NEON_GREEN,
+              isRed
+            });
+          } else if (item.type === "chevron") {
+            world.Chevrons.push({ x: ox, y: oy, dirX: 0, dirY: 1, color: NEON_GREEN });
+          }
+        });
+      } else {
+        // Generate the iconic Color Rush Widescreen Obstacle Matrix (with 22 unique track layouts!)
+        const style = preset.style === "random"
+          ? ["classic", "diamonds", "spinners", "rings", "twinFunnel", "pinball", "plinko", "slalom", "windmills", "speedway"][Math.floor(rng() * 10)]
+          : preset.style;
+
+        // 6 Columns of Hollow Purple Diamonds (Left 3 columns + Right 3 columns)
+        const dColsLeft = [L + 225, L + 415, L + 605];
+        const dColsRight = [R - 605, R - 415, R - 225];
+        const dRows = [275, 415, 555];
+
+        dRows.forEach((ry, rIdx) => {
+          dColsLeft.forEach((cx, cIdx) => {
+            if (style === "spinners" && (rIdx + cIdx) % 2 === 1) {
+              world.GreenSpinners.push({ x: cx, y: ry, len: 86, thick: 14, angle: 0, speed: 0.055 });
+            } else {
+              world.Diamonds.push({ x: cx + (rIdx % 2) * 12, y: ry, r: 44 });
+            }
+          });
+          dColsRight.forEach((cx, cIdx) => {
+            if (style === "spinners" && (rIdx + cIdx) % 2 === 1) {
+              world.GreenSpinners.push({ x: cx, y: ry, len: 86, thick: 14, angle: 0, speed: -0.055 });
+            } else {
+              world.Diamonds.push({ x: cx - (rIdx % 2) * 12, y: ry, r: 44 });
+            }
+          });
+        });
+
+        // 5 Columns of Segmented Red Hazard Rings + Vertical Chains of Yellow Pegs between them!
+        const ringCols = [L + 320, L + 510, CX, R - 510, R - 320];
+        ringCols.forEach((rx, cIdx) => {
+          const isCenterCol = cIdx === 2;
+          const isSpinnerCol = cIdx === 1 || cIdx === 3;
+
+          if (isSpinnerCol && style !== "rings") {
+            // Tilted Green Bar at top + Vertical Yellow Peg Chain + Two Green 4-Blade X-Spinners (Exact Image Match!)
+            const tilt = cIdx === 1 ? 0.55 : -0.55;
+            world.Walls.push({
+              x1: rx - Math.cos(tilt) * 48, y1: 335 - Math.sin(tilt) * 48,
+              x2: rx + Math.cos(tilt) * 48, y2: 335 + Math.sin(tilt) * 48,
+              thick: 14,
+              color: NEON_GREEN
+            });
+            for (let py = 385; py <= 665; py += 28) {
+              if (Math.abs(py - 505) > 25 && Math.abs(py - 625) > 25) {
+                world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+              }
+            }
+            world.GreenSpinners.push({ x: rx, y: 505, len: 88, thick: 14, angle: 0.4, speed: cIdx === 1 ? 0.055 : -0.055 });
+            world.GreenSpinners.push({ x: rx, y: 625, len: 88, thick: 14, angle: 0.4, speed: cIdx === 1 ? -0.055 : 0.055 });
+          } else {
+            // Column of 3 Segmented Red Hazard Rings connected by Yellow Peg Dots (Exact Image Match!)
+            const ringYs = isCenterCol ? [305, 445, 585] : [335, 495, 645];
+            ringYs.forEach((ry, rIdx) => {
+              world.RedRings.push({
+                x: rx,
+                y: ry,
+                r: difficulty === "hard" ? 37 : 33,
+                angle: (rIdx * Math.PI) / 3,
+                speed: (rIdx % 2 === 0 ? 1 : -1) * 0.025
+              });
+              if (rIdx < ringYs.length - 1) {
+                const nextY = ringYs[rIdx + 1];
+                for (let py = ry + 48; py <= nextY - 48; py += 26) {
+                  world.YellowPegs.push({ x: rx, y: py, r: 6.5 });
+                }
+              }
             });
           }
-        }
-      }
-
-      // Bottom Alternating GREEN (Pass) & RED (Reset to Start!) Gates from Screenshot 2 & 6
-      const gateY = y0 + h - 95;
-      const redGates = [];
-      for (let c = 0; c < cols; c++) {
-        const gx = startX + c * stepX;
-        const isGreen = c % 2 === 0 || (diff === "easy" && c !== 3);
-        if (isGreen) {
-          sec.Banners.push({ x: gx - 22, y: gateY, w: 44, h: 24, color: GREEN_SAFE });
-        } else {
-          redGates.push({ x: gx - 24, y: gateY, w: 48, h: 24 });
-        }
-      }
-      addRedZonesByDifficulty(sec, y0, h, diff, redGates);
-    },
-
-    // 3. Curved Chutes, Musical Note Hammers & Red Reset Hazards (Matches Screenshot 3!)
-    musicalHammers(sec, y0, h, diff) {
-      const cx = ARENA_W / 2;
-
-      sec.Banners.push({ x: cx - 10, y: y0 + 40, w: 20, h: (h - 160) * 0.5, color: GREEN_SAFE });
-      sec.Banners.push({ x: cx - 10, y: y0 + 40 + (h - 160) * 0.5, w: 20, h: (h - 160) * 0.45, color: "#eeff00" });
-
-      for (let i = 0; i < 3; i++) {
-        const sy = y0 + 230 + i * ((h - 460) / 3);
-        sec.Boxes.push({ x: cx, y: sy, w: 48, h: 48, angle: Math.PI / 4, color: BLACK });
-      }
-
-      // Wide Curved Side Chutes (110px wide lanes so marbles never jam!)
-      for (let i = 0; i < 3; i++) {
-        const chuteY = y0 + 220 + i * 310;
-        sec.Walls.push(...buildArcWalls(210, chuteY, 130, Math.PI * 0.45, Math.PI * 0.92, 6, 18, BLACK));
-        sec.Walls.push(...buildArcWalls(ARENA_W - 210, chuteY, 130, Math.PI * 0.08, Math.PI * 0.55, 6, 18, BLACK));
-      }
-
-      // Musical Note Hammers
-      const notes = [
-        { x: 420, y: y0 + 270, dir: -1 }, { x: 860, y: y0 + 270, dir: 1 },
-        { x: 330, y: y0 + 520, dir: -1 }, { x: 490, y: y0 + 520, dir: -1 },
-        { x: 790, y: y0 + 520, dir: 1 },  { x: 950, y: y0 + 520, dir: 1 },
-        { x: 350, y: y0 + 780, dir: -1 }, { x: 500, y: y0 + 780, dir: -1 },
-        { x: 780, y: y0 + 780, dir: 1 },  { x: 930, y: y0 + 780, dir: 1 }
-      ];
-      notes.forEach(nc => {
-        const tilt = nc.dir * 0.28;
-        sec.Walls.push({
-          x1: nc.x - Math.cos(tilt) * 36,
-          y1: nc.y - Math.sin(tilt) * 36,
-          x2: nc.x + Math.cos(tilt) * 36,
-          y2: nc.y + Math.sin(tilt) * 36,
-          thick: 14,
-          color: BLACK
-        });
-        sec.Pegs.push({ x: nc.x - nc.dir * 22, y: nc.y + 36, r: 13, color: BLACK, restitution: 0.85 });
-      });
-
-      // Red Reset Laser Segments at the bottom flanks
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 180, y: y0 + h - 105, w: 95, h: 20 },
-        { x: ARENA_W - 275, y: y0 + h - 105, w: 95, h: 20 },
-        { x: cx - 180, y: y0 + 640, w: 65, h: 20 },
-        { x: cx + 115, y: y0 + 640, w: 65, h: 20 }
-      ]);
-    },
-
-    // 4. 3-Tier Sloped Star Maze & Side Elevators (FIXED: Sloped floors + 160px center gaps so 100% passable!)
-    starConveyorMaze(sec, y0, h, diff) {
-      const tiers = 3;
-      const tierH = (h - 180) / tiers;
-      const cx = ARENA_W / 2;
-
-      for (let t = 0; t < tiers; t++) {
-        const ty = y0 + 60 + t * tierH;
-        const botY = ty + tierH;
-
-        // Angled Sloped Floors (12° downward slope toward a wide 190px center opening!)
-        if (t < tiers - 1) {
-          sec.Walls.push({ x1: 110, y1: botY - 55, x2: cx - 95, y2: botY + 15, thick: 26, color: BLACK });
-          sec.Walls.push({ x1: ARENA_W - 110, y1: botY - 55, x2: cx + 95, y2: botY + 15, thick: 26, color: BLACK });
-        }
-
-        // Rotating 4-Point Black Stars with plenty of clearance
-        const starCols = t % 2 === 0 ? [310, 640, 970] : [260, 510, 770, 1020];
-        starCols.forEach((sx, idx) => {
-          sec.Spinners.push({
-            x: sx,
-            y: ty + tierH * 0.45,
-            len: 105,
-            thick: 20,
-            speed: (idx % 2 === 0 ? 1 : -1) * 0.05,
-            color: BLACK,
-            style: "star4"
-          });
         });
 
-        // Side Boost Tubes
-        sec.Zones.push({
-          x: 35,
-          y: ty + 15,
-          w: 58,
-          h: tierH - 30,
-          kind: "conveyorDown",
-          color: "#22242a",
-          arrowColor: t === 0 ? GREEN_SAFE : "#ec4899"
-        });
-        sec.Zones.push({
-          x: ARENA_W - 93,
-          y: ty + 15,
-          w: 58,
-          h: tierH - 30,
-          kind: "conveyorDown",
-          color: "#22242a",
-          arrowColor: t === 2 ? "#eab308" : "#00f2fe"
-        });
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 200, y: y0 + tierH * 0.82, w: 68, h: 20 },
-        { x: ARENA_W - 268, y: y0 + tierH * 0.82, w: 68, h: 20 },
-        { x: cx - 35, y: y0 + tierH * 1.85, w: 70, h: 20 }
-      ]);
-    },
-
-    // 5. Wide Triple Pinball Flipper Chambers (FIXED: Open bottom chutes so no marble is ever trapped!)
-    triplePinballLaunchers(sec, y0, h, diff) {
-      const chambers = 3;
-      const chW = (ARENA_W - 120) / chambers;
-
-      for (let i = 0; i < chambers; i++) {
-        const cx = 60 + chW * (i + 0.5);
-        const topY = y0 + 70;
-        const midY = y0 + h * 0.55;
-        const rad = chW * 0.42;
-
-        // Wide 140px entry funnel into each pinball chamber
-        sec.Walls.push({ x1: cx - rad, y1: topY, x2: cx - 75, y2: topY + 180, thick: 24, color: BLACK });
-        sec.Walls.push({ x1: cx + rad, y1: topY, x2: cx + 75, y2: topY + 180, thick: 24, color: BLACK });
-
-        // Curved outer chamber walls with a wide 140px bottom exit chute
-        sec.Walls.push(...buildArcWalls(cx, midY, rad, Math.PI * 0.62, Math.PI * 1.38, 7, 24, BLACK));
-        sec.Walls.push(...buildArcWalls(cx, midY, rad, -Math.PI * 0.38, Math.PI * 0.38, 7, 24, BLACK));
-
-        // Rotating pinball flipper paddle in the center of each chamber
-        sec.Spinners.push({ x: cx, y: midY + 20, len: 155, thick: 20, speed: (i % 2 === 0 ? 1 : -1) * 0.055, color: BLACK, style: "bar" });
-        sec.Banners.push({ x: cx - 50, y: midY + rad + 10, w: 100, h: 18, color: GREEN_SAFE });
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 240, y: y0 + h - 120, w: 65, h: 20 },
-        { x: ARENA_W / 2 - 32, y: y0 + h - 120, w: 65, h: 20 },
-        { x: ARENA_W - 305, y: y0 + h - 120, w: 65, h: 20 }
-      ]);
-    },
-
-    // 6. 4-Story Sloped Cross Capsules & Scalloped Basin (FIXED: Sloped floors & 180px exit gaps!)
-    capsuleScallopBowl(sec, y0, h, diff) {
-      const stories = 4;
-      const capH = 190;
-      const startY = y0 + 80;
-
-      for (let s = 0; s < stories; s++) {
-        const cy = startY + s * capH;
-        const gapOnRight = s % 2 === 0;
-
-        // Sloped capsule floor (tilted 50px downward toward the 220px wide exit gap!)
-        if (gapOnRight) {
-          sec.Walls.push({ x1: 120, y1: cy + capH - 35, x2: ARENA_W - 340, y2: cy + capH + 15, thick: 22, color: BLACK });
-        } else {
-          sec.Walls.push({ x1: ARENA_W - 120, y1: cy + capH - 35, x2: 340, y2: cy + capH + 15, thick: 22, color: BLACK });
-        }
-
-        // Row of 5 rotating X spinners inside each capsule
-        for (let c = 0; c < 5; c++) {
-          const sx = 240 + c * 200;
-          sec.Spinners.push({
-            x: sx,
-            y: cy + capH * 0.45,
-            len: 125,
-            thick: 18,
-            speed: ((s + c) % 2 === 0 ? 1 : -1) * 0.05,
-            color: BLACK,
-            style: "cross"
-          });
+        // Style-Specific Extra Obstacles for the 22 Tracks
+        if (style === "twinFunnel" || style === "slalom") {
+          world.Walls.push({ x1: L + 220, y1: 685, x2: CX - 230, y2: 725, thick: 14, color: NEON_GREEN });
+          world.Walls.push({ x1: R - 220, y1: 685, x2: CX + 230, y2: 725, thick: 14, color: NEON_GREEN });
+        } else if (style === "windmills") {
+          world.GreenSpinners.push({ x: L + 320, y: 415, len: 92, thick: 14, angle: 0, speed: 0.06 });
+          world.GreenSpinners.push({ x: R - 320, y: 415, len: 92, thick: 14, angle: 0, speed: -0.06 });
+        } else if (style === "speedway") {
+          world.Chevrons.push({ x: L + 320, y: 260, dirX: 0, dirY: 1, color: NEON_GREEN });
+          world.Chevrons.push({ x: R - 320, y: 260, dirX: 0, dirY: 1, color: NEON_GREEN });
         }
       }
 
-      // Scalloped Basin below with wide 190px center drain + spinner agitator
-      const bowlY = startY + stories * capH + 150;
-      const bowlR = 460;
-      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlY - 90, bowlR, Math.PI * 0.14, Math.PI * 0.41, 6, 30, BLACK));
-      sec.Walls.push(...buildArcWalls(ARENA_W / 2, bowlY - 90, bowlR, Math.PI * 0.59, Math.PI * 0.86, 6, 30, BLACK));
-      sec.Spinners.push({ x: ARENA_W / 2, y: bowlY + 260, len: 170, thick: 20, speed: 0.05, color: BLACK, style: "cross" });
+      // ----------------------------------------------------------------------
+      // 4. BOTTOM 3-LANE HORIZONTAL SERPENTINE FINISH TRACK (Y = 825..1045)
+      // ----------------------------------------------------------------------
+      // Matches the bottom of `1000157883_52417a.png`:
+      // Marbles exit the central funnel at CX (1110, 825) into Lane 1, get propelled along the horizontal
+      // purple tube lanes with Green `>>>` boosters and Yellow checkpoint gates, turn around the U-bends,
+      // and cross the Checkered Finish Flag!
+      const tL = L + 25;   // 380
+      const tR = R - 25;   // 1840
+      const laneH = 68;
+      const y0 = 830;
+      const y1 = y0 + laneH;       // 898
+      const y2 = y0 + laneH * 2;   // 966
+      const y3 = y0 + laneH * 3;   // 1034
 
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 180, y: bowlY + 110, w: 68, h: 22 },
-        { x: ARENA_W - 248, y: bowlY + 110, w: 68, h: 22 }
-      ]);
-    },
+      // Top ceiling of Lane 1 (with gap at CX-48..CX+48 for marbles entering from the funnel!)
+      world.Walls.push({ x1: tL, y1: y0, x2: CX - 48, y2: y0, thick: 16, color: PURPLE_MAIN });
+      world.Walls.push({ x1: CX + 48, y1: y0, x2: tR, y2: y0, thick: 16, color: PURPLE_MAIN });
 
-    // 7. Tilted Half-Moons & Brown No-Collision Zone (Matches Screenshot 8!)
-    halfMoonGhostZone(sec, y0, h, diff) {
-      const drawRow = (ry, dir) => {
-        for (let c = 0; c < 4; c++) {
-          const hx = 230 + c * 270 + (dir > 0 ? -30 : 30);
-          sec.HalfMoons.push({ x: hx, y: ry, r: 54, angle: dir * 0.65, color: BLACK });
-        }
-      };
-      drawRow(y0 + 170, 1);
-      drawRow(y0 + 350, -1);
-      drawRow(y0 + 530, 1);
+      if (world.sprintLanes === 1) {
+        // 1-Lane Fast Sprint: Left wall closed, marbles boost straight right to Finish at tR!
+        world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y1, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y1, x2: tR, y2: y1, thick: 16, color: PURPLE_MAIN });
+        world.Chevrons.push({ x: tL + 180, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tR - 260, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.finishX = tR - 45;
+        world.finishYMin = y0;
+        world.finishYMax = y1;
+      } else if (world.sprintLanes === 2) {
+        // 2-Lane Serpentine: Lane 1 goes Left -> drops at tL into Lane 2 -> goes Right to Finish!
+        world.Walls.push({ x1: tR, y1: y0, x2: tR, y2: y1, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL + 95, y1: y1, x2: tR, y2: y1, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y2, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y2, x2: tR, y2: y2, thick: 16, color: PURPLE_MAIN });
 
-      sec.Zones.push({
-        x: 40,
-        y: y0 + 660,
-        w: ARENA_W - 80,
-        h: 210,
-        kind: "ghost",
-        label: "NO COLLISION ZONE"
-      });
-
-      drawRow(y0 + 1000, -1);
-      drawRow(y0 + 1180, 1);
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 350, y: y0 + 1290, w: 75, h: 22 },
-        { x: ARENA_W - 425, y: y0 + 1290, w: 75, h: 22 }
-      ]);
-    },
-
-    // 8. Triple Vertical Oval Peg Lanes (Wide 400px lanes so marbles flow freely!)
-    ovalPegChain(sec, y0, h, diff) {
-      const laneW = ARENA_W / 3;
-      sec.Walls.push({ x1: laneW, y1: y0 + 110, x2: laneW, y2: y0 + h - 150, thick: 24, color: BLACK });
-      sec.Walls.push({ x1: laneW * 2, y1: y0 + 110, x2: laneW * 2, y2: y0 + h - 150, thick: 24, color: BLACK });
-      // Splitter triangles on top of dividing walls so no marble sits on top of a vertical wall!
-      sec.Boxes.push({ x: laneW, y: y0 + 110, w: 36, h: 36, angle: Math.PI / 4, color: BLACK });
-      sec.Boxes.push({ x: laneW * 2, y: y0 + 110, w: 36, h: 36, angle: Math.PI / 4, color: BLACK });
-
-      for (let lane = 0; lane < 3; lane++) {
-        const lx = lane * laneW + laneW / 2;
-        for (let r = 0; r < 6; r++) {
-          const py = y0 + 220 + r * 180;
-          sec.Pegs.push({ x: lx - 75, y: py, r: 16, color: BLACK, restitution: 0.8 });
-          sec.Pegs.push({ x: lx + 75, y: py, r: 16, color: BLACK, restitution: 0.8 });
-          sec.Spinners.push({ x: lx, y: py + 90, len: 115, thick: 16, speed: ((lane + r) % 2 === 0 ? 1 : -1) * 0.05, color: BLACK, style: "cross" });
-        }
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: laneW * 0.5 - 30, y: y0 + h - 105, w: 60, h: 22 },
-        { x: laneW * 1.5 - 30, y: y0 + h - 105, w: 60, h: 22 },
-        { x: laneW * 2.5 - 30, y: y0 + h - 105, w: 60, h: 22 }
-      ]);
-    },
-
-    // 9. Giant Pinwheel & Wide Funnel Drop (FIXED: Open wheel housing with 160px side channels!)
-    wheelFunnelDrop(sec, y0, h, diff) {
-      const cx = ARENA_W / 2;
-      sec.Spinners.push({
-        x: cx,
-        y: y0 + 260,
-        len: 320,
-        thick: 24,
-        speed: 0.038,
-        color: "#ff00aa",
-        style: "pinwheel"
-      });
-
-      // Wide angled funnel ramps guiding marbles into a 210px wide throat
-      sec.Walls.push({ x1: 40, y1: y0 + 380, x2: cx - 105, y2: y0 + 680, thick: 28, color: BLACK });
-      sec.Walls.push({ x1: ARENA_W - 40, y1: y0 + 380, x2: cx + 105, y2: y0 + 680, thick: 28, color: BLACK });
-
-      // Lower Dash & Spinner Field
-      for (let r = 0; r < 4; r++) {
-        const ry = y0 + 820 + r * 140;
-        for (let c = 0; c < 5; c++) {
-          const dx = 220 + c * 210 + (r % 2) * 55;
-          sec.Walls.push({ x1: dx - 32, y1: ry - 12, x2: dx + 32, y2: ry + 12, thick: 14, color: BLACK });
-        }
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 180, y: y0 + 960, w: 75, h: 22 },
-        { x: ARENA_W - 255, y: y0 + 960, w: 75, h: 22 }
-      ]);
-    },
-
-    // 10. Serpentine Slanted Planks (Wide 195px drop gaps + steep 15° slope!)
-    serpentinePlanks(sec, y0, h, diff) {
-      const planks = 7;
-      const stepY = (h - 220) / planks;
-      const gap = 215;
-
-      for (let i = 0; i < planks; i++) {
-        const py = y0 + 110 + i * stepY;
-        if (i % 2 === 0) {
-          sec.Walls.push({ x1: 30, y1: py - 35, x2: ARENA_W - gap, y2: py + 55, thick: 22, color: BLACK });
-        } else {
-          sec.Walls.push({ x1: ARENA_W - 30, y1: py - 35, x2: gap, y2: py + 55, thick: 22, color: BLACK });
-        }
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: ARENA_W - 160, y: y0 + 110 + stepY * 1.4, w: 58, h: 20 },
-        { x: 100, y: y0 + 110 + stepY * 4.4, w: 58, h: 20 }
-      ]);
-    },
-
-    // 11. Twin Sawtooth Canyons & Star Wheel
-    zigzagSawtooth(sec, y0, h, diff) {
-      const teeth = 8;
-      const stepY = (h - 240) / teeth;
-      for (let i = 0; i < teeth; i++) {
-        const ty = y0 + 100 + i * stepY;
-        sec.Polys.push({ pts: [{ x: 25, y: ty }, { x: 135, y: ty + stepY * 0.5 }, { x: 25, y: ty + stepY }], color: BLACK });
-        sec.Polys.push({ pts: [{ x: ARENA_W - 25, y: ty }, { x: ARENA_W - 135, y: ty + stepY * 0.5 }, { x: ARENA_W - 25, y: ty + stepY }], color: BLACK });
-      }
-      for (let r = 0; r < 5; r++) {
-        for (let c = 0; c < 6; c++) {
-          sec.Pegs.push({ x: 260 + c * 150 + (r % 2) * 55, y: y0 + 180 + r * 185, r: 18, color: BLACK, restitution: 0.8 });
-        }
-      }
-      sec.Spinners.push({ x: ARENA_W / 2, y: y0 + h - 220, len: 230, thick: 24, speed: 0.048, color: BLACK, style: "star4" });
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 280, y: y0 + h - 110, w: 72, h: 22 },
-        { x: ARENA_W - 352, y: y0 + h - 110, w: 72, h: 22 }
-      ]);
-    },
-
-    // 12. Stadium Goal Qualification Arena (Pass goal mouth or avoid Red Side Penalties!)
-    soccerGoalArena(sec, y0, h, diff) {
-      const cx = ARENA_W / 2;
-      ARENA_BUILDERS.diamondGrid(sec, y0, h * 0.65, diff);
-      const goalY = y0 + h * 0.78;
-      sec.Walls.push({ x1: cx - 250, y1: goalY - 70, x2: cx - 250, y2: goalY + 70, thick: 24, color: "#ffffff" });
-      sec.Walls.push({ x1: cx + 250, y1: goalY - 70, x2: cx + 250, y2: goalY + 70, thick: 24, color: "#ffffff" });
-      sec.Spinners.push({ x: cx, y: goalY, len: 170, thick: 22, speed: 0.055, color: BLACK, style: "bar" });
-      sec.Banners.push({ x: cx - 230, y: goalY + 45, w: 460, h: 22, color: GREEN_SAFE });
-
-      // Red Reset Penalty Zones outside the goalposts!
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 90, y: goalY + 45, w: 120, h: 22 },
-        { x: ARENA_W - 210, y: goalY + 45, w: 120, h: 22 }
-      ]);
-    },
-
-    // 13. Triple Hourglass & Red Reset Bumpers
-    hourglassArena(sec, y0, h, diff) {
-      const cx = ARENA_W / 2;
-      const gap = 165; // Wide 165px hourglass throat!
-      [0.28, 0.58, 0.85].forEach((pct, idx) => {
-        const py = y0 + h * pct;
-        sec.Walls.push({ x1: 30, y1: py - 180, x2: cx - gap / 2, y2: py, thick: 30, color: BLACK });
-        sec.Walls.push({ x1: ARENA_W - 30, y1: py - 180, x2: cx + gap / 2, y2: py, thick: 30, color: BLACK });
-        sec.Spinners.push({ x: cx, y: py + 95, len: 190, thick: 20, speed: (idx % 2 === 0 ? 1 : -1) * 0.05, color: BLACK, style: "cross" });
-      });
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: cx - 240, y: y0 + h * 0.44, w: 70, h: 22 },
-        { x: cx + 170, y: y0 + h * 0.44, w: 70, h: 22 },
-        { x: cx - 240, y: y0 + h * 0.72, w: 70, h: 22 },
-        { x: cx + 170, y: y0 + h * 0.72, w: 70, h: 22 }
-      ]);
-    },
-
-    // 14. Swinging Hammers & Red Reset Traps
-    pendulumArena(sec, y0, h, diff) {
-      for (let r = 0; r < 4; r++) {
-        const ry = y0 + 210 + r * 310;
-        [320, 640, 960].forEach((px, i) => {
-          sec.Spinners.push({
-            x: px,
-            y: ry,
-            len: 215,
-            thick: 22,
-            speed: ((r + i) % 2 === 0 ? 1 : -1) * 0.048,
-            color: BLACK,
-            style: "cross"
-          });
-        });
-        sec.Pegs.push({ x: 480, y: ry + 145, r: 30, color: BLACK, restitution: 0.9 });
-        sec.Pegs.push({ x: 800, y: ry + 145, r: 30, color: BLACK, restitution: 0.9 });
-      }
-
-      addRedZonesByDifficulty(sec, y0, h, diff, [
-        { x: 140, y: y0 + 520, w: 75, h: 22 },
-        { x: ARENA_W - 215, y: y0 + 520, w: 75, h: 22 },
-        { x: ARENA_W / 2 - 40, y: y0 + 1140, w: 80, h: 22 }
-      ]);
-    }
-  };
-
-  const WORLD_BUILDER = {
-    buildWorld(trackId, lengthOption, difficulty, rng) {
-      const numArenas = lengthOption === "small" ? 1 : lengthOption === "long" ? 4 : 2;
-      const arenaKeys = Object.keys(ARENA_BUILDERS);
-      let chosenTypes = [];
-
-      if (trackId === "custom" && State.customTrack.length > 0) {
-        return this.buildCustomWorld(State.customTrack);
-      } else if (trackId === "seeded_random") {
-        for (let i = 0; i < numArenas; i++) {
-          chosenTypes.push(arenaKeys[Math.floor(rng() * arenaKeys.length)]);
-        }
+        world.Chevrons.push({ x: CX + 250, y: y0 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX - 200, y: y0 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tL + 220, y: y1 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX, y: y1 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tR - 260, y: y1 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Gates.push({ x: CX - 90, y: y0, h: laneH }, { x: CX + 140, y: y1, h: laneH });
+        world.finishX = tR - 45;
+        world.finishYMin = y1;
+        world.finishYMax = y2;
       } else {
-        const preset = window.GAME_DATA.tracks.find(t => t.id === trackId) || window.GAME_DATA.tracks[0];
-        for (let i = 0; i < numArenas; i++) {
-          chosenTypes.push(preset.arenas[i % preset.arenas.length]);
-        }
+        // 3-Lane Full Serpentine (Exact Match to Reference Image!):
+        // Lane 1 flows Left -> U-turn at Left -> Lane 2 flows Right -> U-turn at Right -> Lane 3 flows Left/Right to Checkered Finish!
+        // Wait: in the reference image, the Checkered Finish Flag is at the bottom-right (`tR`, spanning Lane 2/3), so let's make:
+        // Lane 1 flows Right -> U-bend at Right (`tR`) -> Lane 2 flows Left -> U-bend at Left (`tL`) -> Lane 3 flows Right to the Checkered Finish Flag at Bottom-Right!
+        world.Walls.push({ x1: tL, y1: y0, x2: tL, y2: y1, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y1, x2: tR - 95, y2: y1, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tR, y1: y0, x2: tR, y2: y2, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL + 95, y1: y2, x2: tR, y2: y2, thick: 16, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y1, x2: tL, y2: y3, thick: 18, color: PURPLE_MAIN });
+        world.Walls.push({ x1: tL, y1: y3, x2: tR, y2: y3, thick: 16, color: PURPLE_MAIN });
+
+        // Lane 1 Boosters (pushing Right toward U-turn 1)
+        world.Chevrons.push({ x: tL + 220, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tR - 240, y: y0 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+
+        // Lane 2 Boosters (pushing Left toward U-turn 2)
+        world.Chevrons.push({ x: tR - 260, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tL + 260, y: y1 + 34, dirX: -1, dirY: 0, color: NEON_GREEN });
+
+        // Lane 3 Boosters (pushing Right into the Bottom-Right Checkered Finish Line!)
+        world.Chevrons.push({ x: tL + 240, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: CX, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+        world.Chevrons.push({ x: tR - 260, y: y2 + 34, dirX: 1, dirY: 0, color: NEON_GREEN });
+
+        // Yellow vertical timing gates (exact match to Image!)
+        world.Gates.push(
+          { x: CX - 130, y: y0, h: laneH },
+          { x: CX + 260, y: y0, h: laneH },
+          { x: tL + 250, y: y1, h: laneH },
+          { x: CX + 80, y: y1, h: laneH },
+          { x: CX - 140, y: y2, h: laneH }
+        );
+
+        world.finishX = tR - 45;
+        world.finishYMin = y2;
+        world.finishYMax = y3;
       }
 
-      const sections = [];
-      let curY = 250;
-      const arenaH = 1480;
-
-      chosenTypes.forEach((type, idx) => {
-        const sec = {
-          index: idx + 1,
-          total: chosenTypes.length,
-          type,
-          yStart: curY,
-          yEnd: curY + arenaH,
-          Walls: [],
-          Boxes: [],
-          Pegs: [],
-          Polys: [],
-          HalfMoons: [],
-          Spinners: [],
-          Banners: [],
-          Zones: [],
-          RedZones: [],
-          dynamicItems: []
-        };
-        const fn = ARENA_BUILDERS[type] || ARENA_BUILDERS.diamondGrid;
-        fn(sec, curY, arenaH, difficulty);
-
-        const exitY = curY + arenaH - 35;
-        sec.Walls.push({ x1: 25, y1: exitY - 85, x2: 145, y2: exitY, thick: 30, color: BLACK });
-        sec.Walls.push({ x1: ARENA_W - 25, y1: exitY - 85, x2: ARENA_W - 145, y2: exitY, thick: 30, color: BLACK });
-
-        sections.push(sec);
-        curY += arenaH;
-      });
-
-      const finishY = curY + 40;
-      const totalHeight = finishY + 240;
-      return { sections, finishY, totalHeight };
-    },
-
-    buildCustomWorld(customItems) {
-      const h = 1600;
-      const sec = {
-        index: 1,
-        total: 1,
-        type: "custom",
-        yStart: 250,
-        yEnd: 250 + h,
-        Walls: [],
-        Boxes: [],
-        Pegs: [],
-        Polys: [],
-        HalfMoons: [],
-        Spinners: [],
-        Banners: [],
-        Zones: [],
-        RedZones: [],
-        dynamicItems: []
-      };
-
-      const scaleX = ARENA_W / 520;
-      customItems.forEach(item => {
-        const x = item.x * scaleX;
-        const y = 250 + item.y;
-        const scl = item.scale || 1;
-        const rad = ((item.angle || 0) * Math.PI) / 180;
-
-        if (item.type === "redReset") {
-          sec.RedZones.push({ x: x - 55 * scl, y: y - 12 * scl, w: 110 * scl, h: 24 * scl });
-        } else if (item.type === "diamond") {
-          sec.Boxes.push({ x, y, w: 58 * scl, h: 58 * scl, angle: rad || Math.PI / 4, color: BLACK });
-        } else if (item.type === "circleNode") {
-          sec.Pegs.push({ x, y, r: 20 * scl, color: BLACK, restitution: 0.75 });
-          sec.Boxes.push({ x: x - 65 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
-          sec.Boxes.push({ x: x + 65 * scl, y, w: 28 * scl, h: 28 * scl, angle: Math.PI / 4, color: BLACK });
-        } else if (item.type === "hammer") {
-          sec.Walls.push({
-            x1: x - Math.cos(rad) * 48 * scl,
-            y1: y - Math.sin(rad) * 48 * scl,
-            x2: x + Math.cos(rad) * 48 * scl,
-            y2: y + Math.sin(rad) * 48 * scl,
-            thick: 16 * scl,
-            color: BLACK
-          });
-          sec.Pegs.push({ x, y: y + 36 * scl, r: 15 * scl, color: BLACK, restitution: 0.85 });
-        } else if (item.type === "star") {
-          sec.Spinners.push({ x, y, len: 120 * scl, thick: 20 * scl, speed: 0.05, color: BLACK, style: "star4" });
-        } else if (item.type === "halfMoon") {
-          sec.HalfMoons.push({ x, y, r: 54 * scl, angle: rad, color: BLACK });
-        } else if (item.type === "cross") {
-          sec.Spinners.push({ x, y, len: 160 * scl, thick: 20 * scl, speed: 0.05, color: BLACK, style: "cross" });
-        } else if (item.type === "funnel") {
-          sec.Walls.push({ x1: x - 190 * scl, y1: y - 70 * scl, x2: x - 75 * scl, y2: y + 70 * scl, thick: 26, color: BLACK });
-          sec.Walls.push({ x1: x + 190 * scl, y1: y - 70 * scl, x2: x + 75 * scl, y2: y + 70 * scl, thick: 26, color: BLACK });
-        } else if (item.type === "ghostZone") {
-          sec.Zones.push({ x: x - 220 * scl, y: y - 60 * scl, w: 440 * scl, h: 120 * scl, kind: "ghost", label: "NO COLLISION ZONE" });
-        } else {
-          const half = 140 * scl;
-          sec.Walls.push({
-            x1: x - Math.cos(rad) * half,
-            y1: y - Math.sin(rad) * half,
-            x2: x + Math.cos(rad) * half,
-            y2: y + Math.sin(rad) * half,
-            thick: 22,
-            color: BLACK
-          });
-        }
-      });
-
-      const finishY = 250 + h + 40;
-      return { sections: [sec], finishY, totalHeight: finishY + 240 };
+      return world;
     }
   };
 
@@ -874,7 +572,7 @@
   // UI CONTROLLER
   // ============================================================================
   const UI = {
-    manualSelected: new Set(["DZ", "MA", "TN", "EG", "SA", "FR", "BR", "AR", "DE", "JP", "ES", "SN"]),
+    manualSelected: new Set(["DZ", "MA", "TN", "EG", "SA", "FR", "BR", "AR", "DE", "JP", "ES", "US", "GB", "IT", "CA", "AU"]),
     uploadedLogoDataUrl: null,
 
     init() {
@@ -893,13 +591,11 @@
       Editor.init();
 
       const badge = document.getElementById("totalCountriesBadge");
-      if (badge) badge.textContent = `${getAllMarblesPool().length} FLAGS`;
+      if (badge) badge.textContent = `${getAllMarblesPool().length} COUNTRIES`;
 
       window.addEventListener("resize", () => {
-        const canvas = document.getElementById("raceCanvas");
-        if (canvas && document.getElementById("screen-race").classList.contains("active")) {
-          canvas.width = canvas.clientWidth || window.innerWidth || 640;
-          canvas.height = canvas.clientHeight || window.innerHeight || 360;
+        if (document.body.classList.contains("in-race")) {
+          Game.resize4KCanvas();
         }
       });
     },
@@ -909,7 +605,7 @@
       const sb = document.getElementById("btnSound");
       if (sb) sb.textContent = SFX.enabled ? "🔊 SFX" : "🔇 Mute";
       const mb = document.getElementById("btnMusic");
-      if (mb) mb.textContent = SFX.musicEnabled ? "🎵 BGM: ON" : "🎵 BGM";
+      if (mb) mb.textContent = SFX.musicEnabled ? "🎵 BGM: ON" : "🎵 Synth BGM";
     },
 
     toggleSound() {
@@ -924,7 +620,7 @@
       if (!audio) return;
       SFX.musicEnabled = !SFX.musicEnabled;
       if (SFX.musicEnabled) {
-        audio.volume = 0.28;
+        audio.volume = 0.3;
         audio.play().catch(() => {});
       } else {
         audio.pause();
@@ -932,19 +628,19 @@
       this.refreshHeader();
     },
 
-    async setOrientationPref(mode) {
-      State.settings.orientation = mode;
-      saveState();
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          await screen.orientation.lock(mode === "any" ? "landscape" : mode);
-        }
-      } catch (e) {}
+    changeBgmTrack(src) {
+      const audio = document.getElementById("bgmAudio");
+      if (!audio) return;
+      audio.src = src;
+      if (SFX.musicEnabled) audio.play().catch(() => {});
     },
 
     onFormatChange() {
       const fmt = document.getElementById("crFormat").value;
       document.getElementById("gpSystemWrap").style.display = fmt === "grandprix" ? "block" : "none";
+      if (fmt === "survival") {
+        document.getElementById("crRedRule").value = "eliminate";
+      }
     },
 
     onTrackChange() {
@@ -953,11 +649,18 @@
     },
 
     randomizeSeed() {
-      const words = ["ALGERIA", "ORAN", "ATLAS", "SAHARA", "TITAN", "VORTEX", "OLYMPUS"];
+      const words = ["COLOR-RUSH", "NEON-ORAN", "ATLAS-4K", "CYBER-CUP", "VORTEX-99"];
       document.getElementById("crTrackSeed").value = words[Math.floor(Math.random() * words.length)] + "-" + Math.floor(100 + Math.random() * 900);
     },
 
     showScreen(id, btn) {
+      // Hide left menu & top bar when in race screen!
+      if (id === "race") {
+        document.body.classList.add("in-race");
+      } else {
+        document.body.classList.remove("in-race");
+      }
+
       document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
       document.getElementById("screen-" + id).classList.add("active");
       if (btn) {
@@ -983,10 +686,6 @@
         const el = document.getElementById(id);
         if (el) el.innerHTML = opts;
       });
-      const betEl = document.getElementById("crBetCountry");
-      if (betEl) {
-        betEl.innerHTML = `<option value="">-- Optional: Pick Podium Bet (+200 🪙) --</option>` + opts;
-      }
 
       document.getElementById("careerCountrySelect").value = State.career.countryCode || "DZ";
       document.getElementById("rivalA").value = "DZ";
@@ -1004,14 +703,14 @@
         const img = new Image();
         img.onload = () => {
           const cnv = document.createElement("canvas");
-          cnv.width = 80;
-          cnv.height = 80;
+          cnv.width = 160;
+          cnv.height = 160;
           const ctx = cnv.getContext("2d");
           ctx.beginPath();
-          ctx.arc(40, 40, 40, 0, Math.PI * 2);
+          ctx.arc(80, 80, 80, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
-          ctx.drawImage(img, 0, 0, 80, 80);
+          ctx.drawImage(img, 0, 0, 160, 160);
           this.uploadedLogoDataUrl = cnv.toDataURL("image/png");
           document.getElementById("cmLogoPreview").src = this.uploadedLogoDataUrl;
         };
@@ -1029,10 +728,10 @@
     createCustomMarble() {
       const name = document.getElementById("cmName").value.trim();
       const iso3 = (document.getElementById("cmCode3").value.trim() || "CUS").toUpperCase().slice(0, 3);
-      const color = document.getElementById("cmColor").value || "#ef4444";
-      const color2 = document.getElementById("cmColor2").value || "#ffffff";
+      const color = document.getElementById("cmColor").value || "#ff2a5f";
+      const color2 = document.getElementById("cmColor2").value || "#00f566";
       const region = document.getElementById("cmRegion").value || "Custom";
-      const fact = document.getElementById("cmFact").value.trim() || `${name} (${iso3}) is a custom contender!`;
+      const fact = document.getElementById("cmFact").value.trim() || `${name} (${iso3}) is a custom 4K Color Rush contender!`;
 
       if (!name) {
         alert("Please enter a Team or Country Name!");
@@ -1061,7 +760,7 @@
       this.renderCustomMarblesList();
       document.getElementById("cmName").value = "";
       this.clearUploadedLogo();
-      alert(`Custom Marble "${name} (${iso3})" created!`);
+      alert(`Custom 4K Marble "${name} (${iso3})" created!`);
     },
 
     deleteCustomMarble(code) {
@@ -1082,7 +781,7 @@
         return;
       }
       wrap.innerHTML = list.map(m => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:6px; border-left:4px solid ${m.color};">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#080a17; padding:6px 10px; border-radius:8px; margin-bottom:6px; border-left:4px solid ${m.color};">
           <div style="display:flex; align-items:center; gap:8px;">
             ${m.logoDataUrl ? `<img src="${m.logoDataUrl}" style="width:26px;height:26px;border-radius:50%;" />` : `<span style="display:inline-block;width:22px;height:22px;border-radius:50%;background:${m.color};"></span>`}
             <strong>${m.name} (${m.iso3})</strong> <span class="tag">${m.region[0]}</span>
@@ -1093,7 +792,7 @@
     },
 
     saveCustomTournament(playImmediately) {
-      const name = document.getElementById("ctName").value.trim() || ("Custom Cup #" + ((State.customTournaments?.length || 0) + 1));
+      const name = document.getElementById("ctName").value.trim() || ("Color Rush Cup #" + ((State.customTournaments?.length || 0) + 1));
       const rawFmt = document.getElementById("ctFormat").value;
       const format = (rawFmt === "grandprix" || rawFmt === "nascar") ? "grandprix" : rawFmt;
       const gpSystem = rawFmt === "nascar" ? "nascar" : "formula";
@@ -1137,10 +836,10 @@
         return;
       }
       wrap.innerHTML = list.map(c => `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:6px; border:1px solid #334155;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#080a17; padding:6px 10px; border-radius:8px; margin-bottom:6px; border:1px solid #3b308a;">
           <div>
             <strong>${c.name}</strong>
-            <span style="font-size:0.72rem; color:var(--muted); margin-left:6px;">${c.count} Flags • ${c.rounds} Laps • ${c.length.toUpperCase()}</span>
+            <span style="font-size:0.72rem; color:var(--muted); margin-left:6px;">${c.count} Flags • ${c.rounds} Laps • ${c.format.toUpperCase()}</span>
           </div>
           <div style="display:flex; gap:5px;">
             <button class="btn btn-sm btn-green" onclick="Game.startCup('${c.id}')">▶ Play</button>
@@ -1197,7 +896,7 @@
     },
 
     savePreset() {
-      const name = prompt("Preset Name:", "Widescreen Setup " + (State.presets.length + 1));
+      const name = prompt("Preset Name:", "Color Rush " + (State.presets.length + 1));
       if (!name) return;
       State.presets.push({
         name,
@@ -1207,8 +906,8 @@
         region: document.getElementById("crRegion").value,
         track: document.getElementById("crTrack").value,
         length: document.getElementById("crLength").value,
+        redRule: document.getElementById("crRedRule").value,
         difficulty: document.getElementById("crDifficulty").value,
-        camera: document.getElementById("crCamera").value,
         physSpeed: document.getElementById("crPhysSpeed").value,
         rounds: document.getElementById("crRounds").value,
         elim: document.getElementById("crElim").value
@@ -1233,8 +932,8 @@
       document.getElementById("crRegion").value = p.region;
       document.getElementById("crTrack").value = p.track;
       document.getElementById("crLength").value = p.length;
+      if (p.redRule) document.getElementById("crRedRule").value = p.redRule;
       document.getElementById("crDifficulty").value = p.difficulty;
-      document.getElementById("crCamera").value = p.camera;
       document.getElementById("crPhysSpeed").value = p.physSpeed;
       document.getElementById("crRounds").value = p.rounds;
       document.getElementById("crElim").value = p.elim;
@@ -1245,10 +944,10 @@
     renderCups() {
       const wrap = document.getElementById("cupsList");
       wrap.innerHTML = window.GAME_DATA.competitions.map(c => `
-        <div style="background:#070b16; padding:10px; border-radius:10px; border:1px solid #1e293b;">
+        <div style="background:#080a17; padding:10px; border-radius:10px; border:1.5px solid #3b308a;">
           <div style="font-weight:800; margin-bottom:4px; font-size:0.84rem;">${c.name}</div>
           <div style="font-size:0.7rem; color:var(--muted); margin-bottom:8px;">
-            ${c.count} Flags • ${c.rounds} Laps • ${c.length.toUpperCase()}
+            ${c.count} Flags • ${c.rounds} Laps • ${c.format.toUpperCase()}
           </div>
           <button class="btn btn-sm btn-block" onclick="Game.startCup('${c.id}')">Start Cup</button>
         </div>
@@ -1264,7 +963,7 @@
       ];
       const cObj = findMarbleByCode(State.career.countryCode);
       document.getElementById("careerStatusBox").innerHTML = `
-        <div style="background:#070b16; padding:8px 12px; border-radius:8px; border:1px solid var(--neon-green);">
+        <div style="background:#080a17; padding:8px 12px; border-radius:8px; border:1.5px solid var(--neon-green);">
           <strong>Nation:</strong> ${cObj.flag || "🔵"} ${cObj.name} (${cObj.iso3}) &nbsp;|&nbsp;
           <strong>${stages[State.career.stage] || stages[0]}</strong>
         </div>
@@ -1306,8 +1005,11 @@
       const avg = s.races > 0 ? (s.posSum / s.races).toFixed(1) : "N/A";
       const recentStr = s.recent.length ? s.recent.map(p => "#" + p).join(", ") : "No races yet";
       document.getElementById("countryProfileView").innerHTML = `
-        <div style="background:#070b16; padding:10px; border-radius:8px; border-left:4px solid ${c.color};">
-          <div style="font-size:1.05rem; font-weight:800;">${c.flag || "🔵"} ${c.name} (${c.iso3 || c.code})</div>
+        <div style="background:#080a17; padding:10px; border-radius:10px; border:1.5px solid var(--purple-wall);">
+          <div style="font-size:1.1rem; font-weight:900; color:var(--neon-green);">${c.flag || "🔵"} ${c.name} (${c.iso3 || c.code})</div>
+          <div style="margin:6px 0; padding:8px; background:rgba(99,68,245,0.18); border-radius:8px; font-size:0.8rem; color:#fff; line-height:1.35;">
+            💡 <strong>Fun Fact:</strong> ${c.fact}
+          </div>
           <div class="grid-3" style="margin-top:6px;">
             <div class="tag">Races: <strong>${s.races}</strong></div>
             <div class="tag">Wins: <strong>${s.wins}</strong></div>
@@ -1316,7 +1018,7 @@
             <div class="tag">Cups: <strong>${s.cups}</strong></div>
             <div class="tag">Avg Pos: <strong>${avg}</strong></div>
           </div>
-          <div style="font-size:0.75rem; margin-top:6px; color:var(--gold);">Recent Finishes: ${recentStr}</div>
+          <div style="font-size:0.75rem; margin-top:6px; color:var(--neon-yellow);">Recent Finishes: ${recentStr}</div>
         </div>
       `;
     },
@@ -1327,7 +1029,7 @@
         const owned = State.unlockedSkins.includes(sk.id);
         const equipped = State.equippedSkin === sk.id;
         return `
-          <div style="background:#070b16; padding:8px; border-radius:8px; border:1px solid ${equipped ? 'var(--neon-cyan)' : '#1e293b'};">
+          <div style="background:#080a17; padding:8px; border-radius:8px; border:1.5px solid ${equipped ? 'var(--neon-green)' : '#232854'};">
             <div style="font-weight:700; font-size:0.8rem;">${sk.name}</div>
             <div style="font-size:0.72rem; color:var(--muted); margin:3px 0;">${owned ? "Unlocked" : "Cost: 🪙 " + sk.cost}</div>
             <button class="btn btn-sm btn-block ${equipped ? 'btn-green' : ''}" onclick="UI.buyOrEquipSkin('${sk.id}')">
@@ -1341,7 +1043,7 @@
       al.innerHTML = window.GAME_DATA.achievements.map(a => {
         const done = State.achievements.includes(a.id);
         return `
-          <div style="background:#070b16; padding:6px 10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${done ? '#00ff66' : '#334155'};">
+          <div style="background:#080a17; padding:6px 10px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; border-left:4px solid ${done ? '#00f566' : '#334155'};">
             <div>
               <div style="font-weight:700; font-size:0.78rem;">${done ? "✅" : "🔒"} ${a.name}</div>
               <div style="font-size:0.7rem; color:var(--muted);">${a.desc}</div>
@@ -1379,7 +1081,6 @@
     },
 
     openSettings() {
-      document.getElementById("optOrientation").value = State.settings.orientation || "landscape";
       document.getElementById("optLang").value = State.settings.lang;
       document.getElementById("optMaxMarbles").value = State.settings.maxMarbles;
       document.getElementById("optFontScale").value = State.settings.fontScale;
@@ -1418,17 +1119,14 @@
   };
 
   // ============================================================================
-  // WIDESCREEN VECTOR TRACK EDITOR (WITH RED RESET ZONE PLACEMENT!)
+  // WIDESCREEN 16:9 COLOR RUSH TRACK EDITOR
   // ============================================================================
   const Editor = {
     tool: "select",
     canvas: null,
     ctx: null,
-    scrollY: 0,
-    virtualHeight: 1600,
     selectedIndex: -1,
     isDragging: false,
-    snapGrid: true,
 
     init() {
       this.canvas = document.getElementById("editorCanvas");
@@ -1437,13 +1135,9 @@
 
       const getCoords = e => {
         const rect = this.canvas.getBoundingClientRect();
-        let x = Math.round(((e.clientX - rect.left) / rect.width) * 520);
-        let y = Math.round(((e.clientY - rect.top) / rect.height) * 290 + this.scrollY);
-        if (this.snapGrid) {
-          x = Math.round(x / 20) * 20;
-          y = Math.round(y / 20) * 20;
-        }
-        return { x: Math.max(24, Math.min(496, x)), y: Math.max(60, Math.min(this.virtualHeight - 80, y)) };
+        const x = Math.round(((e.clientX - rect.left) / rect.width) * 640 / 10) * 10;
+        const y = Math.round(((e.clientY - rect.top) / rect.height) * 320 / 10) * 10;
+        return { x: Math.max(30, Math.min(610, x)), y: Math.max(30, Math.min(290, y)) };
       };
 
       this.canvas.addEventListener("pointerdown", e => {
@@ -1451,7 +1145,7 @@
         let hitIdx = -1;
         for (let i = State.customTrack.length - 1; i >= 0; i--) {
           const ob = State.customTrack[i];
-          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 38 * (ob.scale || 1)) {
+          if (Math.hypot(ob.x - pt.x, ob.y - pt.y) < 32 * (ob.scale || 1)) {
             hitIdx = i;
             break;
           }
@@ -1467,7 +1161,7 @@
             type: this.tool,
             x: pt.x,
             y: pt.y,
-            angle: this.tool === "diamond" ? 45 : this.tool === "rampL" ? 18 : 0,
+            angle: 0,
             scale: 1
           };
           State.customTrack.push(newItem);
@@ -1497,12 +1191,6 @@
       this.draw();
     },
 
-    toggleSnap() {
-      this.snapGrid = !this.snapGrid;
-      document.getElementById("btnSnap").textContent = `🧲 Snap: ${this.snapGrid ? "ON" : "OFF"}`;
-      this.draw();
-    },
-
     setTool(t) {
       this.tool = t;
       document.querySelectorAll("[id^='tool_']").forEach(b => b.classList.remove("active-tool"));
@@ -1510,23 +1198,16 @@
       if (btn) btn.classList.add("active-tool");
     },
 
-    setScroll(val) {
-      this.scrollY = Number(val) || 0;
-      this.draw();
-    },
-
     syncInspector() {
       const ob = State.customTrack[this.selectedIndex];
       const title = document.getElementById("inspTitle");
-      const ang = document.getElementById("inspAngle");
-      const scl = document.getElementById("inspScale");
       if (!ob) {
-        title.textContent = "Selected: None (Tap an obstacle)";
+        title.textContent = "Selected: None (Tap obstacle)";
         return;
       }
       title.textContent = `Selected: ${ob.type.toUpperCase()} (${ob.x}, ${ob.y})`;
-      ang.value = ob.angle || 0;
-      scl.value = ob.scale || 1;
+      document.getElementById("inspAngle").value = ob.angle || 0;
+      document.getElementById("inspScale").value = ob.scale || 1;
       document.getElementById("inspAngleVal").textContent = (ob.angle || 0) + "°";
       document.getElementById("inspScaleVal").textContent = Number(ob.scale || 1).toFixed(1) + "x";
     },
@@ -1542,7 +1223,7 @@
     duplicateSelected() {
       const ob = State.customTrack[this.selectedIndex];
       if (!ob) return;
-      State.customTrack.push(Object.assign({}, ob, { x: Math.min(480, ob.x + 40), y: Math.min(this.virtualHeight - 80, ob.y + 40) }));
+      State.customTrack.push(Object.assign({}, ob, { x: Math.min(600, ob.x + 30), y: Math.min(280, ob.y + 30) }));
       this.selectedIndex = State.customTrack.length - 1;
       this.syncInspector();
       this.draw();
@@ -1557,19 +1238,16 @@
     },
 
     loadPresetIntoEditor() {
-      State.customTrack = [];
-      for (let r = 0; r < 3; r++) {
-        for (let c = 0; c < 4; c++) {
-          State.customTrack.push({ type: "diamond", x: 100 + c * 105 + (r % 2) * 35, y: 140 + r * 110, angle: 45, scale: 1 });
-        }
-      }
-      State.customTrack.push({ type: "redReset", x: 180, y: 500, angle: 0, scale: 1 });
-      State.customTrack.push({ type: "redReset", x: 340, y: 500, angle: 0, scale: 1 });
-      State.customTrack.push({ type: "star", x: 170, y: 660, angle: 0, scale: 1.2 });
-      State.customTrack.push({ type: "star", x: 350, y: 660, angle: 0, scale: 1.2 });
-      State.customTrack.push({ type: "ghostZone", x: 260, y: 860, angle: 0, scale: 1.1 });
-      State.customTrack.push({ type: "halfMoon", x: 160, y: 1060, angle: 25, scale: 1.1 });
-      State.customTrack.push({ type: "halfMoon", x: 360, y: 1060, angle: -25, scale: 1.1 });
+      State.customTrack = [
+        { type: "diamond", x: 140, y: 90, angle: 0, scale: 1 },
+        { type: "diamond", x: 320, y: 90, angle: 0, scale: 1 },
+        { type: "diamond", x: 500, y: 90, angle: 0, scale: 1 },
+        { type: "redRing", x: 230, y: 155, angle: 0, scale: 1 },
+        { type: "redRing", x: 410, y: 155, angle: 0, scale: 1 },
+        { type: "greenSpinner", x: 230, y: 240, angle: 0, scale: 1 },
+        { type: "greenSpinner", x: 410, y: 240, angle: 0, scale: 1 },
+        { type: "yellowPegs", x: 320, y: 195, angle: 0, scale: 1 }
+      ];
       this.selectedIndex = -1;
       this.syncInspector();
       this.draw();
@@ -1585,7 +1263,7 @@
     save() {
       saveState();
       UI.unlockAchievement("architect");
-      alert("Custom track saved!");
+      alert("Custom Landscape Track saved!");
     },
 
     exportCode() {
@@ -1618,25 +1296,13 @@
     draw() {
       if (!this.ctx) return;
       const ctx = this.ctx;
-      ctx.fillStyle = PERIWINKLE;
-      ctx.fillRect(0, 0, 520, 290);
-      ctx.save();
-      ctx.translate(0, -this.scrollY);
+      ctx.fillStyle = DARK_BG;
+      ctx.fillRect(0, 0, 640, 320);
 
-      if (this.snapGrid) {
-        ctx.strokeStyle = "rgba(0,0,0,0.12)";
-        ctx.lineWidth = 1;
-        for (let x = 20; x < 520; x += 20) {
-          ctx.beginPath(); ctx.moveTo(x, this.scrollY); ctx.lineTo(x, this.scrollY + 290); ctx.stroke();
-        }
-        for (let y = Math.floor(this.scrollY / 20) * 20; y < this.scrollY + 290; y += 20) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(520, y); ctx.stroke();
-        }
-      }
-
-      ctx.fillStyle = BLACK;
-      ctx.fillRect(0, 0, 12, this.virtualHeight);
-      ctx.fillRect(508, 0, 12, this.virtualHeight);
+      // Widescreen Purple Arena Frame Preview
+      ctx.strokeStyle = PURPLE_MAIN;
+      ctx.lineWidth = 6;
+      ctx.strokeRect(12, 12, 616, 296);
 
       State.customTrack.forEach((item, idx) => {
         const scl = item.scale || 1;
@@ -1647,47 +1313,46 @@
         ctx.scale(scl, scl);
 
         if (idx === this.selectedIndex) {
-          ctx.strokeStyle = GREEN_SAFE;
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(-45, -28, 90, 56);
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-32, -32, 64, 64);
         }
 
-        ctx.fillStyle = BLACK;
-        ctx.strokeStyle = BLACK;
-        ctx.lineWidth = 6;
-
-        if (item.type === "redReset") {
-          ctx.fillStyle = RED_RESET;
-          ctx.fillRect(-36, -8, 72, 16);
-          ctx.fillStyle = "#fff";
-          ctx.font = "900 9px sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText("RESET", 0, 3);
-        } else if (item.type === "diamond") {
-          ctx.fillRect(-18, -18, 36, 36);
-        } else if (item.type === "circleNode") {
-          ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeRect(-22, -22, 44, 44);
-        } else if (item.type === "star" || item.type === "cross") {
-          ctx.fillRect(-26, -5, 52, 10);
-          ctx.fillRect(-5, -26, 10, 52);
-        } else if (item.type === "halfMoon") {
-          ctx.beginPath(); ctx.arc(0, 0, 22, -Math.PI * 0.5, Math.PI * 0.5); ctx.closePath(); ctx.fill();
-        } else if (item.type === "ghostZone") {
-          ctx.fillStyle = "rgba(120, 65, 18, 0.85)";
-          ctx.fillRect(-65, -20, 130, 40);
-        } else {
-          ctx.fillRect(-35, -4, 70, 8);
+        if (item.type === "diamond") {
+          ctx.rotate(Math.PI / 4);
+          ctx.strokeStyle = PURPLE_MAIN;
+          ctx.lineWidth = 6;
+          ctx.strokeRect(-16, -16, 32, 32);
+        } else if (item.type === "redRing") {
+          ctx.strokeStyle = NEON_RED;
+          ctx.lineWidth = 7;
+          ctx.beginPath();
+          ctx.arc(0, 0, 18, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (item.type === "greenSpinner") {
+          ctx.fillStyle = NEON_GREEN;
+          ctx.fillRect(-24, -4, 48, 8);
+          ctx.fillRect(-4, -24, 8, 48);
+        } else if (item.type === "yellowPegs") {
+          ctx.fillStyle = NEON_YELLOW;
+          for (let k = -2; k <= 2; k++) {
+            ctx.beginPath(); ctx.arc(0, k * 11, 3.5, 0, Math.PI * 2); ctx.fill();
+          }
+        } else if (item.type === "pinkBar" || item.type === "greenBar") {
+          ctx.fillStyle = item.type === "pinkBar" ? NEON_RED : NEON_GREEN;
+          ctx.fillRect(-28, -4, 56, 8);
+        } else if (item.type === "chevron") {
+          ctx.fillStyle = NEON_GREEN;
+          ctx.font = "900 14px sans-serif";
+          ctx.fillText(">>>", -14, 5);
         }
         ctx.restore();
       });
-
-      ctx.restore();
     }
   };
 
   // ============================================================================
-  // CORE WIDESCREEN PHYSICS ENGINE (WITH RED ZONE TELEPORT TO START & SPARKS!)
+  // CORE 4K COLOR RUSH LANDSCAPE PHYSICS ENGINE + DUAL VIDEO/FRAME RECORDER
   // ============================================================================
   const Game = {
     session: null,
@@ -1697,16 +1362,30 @@
     speedMult: 1,
     cameraMode: "wide",
     autoPlay: false,
-    camY: 0,
-    lavaY: -400,
     simTick: 0,
-    totalRedResets: 0,
-    lastResetBanner: "",
-    resetParticles: [],
+    redEventsCount: 0,
+    lastEventBanner: "",
+    particles: [],
+    dpr: 2.5,
+    // Dual Video + Frame Replay Recorder so recording ALWAYS works on Android APK
+    isRecording: false,
     mediaRecorder: null,
     recordedChunks: [],
     lastRecordedBlob: null,
     lastRecordedMime: "video/webm",
+    capturedFrames: [],
+    replayInterval: null,
+
+    resize4KCanvas() {
+      const canvas = document.getElementById("raceCanvas");
+      if (!canvas) return;
+      const cssW = window.innerWidth || 800;
+      const cssH = window.innerHeight || 450;
+      const userRes = Number(document.getElementById("crResolution")?.value) || 2.5;
+      this.dpr = Math.min(3, Math.max(window.devicePixelRatio || 2, userRes));
+      canvas.width = Math.round(cssW * this.dpr);
+      canvas.height = Math.round(cssH * this.dpr);
+    },
 
     pickCountries(region, count, manual) {
       let basePool = getAllMarblesPool();
@@ -1722,7 +1401,7 @@
         if (basePool.length < 2) basePool = getAllMarblesPool();
       }
 
-      const cap = Math.max(2, Math.min(Number(count) || 120, State.settings.maxMarbles || 256));
+      const cap = Math.max(2, Math.min(Number(count) || 64, State.settings.maxMarbles || 255));
       const rng = createRNG(Date.now() ^ (Math.random() * 0xffffffff));
       const result = [];
 
@@ -1771,35 +1450,34 @@
     },
 
     getTrackDisplayName(trackId) {
-      if (trackId === "custom") return "Custom Vector Track";
-      if (trackId === "seeded_random") return `Procedural Track (${this.session?.seedStr || "SEED"})`;
+      if (trackId === "custom") return "Custom Color Rush Arena";
       const found = window.GAME_DATA.tracks.find(t => t.id === trackId);
       return found ? found.name : trackId;
     },
 
     startFromCreator() {
-      const count = Number(document.getElementById("crCount").value) || 120;
+      const count = Number(document.getElementById("crCount").value) || 64;
       const format = document.getElementById("crFormat").value;
       const gpSystem = document.getElementById("crGpSystem").value || "formula";
       const region = document.getElementById("crRegion").value;
       const track = document.getElementById("crTrack").value;
-      const seedStr = document.getElementById("crTrackSeed").value.trim() || "ORAN-PRO-2026";
+      const seedStr = document.getElementById("crTrackSeed").value.trim() || "COLOR-RUSH-4K";
       const difficulty = document.getElementById("crDifficulty").value;
       const length = document.getElementById("crLength").value;
-      const camera = document.getElementById("crCamera").value;
+      const redRule = format === "survival" ? "eliminate" : (document.getElementById("crRedRule").value || "reset");
       const physSpeed = Number(document.getElementById("crPhysSpeed").value) || 1;
       const rounds = Math.max(1, Math.min(25, Number(document.getElementById("crRounds").value) || 5));
-      const elim = Math.max(1, Number(document.getElementById("crElim").value) || 15);
+      const elim = Math.max(1, Number(document.getElementById("crElim").value) || 8);
       const manual = document.getElementById("crSelectMode").value === "manual";
-      const betCode = document.getElementById("crBetCountry").value || "";
 
       const entrants = this.pickCountries(region, count, manual);
-      this.cameraMode = camera;
+      this.cameraMode = "wide";
 
       this.session = {
-        modeTitle: format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "World Marble Broadcast",
+        modeTitle: format === "survival" ? "💀 Survival Mode" : format === "grandprix" ? `Grand Prix (${gpSystem.toUpperCase()})` : "Color Rush Broadcast",
         format,
         gpSystem,
+        redRule,
         trackSchedule: this.buildTrackSchedule(track, rounds),
         seedStr,
         difficulty,
@@ -1811,7 +1489,6 @@
         activeCountries: entrants,
         seriesScores: {},
         teamScores: {},
-        betCode,
         isRivalry: false,
         isCareer: false,
         cupId: null
@@ -1833,10 +1510,11 @@
         modeTitle: cup.name,
         format: cup.format,
         gpSystem: cup.gpSystem || "formula",
+        redRule: cup.format === "survival" ? "eliminate" : "reset",
         trackSchedule: this.buildTrackSchedule("rotate", cup.rounds),
         seedStr: cup.id.toUpperCase(),
         difficulty: "medium",
-        length: cup.length || "medium",
+        length: cup.length || "long",
         physSpeed: 1,
         totalRounds: cup.rounds,
         currentRound: 1,
@@ -1844,7 +1522,6 @@
         activeCountries: entrants,
         seriesScores: {},
         teamScores: {},
-        betCode: "",
         isRivalry: false,
         isCareer: false,
         cupId: cup.id
@@ -1859,7 +1536,7 @@
       saveState();
       const playerMarble = findMarbleByCode(code);
       const stageNames = ["Career Qualifier", "Career Group Stage", "Career Semi-Final", "Career World Final"];
-      const stageTracks = ["diamond_grid", "circle_gear_matrix", "star_conveyor_maze", "algodoo_mega_mix"];
+      const stageTracks = ["color_rush_classic", "neon_diamond_matrix", "emerald_cross_reactor", "world_cup_gran_finale"];
       const counts = [60, 45, 30, 20];
       const st = State.career.stage || 0;
       const pool = this.pickCountries("ALL", counts[st], false).filter(c => c.code !== code);
@@ -1869,10 +1546,11 @@
         modeTitle: stageNames[st],
         format: "knockout",
         gpSystem: "formula",
+        redRule: "reset",
         trackSchedule: [stageTracks[st]],
         seedStr: "CAREER-" + st,
         difficulty: st >= 2 ? "hard" : "medium",
-        length: st === 3 ? "long" : "medium",
+        length: "long",
         physSpeed: 1,
         totalRounds: 1,
         currentRound: 1,
@@ -1880,7 +1558,6 @@
         activeCountries: entrants,
         seriesScores: {},
         teamScores: {},
-        betCode: code,
         isRivalry: false,
         isCareer: true,
         careerCode: code
@@ -1903,10 +1580,11 @@
         modeTitle: `${cA.iso3} vs ${cB.iso3} (Best of 5)`,
         format: "normal",
         gpSystem: "formula",
+        redRule: "reset",
         trackSchedule: this.buildTrackSchedule("rotate", 5),
         seedStr: "DERBY",
         difficulty: "medium",
-        length: "small",
+        length: "long",
         physSpeed: 1,
         totalRounds: 5,
         currentRound: 1,
@@ -1914,7 +1592,6 @@
         activeCountries: [cA, cB],
         seriesScores: { [codeA]: 0, [codeB]: 0 },
         teamScores: {},
-        betCode: "",
         isRivalry: true,
         bestOf: 5
       };
@@ -1928,22 +1605,18 @@
 
     launchRound() {
       UI.showScreen("race");
-      const canvas = document.getElementById("raceCanvas");
-      canvas.width = canvas.clientWidth || window.innerWidth || 640;
-      canvas.height = canvas.clientHeight || window.innerHeight || 360;
+      this.resize4KCanvas();
 
-      const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "diamond_grid";
+      const currentTrackId = this.session.trackSchedule[(this.session.currentRound - 1) % this.session.trackSchedule.length] || "color_rush_classic";
       this.currentTrackId = currentTrackId;
 
       const rng = createRNG(`${this.session.seedStr}-L${this.session.currentRound}-${Date.now()}`);
-      this.worldData = WORLD_BUILDER.buildWorld(currentTrackId, this.session.length, this.session.difficulty, rng);
+      this.worldData = LANDSCAPE_BUILDER.buildArena(currentTrackId, this.session.length, this.session.difficulty, rng);
 
-      this.lavaY = -400;
-      this.camY = 0;
       this.simTick = 0;
-      this.totalRedResets = 0;
-      this.lastResetBanner = "";
-      this.resetParticles = [];
+      this.redEventsCount = 0;
+      this.lastEventBanner = "";
+      this.particles = [];
 
       const totalCount = this.session.activeCountries.length;
       this.spotsTotal = this.session.format === "knockout"
@@ -1952,7 +1625,7 @@
 
       this.setupPhysicsWorld(rng);
       this.updateHUDButtons();
-      this.startLoop(canvas);
+      this.startLoop();
     },
 
     setupPhysicsWorld(rng) {
@@ -1961,101 +1634,78 @@
       if (this.engine) World.clear(this.engine.world);
 
       this.engine = Engine.create({
-        positionIterations: 6,
-        velocityIterations: 5
+        positionIterations: 8,
+        velocityIterations: 6
       });
-      this.engine.gravity.y = 0.94 * (this.session.physSpeed || 1);
+      this.engine.gravity.y = 0.86 * (this.session.physSpeed || 1);
 
-      const H = this.worldData.totalHeight;
-      const wallOpts = { isStatic: true, restitution: 0.58, friction: 0, frictionStatic: 0 };
-      World.add(this.engine.world, [
-        Bodies.rectangle(0, H / 2, 50, H * 2, wallOpts),
-        Bodies.rectangle(ARENA_W, H / 2, 50, H * 2, wallOpts),
-        Bodies.rectangle(ARENA_W / 2, -80, ARENA_W + 200, 140, wallOpts)
-      ]);
+      const w = this.worldData;
+      w.dynamicItems = [];
 
-      this.worldData.sections.forEach(sec => {
-        sec.dynamicItems = [];
-
-        sec.Walls.forEach(w => {
-          const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
-          const len = Math.hypot(dx, dy);
-          const ang = Math.atan2(dy, dx);
-          World.add(this.engine.world, Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, len + 6, w.thick || 22, {
-            isStatic: true,
-            angle: ang,
-            restitution: 0.55,
-            friction: 0,
-            frictionStatic: 0
-          }));
+      // 1. Walls
+      w.Walls.forEach(seg => {
+        const dx = seg.x2 - seg.x1, dy = seg.y2 - seg.y1;
+        const len = Math.hypot(dx, dy);
+        const ang = Math.atan2(dy, dx);
+        const body = Bodies.rectangle((seg.x1 + seg.x2) / 2, (seg.y1 + seg.y2) / 2, len + 4, seg.thick || 16, {
+          isStatic: true,
+          angle: ang,
+          restitution: seg.isRed ? 0.95 : 0.58,
+          friction: 0,
+          frictionStatic: 0
         });
-
-        sec.Boxes.forEach(bx => {
-          World.add(this.engine.world, Bodies.rectangle(bx.x, bx.y, bx.w, bx.h, {
-            isStatic: true,
-            angle: bx.angle || 0,
-            restitution: bx.restitution || 0.6,
-            friction: 0,
-            frictionStatic: 0
-          }));
-        });
-
-        sec.Pegs.forEach(p => {
-          World.add(this.engine.world, Bodies.circle(p.x, p.y, p.r, {
-            isStatic: true,
-            restitution: p.restitution || 0.78,
-            friction: 0,
-            frictionStatic: 0
-          }));
-        });
-
-        sec.Polys.forEach(poly => {
-          for (let i = 0; i < poly.pts.length; i++) {
-            const p1 = poly.pts[i];
-            const p2 = poly.pts[(i + 1) % poly.pts.length];
-            const dx = p2.x - p1.x, dy = p2.y - p1.y;
-            World.add(this.engine.world, Bodies.rectangle((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, Math.hypot(dx, dy), 16, {
-              isStatic: true,
-              angle: Math.atan2(dy, dx),
-              restitution: 0.55,
-              friction: 0,
-              frictionStatic: 0
-            }));
-          }
-        });
-
-        sec.HalfMoons.forEach(hm => {
-          const arcWalls = buildArcWalls(hm.x, hm.y, hm.r * 0.75, hm.angle - Math.PI * 0.45, hm.angle + Math.PI * 0.45, 5, 20, BLACK);
-          arcWalls.forEach(w => {
-            const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
-            World.add(this.engine.world, Bodies.rectangle((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, Math.hypot(dx, dy), 18, {
-              isStatic: true,
-              angle: Math.atan2(dy, dx),
-              restitution: 0.68,
-              friction: 0,
-              frictionStatic: 0
-            }));
-          });
-        });
-
-        sec.Spinners.forEach(sp => {
-          const bladesCount = sp.style === "bar" ? 1 : 2;
-          const bladeBodies = [];
-          for (let k = 0; k < bladesCount; k++) {
-            const b = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 20, {
-              isStatic: true,
-              angle: (k * Math.PI) / bladesCount,
-              restitution: 0.78,
-              friction: 0,
-              frictionStatic: 0
-            });
-            bladeBodies.push(b);
-            World.add(this.engine.world, b);
-          }
-          sec.dynamicItems.push({ blades: bladeBodies, spec: sp, angle: rng() * Math.PI });
-        });
+        body.isRedHazard = !!seg.isRed;
+        World.add(this.engine.world, body);
       });
 
+      // 2. Hollow Purple Diamond Frames (4 angled wall bars per diamond)
+      w.Diamonds.forEach(d => {
+        const s = d.r * 1.35;
+        const body = Bodies.rectangle(d.x, d.y, s, s, {
+          isStatic: true,
+          angle: Math.PI / 4,
+          restitution: 0.65,
+          friction: 0,
+          frictionStatic: 0
+        });
+        World.add(this.engine.world, body);
+      });
+
+      // 3. Red Segmented Hazard Rings
+      w.RedRings.forEach(rr => {
+        const body = Bodies.circle(rr.x, rr.y, rr.r, {
+          isStatic: true,
+          restitution: 0.95,
+          friction: 0,
+          frictionStatic: 0
+        });
+        body.isRedHazard = true;
+        World.add(this.engine.world, body);
+      });
+
+      // 4. Yellow Pegs
+      w.YellowPegs.forEach(p => {
+        World.add(this.engine.world, Bodies.circle(p.x, p.y, p.r, {
+          isStatic: true,
+          restitution: 0.8,
+          friction: 0,
+          frictionStatic: 0
+        }));
+      });
+
+      // 5. Green 4-Blade Rotating Spinners
+      w.GreenSpinners.forEach(sp => {
+        const b1 = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 14, {
+          isStatic: true, angle: sp.angle, restitution: 0.85, friction: 0
+        });
+        const b2 = Bodies.rectangle(sp.x, sp.y, sp.len, sp.thick || 14, {
+          isStatic: true, angle: sp.angle + Math.PI / 2, restitution: 0.85, friction: 0
+        });
+        World.add(this.engine.world, [b1, b2]);
+        w.dynamicItems.push({ blades: [b1, b2], spec: sp, angle: sp.angle });
+      });
+
+      // Spawn Marbles in the Left & Right Upper Launch Trays (Y = 72..118)
       this.marbles = [];
       this.finishedOrder = [];
       this.eliminatedOrder = [];
@@ -2063,41 +1713,44 @@
       this.midRaceRecorded = false;
 
       const list = this.session.activeCountries.slice();
-      const r = list.length > 180 ? 13 : list.length > 90 ? 15.5 : 18;
-      const usableW = ARENA_W - 180;
-      const cols = Math.max(12, Math.floor(usableW / (r * 2.25)));
+      const r = list.length > 140 ? 11.5 : list.length > 70 ? 13 : 14.5;
 
       list.forEach((country, idx) => {
         MarbleTextureCache.getTexture(country);
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
-        const x = 90 + col * (usableW / Math.max(1, cols - 1)) + (rng() - 0.5) * 8;
-        const y = 35 + row * (r * 2.2) + (rng() - 0.5) * 5;
+        const side = idx % 2 === 0 ? -1 : 1;
+        const sideIdx = Math.floor(idx / 2);
+        const cols = 14;
+        const col = sideIdx % cols;
+        const row = Math.floor(sideIdx / cols);
 
-        const body = Bodies.circle(x, y, r, {
-          restitution: 0.6,
+        const baseX = side < 0
+          ? 425 + col * 42 + (rng() - 0.5) * 6
+          : 1215 + col * 42 + (rng() - 0.5) * 6;
+        const baseY = 72 + row * (r * 2.1) + (rng() - 0.5) * 4;
+
+        const body = Bodies.circle(baseX, baseY, r, {
+          restitution: 0.62,
           friction: 0,
           frictionStatic: 0,
-          frictionAir: 0.0018,
+          frictionAir: 0.0015,
           slop: 0.02,
           density: 0.0025
         });
-        Body.setVelocity(body, { x: (rng() - 0.5) * 4.5, y: 2.8 + rng() * 2 });
+        Body.setVelocity(body, { x: (rng() - 0.5) * 5, y: 2 + rng() * 2 });
         World.add(this.engine.world, body);
 
         this.marbles.push({
           country,
           body,
           r,
-          x,
-          y,
+          x: baseX,
+          y: baseY,
           angle: 0,
           resets: 0,
           prevRank: idx + 1,
           rankDelta: 0,
-          lastPos: { x, y },
+          lastPos: { x: baseX, y: baseY },
           stuckTicks: 0,
-          inGhostZone: false,
           trail: [],
           finished: false,
           eliminated: false,
@@ -2107,36 +1760,57 @@
       });
     },
 
-    // Spawns red spark burst & teleports marble back to the very beginning of the race!
-    teleportMarbleToStart(m) {
-      const { Body } = window.Matter;
-      for (let i = 0; i < 10; i++) {
-        const ang = (Math.PI * 2 * i) / 10;
-        this.resetParticles.push({
-          x: m.x,
-          y: m.y,
-          vx: Math.cos(ang) * (4 + Math.random() * 4),
-          vy: Math.sin(ang) * (4 + Math.random() * 4),
+    spawnBurstParticles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const a = (Math.PI * 2 * i) / count;
+        const spd = 3 + Math.random() * 5;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(a) * spd,
+          vy: Math.sin(a) * spd,
+          color,
           life: 24
         });
       }
-      const newX = 110 + Math.random() * (ARENA_W - 220);
-      const newY = 40 + Math.random() * 45;
-      Body.setPosition(m.body, { x: newX, y: newY });
-      Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 4, y: 2.5 });
-      m.x = newX;
-      m.y = newY;
-      m.lastPos = { x: newX, y: newY };
-      m.stuckTicks = 0;
-      m.trail = [];
-      m.resets = (m.resets || 0) + 1;
-      this.totalRedResets += 1;
-      this.lastResetBanner = `🔴 ${m.country.iso3} RESET TO START!`;
-      if (this.simTick % 4 === 0) SFX.redZoneBuzzer();
     },
 
-    startLoop(canvas) {
+    handleRedContact(m) {
+      const { Body, World } = window.Matter;
+      const rule = this.session.format === "survival" ? "eliminate" : (this.session.redRule || "reset");
+      if (rule === "bounce") return;
+
+      this.redEventsCount += 1;
+      if (rule === "eliminate") {
+        // SURVIVAL MODE: Touching ANY Red obstacle immediately eliminates the marble!
+        this.spawnBurstParticles(m.x, m.y, NEON_RED, 14);
+        m.eliminated = true;
+        m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
+        this.eliminatedOrder.push(m);
+        World.remove(this.engine.world, m.body);
+        this.lastEventBanner = `💀 ${m.country.iso3} ELIMINATED BY RED!`;
+        if (this.simTick % 3 === 0) SFX.redHitSound(true);
+      } else {
+        // RESET MODE: Touching Red teleports the marble back to the top launch tray!
+        this.spawnBurstParticles(m.x, m.y, NEON_RED, 10);
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const nx = side < 0 ? (440 + Math.random() * 500) : (1220 + Math.random() * 500);
+        const ny = 74 + Math.random() * 25;
+        Body.setPosition(m.body, { x: nx, y: ny });
+        Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 4, y: 2 });
+        m.x = nx;
+        m.y = ny;
+        m.lastPos = { x: nx, y: ny };
+        m.stuckTicks = 0;
+        m.trail = [];
+        m.resets = (m.resets || 0) + 1;
+        this.lastEventBanner = `🔴 ${m.country.iso3} RESET TO START!`;
+        if (this.simTick % 4 === 0) SFX.redHitSound(false);
+      }
+    },
+
+    startLoop() {
       if (this.animId) cancelAnimationFrame(this.animId);
+      const canvas = document.getElementById("raceCanvas");
       const ctx = canvas.getContext("2d");
       const skin = window.GAME_DATA.skins.find(s => s.id === State.equippedSkin) || window.GAME_DATA.skins[0];
 
@@ -2146,7 +1820,14 @@
           for (let s = 0; s < subSteps; s++) {
             this.stepPhysicsSubStep();
           }
-          this.renderBroadcastScene(ctx, canvas, skin);
+          this.render4KColorRushScene(ctx, canvas, skin);
+
+          // Capture frames for built-in fallback video/replay recorder if recording is active
+          if (this.isRecording && this.simTick % 4 === 0 && this.capturedFrames.length < 180) {
+            try {
+              this.capturedFrames.push(canvas.toDataURL("image/webp", 0.72));
+            } catch (e) {}
+          }
         } catch (err) {
           console.error("Frame recovery:", err);
         }
@@ -2164,105 +1845,121 @@
       if (!window.Matter || !this.engine || !this.worldData) return;
       const { Engine, Body, World } = window.Matter;
       this.simTick += 1;
-      const finishY = this.worldData.finishY;
+      const w = this.worldData;
       const spd = (this.session.physSpeed || 1) * 0.5;
 
-      this.worldData.sections.forEach(sec => {
-        sec.dynamicItems.forEach(item => {
-          item.angle += item.spec.speed * spd;
-          const n = item.blades.length;
-          for (let k = 0; k < n; k++) {
-            Body.setAngle(item.blades[k], item.angle + (k * Math.PI) / n);
-          }
-        });
+      // Rotate Green Spinners & Red Rings
+      w.dynamicItems.forEach(item => {
+        item.angle += item.spec.speed * spd;
+        Body.setAngle(item.blades[0], item.angle);
+        Body.setAngle(item.blades[1], item.angle + Math.PI / 2);
+      });
+      w.RedRings.forEach(rr => {
+        rr.angle += (rr.speed || 0.025) * spd;
       });
 
       Engine.update(this.engine, 1000 / 120);
 
-      if (this.session.format === "survival") {
-        this.lavaY += 1.5 * spd;
-      }
-
-      let maxActiveY = 0;
-
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
 
-        if (!Number.isFinite(m.body.position.x) || !Number.isFinite(m.body.position.y)) {
-          Body.setPosition(m.body, { x: ARENA_W / 2, y: 50 });
-          Body.setVelocity(m.body, { x: 0, y: 4 });
-        }
-
-        if (m.body.position.x < 28 + m.r) {
-          Body.setPosition(m.body, { x: 30 + m.r, y: m.body.position.y });
-          Body.setVelocity(m.body, { x: Math.abs(m.body.velocity.x) + 2, y: m.body.velocity.y });
-        } else if (m.body.position.x > ARENA_W - 28 - m.r) {
-          Body.setPosition(m.body, { x: ARENA_W - 30 - m.r, y: m.body.position.y });
-          Body.setVelocity(m.body, { x: -Math.abs(m.body.velocity.x) - 2, y: m.body.velocity.y });
-        }
-
-        const vx = m.body.velocity.x, vy = m.body.velocity.y;
-        const maxV = m.r * 0.88;
-        const curV = Math.hypot(vx, vy);
-        if (curV > maxV) {
-          Body.setVelocity(m.body, { x: (vx / curV) * maxV, y: (vy / curV) * maxV });
+        // Bounds safety
+        if (!Number.isFinite(m.body.position.x) || !Number.isFinite(m.body.position.y) || m.body.position.y > 1075) {
+          Body.setPosition(m.body, { x: 1110, y: 855 });
+          Body.setVelocity(m.body, { x: 6, y: 0 });
         }
 
         m.x = m.body.position.x;
         m.y = m.body.position.y;
         m.angle = m.body.angle;
-        if (m.y > maxActiveY) maxActiveY = m.y;
 
-        // Check RED RESET ZONES & Special Zones
-        let insideGhost = false;
-        let hitRedReset = false;
-
-        for (let si = 0; si < this.worldData.sections.length; si++) {
-          const sec = this.worldData.sections[si];
-          if (m.y + m.r < sec.yStart || m.y - m.r > sec.yEnd) continue;
-
-          // Check Red Reset Zones: If marble touches any Red Zone, restart from the beginning!
-          for (let ri = 0; ri < sec.RedZones.length; ri++) {
-            const rz = sec.RedZones[ri];
-            if (m.x + m.r >= rz.x && m.x - m.r <= rz.x + rz.w && m.y + m.r >= rz.y && m.y - m.r <= rz.y + rz.h) {
-              hitRedReset = true;
-              break;
-            }
+        // 1. Check Red Hazard Rings & Red Bars proximity for Survival Elimination / Reset
+        for (let i = 0; i < w.RedRings.length; i++) {
+          const rr = w.RedRings[i];
+          if (Math.hypot(m.x - rr.x, m.y - rr.y) <= rr.r + m.r + 2.5) {
+            this.handleRedContact(m);
+            if (m.eliminated) return;
+            break;
           }
-          if (hitRedReset) break;
+        }
 
-          sec.Zones.forEach(z => {
-            if (m.x >= z.x && m.x <= z.x + z.w && m.y >= z.y && m.y <= z.y + z.h) {
-              if (z.kind === "ghost") insideGhost = true;
-              else if (z.kind === "conveyorDown") {
-                Body.setVelocity(m.body, { x: 0, y: 10 });
-              }
-            }
+        for (let i = 0; i < w.Walls.length; i++) {
+          const seg = w.Walls[i];
+          if (!seg.isRed) continue;
+          // Point-to-segment distance check
+          const l2 = Math.pow(seg.x2 - seg.x1, 2) + Math.pow(seg.y2 - seg.y1, 2);
+          if (l2 === 0) continue;
+          let t = ((m.x - seg.x1) * (seg.x2 - seg.x1) + (m.y - seg.y1) * (seg.y2 - seg.y1)) / l2;
+          t = Math.max(0, Math.min(1, t));
+          const projX = seg.x1 + t * (seg.x2 - seg.x1);
+          const projY = seg.y1 + t * (seg.y2 - seg.y1);
+          if (Math.hypot(m.x - projX, m.y - projY) <= (seg.thick || 14) / 2 + m.r + 2) {
+            this.handleRedContact(m);
+            if (m.eliminated) return;
+            break;
+          }
+        }
+
+        // 2. Bottom Horizontal Serpentine Sprint Tube Propulsion
+        if (m.y >= 826) {
+          const laneIdx = Math.floor((m.y - 830) / 68);
+          let dirX = 1;
+          if (w.sprintLanes === 2) {
+            dirX = laneIdx === 0 ? -1 : 1;
+          } else if (w.sprintLanes === 3) {
+            dirX = laneIdx === 1 ? -1 : 1;
+          }
+          // Gentle horizontal current inside the bottom sprint tube + stronger boost on Green `>>>` pads
+          Body.setVelocity(m.body, {
+            x: m.body.velocity.x * 0.96 + dirX * 0.48 * (this.session.physSpeed || 1),
+            y: m.body.velocity.y
           });
+
+          // Check Checkered Finish Line at the end of the final sprint lane!
+          if (m.y >= w.finishYMin - 10 && m.y <= w.finishYMax + 15 && m.x >= w.finishX) {
+            m.finished = true;
+            m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
+            this.finishedOrder.push(m);
+            World.remove(this.engine.world, m.body);
+            SFX.qualifyDing();
+
+            // If Knockout "Spots Left" hits 0, eliminate remaining marbles
+            if (this.session.format === "knockout" && this.finishedOrder.length >= this.spotsTotal && this.spotsTotal < this.marbles.length) {
+              const rem = this.marbles.filter(x => !x.finished && !x.eliminated).sort((a, b) => this.computeProgressScore(b) - this.computeProgressScore(a));
+              rem.forEach((st, idx) => {
+                st.eliminated = true;
+                st.finishTimeMs = Math.round(performance.now() - this.raceStartTime) + (idx + 1) * 35;
+                this.eliminatedOrder.unshift(st);
+                World.remove(this.engine.world, st.body);
+              });
+            }
+            return;
+          }
         }
 
-        if (hitRedReset) {
-          this.teleportMarbleToStart(m);
-          return;
-        }
-
-        if (insideGhost !== m.inGhostZone) {
-          m.inGhostZone = insideGhost;
-          m.body.collisionFilter.group = insideGhost ? -2 : 0;
-        }
-
-        // Fast Anti-Stuck System
-        const movedDist = Math.hypot(m.x - m.lastPos.x, m.y - m.lastPos.y);
-        if (movedDist < 1.3) {
+        // 3. Fast Anti-Stuck System (Zero getting stuck on any obstacle!)
+        const moved = Math.hypot(m.x - m.lastPos.x, m.y - m.lastPos.y);
+        if (moved < 1.1) {
           m.stuckTicks += 1;
-          if (m.stuckTicks === 30) {
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 10, y: -6 });
-          } else if (m.stuckTicks === 65) {
-            Body.setPosition(m.body, { x: m.x + (Math.random() - 0.5) * 45, y: m.y + 48 });
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 8, y: 7 });
-          } else if (m.stuckTicks > 105) {
-            Body.setPosition(m.body, { x: ARENA_W * 0.2 + Math.random() * (ARENA_W * 0.6), y: m.y + 90 });
-            Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 5, y: 7.5 });
+          if (m.stuckTicks === 28) {
+            if (m.y < 215) {
+              // In upper tray, slide toward central funnel openings
+              const toCenter = m.x < 1110 ? 6 : -6;
+              Body.setVelocity(m.body, { x: toCenter, y: 4 });
+            } else if (m.y < 825) {
+              // In main arena, pop toward center funnel (X = 1110)
+              const towardFunnel = m.x < 1110 ? 5.5 : -5.5;
+              Body.setVelocity(m.body, { x: towardFunnel + (Math.random() - 0.5) * 4, y: -5 });
+            } else {
+              Body.setVelocity(m.body, { x: 8, y: -3 });
+            }
+          } else if (m.stuckTicks > 62) {
+            if (m.y < 810) {
+              Body.setPosition(m.body, { x: m.x + (1110 - m.x) * 0.18, y: m.y + 38 });
+              Body.setVelocity(m.body, { x: (1110 - m.x) * 0.02, y: 6 });
+            } else {
+              Body.setPosition(m.body, { x: m.x + 45, y: m.y });
+            }
             m.stuckTicks = 0;
           }
         } else {
@@ -2275,38 +1972,22 @@
           m.trail.push({ x: m.x, y: m.y });
           if (m.trail.length > 6) m.trail.shift();
         }
-
-        if (this.session.format === "survival" && m.y < this.lavaY) {
-          m.eliminated = true;
-          m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
-          this.eliminatedOrder.push(m);
-          World.remove(this.engine.world, m.body);
-        } else if (m.y >= finishY) {
-          m.finished = true;
-          m.finishTimeMs = Math.round(performance.now() - this.raceStartTime);
-          this.finishedOrder.push(m);
-          World.remove(this.engine.world, m.body);
-          if (this.finishedOrder.length <= 5 || this.finishedOrder.length === this.spotsTotal) {
-            SFX.qualifyDing();
-          }
-
-          if (this.session.format === "knockout" && this.finishedOrder.length >= this.spotsTotal && this.spotsTotal < this.marbles.length) {
-            const stragglers = this.marbles.filter(x => !x.finished && !x.eliminated).sort((a, b) => b.y - a.y);
-            stragglers.forEach((st, idx) => {
-              st.eliminated = true;
-              st.finishTimeMs = Math.round(performance.now() - this.raceStartTime) + (idx + 1) * 35;
-              this.eliminatedOrder.unshift(st);
-              World.remove(this.engine.world, st.body);
-            });
-          }
-        }
       });
+    },
 
-      if (!this.midRaceRecorded && maxActiveY >= finishY * 0.5) {
-        this.midRaceRecorded = true;
-        const sorted = this.marbles.slice().sort((a, b) => b.y - a.y);
-        sorted.forEach((m, idx) => { m.midRank = idx + 1; });
+    computeProgressScore(m) {
+      if (m.finished) return 100000 - m.finishTimeMs;
+      if (m.eliminated) return -10000;
+      if (m.y < 825) {
+        return m.y - Math.abs(m.x - 1110) * 0.15;
       }
+      const laneIdx = Math.floor((m.y - 830) / 68);
+      if (this.worldData.sprintLanes === 3) {
+        if (laneIdx === 0) return 1000 + m.x;
+        if (laneIdx === 1) return 3000 + (1865 - m.x);
+        return 5000 + m.x;
+      }
+      return 1000 + laneIdx * 2000 + m.x;
     },
 
     nudgeAllMarbles() {
@@ -2314,7 +1995,7 @@
       const { Body } = window.Matter;
       this.marbles.forEach(m => {
         if (!m.finished && !m.eliminated) {
-          Body.setVelocity(m.body, { x: (Math.random() - 0.5) * 12, y: 8.5 });
+          Body.setVelocity(m.body, { x: (1110 - m.x) * 0.015 + (Math.random() - 0.5) * 8, y: 7 });
         }
       });
     },
@@ -2326,22 +2007,46 @@
           remaining[0].finished = true;
           remaining[0].finishTimeMs = Math.round(performance.now() - this.raceStartTime);
           this.finishedOrder.push(remaining[0]);
+          UI.unlockAchievement("survivor");
         }
         return true;
       }
       return remaining.length === 0;
     },
 
-    renderBroadcastScene(ctx, canvas, skin) {
-      const W = canvas.width;
-      const H = canvas.height;
-      const finishY = this.worldData.finishY;
+    // ========================================================================
+    // 4K COLOR RUSH WIDESCREEN RENDERER (EXACT MATCH TO 1000157883_52417a.png)
+    // ========================================================================
+    render4KColorRushScene(ctx, canvas, skin) {
+      const cw = canvas.width;
+      const ch = canvas.height;
 
+      ctx.save();
       ctx.imageSmoothingEnabled = true;
-      ctx.fillStyle = "#000000";
-      ctx.fillRect(0, 0, W, H);
+      ctx.imageSmoothingQuality = "high";
 
-      const activeMarbles = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y);
+      // Map 1920x1080 UHD Virtual Space onto the 4K Canvas seamlessly
+      const scaleX = cw / 1920;
+      const scaleY = ch / 1080;
+      ctx.scale(scaleX, scaleY);
+
+      // Deep Navy/Black Color Rush Background with diagonal subtle stadium stripes
+      ctx.fillStyle = DARK_BG;
+      ctx.fillRect(0, 0, 1920, 1080);
+
+      ctx.strokeStyle = "rgba(99, 68, 245, 0.06)";
+      ctx.lineWidth = 28;
+      for (let sx = -400; sx < 2200; sx += 220) {
+        ctx.beginPath();
+        ctx.moveTo(sx, 1080);
+        ctx.lineTo(sx + 600, 0);
+        ctx.stroke();
+      }
+
+      const activeMarbles = this.marbles
+        .filter(m => !m.finished && !m.eliminated)
+        .sort((a, b) => this.computeProgressScore(b) - this.computeProgressScore(a));
+
       const liveRanking = [
         ...this.finishedOrder,
         ...activeMarbles,
@@ -2357,216 +2062,269 @@
         });
       }
 
-      const sidebarW = Math.max(125, Math.min(200, Math.round(W * 0.19)));
-      const arenaViewX = sidebarW + 4;
-      const arenaViewW = W - arenaViewX - 18;
-      const holdingTubeH = 48;
-      const arenaViewH = H - holdingTubeH - 4;
-
-      // 1. RENDER MAIN ARENA
-      ctx.save();
+      // ----------------------------------------------------------------------
+      // 1. LEFT BROADCAST SIDEBAR (X = 24..312, Y = 22..1058) - Exact Image Match
+      // ----------------------------------------------------------------------
+      // Top Card: Neon Green Border (`🏁 LAP X` / `MARBLES: Y`)
+      ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
+      ctx.strokeStyle = NEON_GREEN;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.rect(arenaViewX, 0, arenaViewW, arenaViewH);
-      ctx.clip();
+      ctx.roundRect(24, 22, 286, 104, 14);
+      ctx.fill();
+      ctx.stroke();
 
-      const scaleX = arenaViewW / ARENA_W;
-      let camScale = scaleX;
-      if (this.cameraMode === "leader" || this.cameraMode === "pack") {
-        camScale = Math.max(scaleX, (arenaViewW / ARENA_W) * 1.25);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 32px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`🏁  LAP ${this.session.currentRound}`, 167, 68);
+      ctx.fillStyle = "#cbd5e1";
+      ctx.font = "800 22px system-ui, sans-serif";
+      ctx.fillText(`MARBLES: ${activeMarbles.length + this.finishedOrder.length}`, 167, 106);
+
+      // Middle Card: Glowing Purple Border (`1. 🇺🇸 USA ▲` .. `20. 🇨🇴 COL ▼`)
+      ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
+      ctx.strokeStyle = PURPLE_MAIN;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.roundRect(24, 144, 286, 750, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      const maxRows = 20;
+      const rowH = 35.5;
+      for (let i = 0; i < maxRows && i < liveRanking.length; i++) {
+        const m = liveRanking[i];
+        const ry = 162 + i * rowH;
+
+        // Neon Green Rank Number
+        ctx.fillStyle = m.eliminated ? NEON_RED : NEON_GREEN;
+        ctx.font = "900 20px system-ui, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(`${i + 1}.`, 68, ry + 22);
+
+        // Crisp Flag Icon
+        const tex = MarbleTextureCache.getTexture(m.country);
+        ctx.drawImage(tex, 82, ry + 3, 25, 25);
+
+        // 3-Letter Country Code
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "800 20px system-ui, sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(m.country.iso3 || m.country.code.slice(0, 3), 120, ry + 22);
+
+        // Up/Down Triangle Indicator (Green/Cyan ▲ or Orange ▼)
+        const ax = 278;
+        ctx.fillStyle = m.rankDelta > 0 ? NEON_GREEN : m.rankDelta === 0 ? "#00e5ff" : "#f97316";
+        ctx.beginPath();
+        if (m.rankDelta >= 0) {
+          ctx.moveTo(ax, ry + 6);
+          ctx.lineTo(ax - 9, ry + 23);
+          ctx.lineTo(ax + 9, ry + 23);
+        } else {
+          ctx.moveTo(ax - 9, ry + 7);
+          ctx.lineTo(ax + 9, ry + 7);
+          ctx.lineTo(ax, ry + 24);
+        }
+        ctx.closePath();
+        ctx.fill();
       }
 
-      const visibleWorldH = arenaViewH / camScale;
-      let focusY = finishY * 0.5;
-      if (this.cameraMode === "pack" && activeMarbles.length) {
-        const slice = activeMarbles.slice(0, Math.min(20, activeMarbles.length));
-        focusY = slice.reduce((s, m) => s + m.y, 0) / slice.length;
-      } else if (activeMarbles[0]) {
-        focusY = activeMarbles[0].y;
-      } else {
-        focusY = finishY - visibleWorldH * 0.3;
+      // Bottom Card: Neon Green Border (`🟢 SPOTS LEFT: X`)
+      ctx.fillStyle = "rgba(14, 18, 36, 0.95)";
+      ctx.strokeStyle = NEON_GREEN;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.roundRect(24, 912, 286, 138, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      const spotsLeft = Math.max(0, this.spotsTotal - this.finishedOrder.length);
+      ctx.fillStyle = NEON_GREEN;
+      ctx.font = "900 28px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(this.session.format === "survival" ? "💀 SURVIVAL MODE" : "🏳️ QUALIFYING", 167, 958);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 26px system-ui, sans-serif";
+      ctx.fillText(
+        this.session.format === "survival"
+          ? `ALIVE: ${activeMarbles.length}`
+          : `SPOTS LEFT: ${spotsLeft}`,
+        167,
+        1005
+      );
+      if (this.lastEventBanner) {
+        ctx.fillStyle = NEON_RED;
+        ctx.font = "800 15px system-ui, sans-serif";
+        ctx.fillText(this.lastEventBanner, 167, 1034);
       }
 
-      const targetCamY = Math.max(0, Math.min(Math.max(0, finishY + 60 - visibleWorldH), focusY - visibleWorldH * 0.5));
-      this.camY += (targetCamY - this.camY) * 0.16;
+      // ----------------------------------------------------------------------
+      // 2. WIDESCREEN COLOR RUSH ARENA (X = 335..1890, Y = 20..1060)
+      // ----------------------------------------------------------------------
+      const w = this.worldData;
 
-      ctx.translate(arenaViewX, 0);
-      ctx.scale(camScale, camScale);
-      ctx.translate(0, -this.camY);
+      // Left & Right Outer Purple Framing Brackets (Matches Image!)
+      ctx.strokeStyle = PURPLE_MAIN;
+      ctx.lineWidth = 14;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(355, 26); ctx.lineTo(338, 26); ctx.lineTo(338, 1048); ctx.lineTo(355, 1048);
+      ctx.moveTo(1865, 26); ctx.lineTo(1882, 26); ctx.lineTo(1882, 1048); ctx.lineTo(1865, 1048);
+      ctx.stroke();
 
-      const viewTop = this.camY - 200;
-      const viewBot = this.camY + visibleWorldH + 200;
-
-      ctx.fillStyle = PERIWINKLE;
-      ctx.fillRect(22, 0, ARENA_W - 44, finishY);
-
-      ctx.fillStyle = BLACK;
-      ctx.fillRect(0, 0, 25, finishY + 300);
-      ctx.fillRect(ARENA_W - 25, 0, 25, finishY + 300);
-
-      this.worldData.sections.forEach(sec => {
-        if (sec.yEnd < viewTop || sec.yStart > viewBot) return;
-
-        sec.Zones.forEach(z => {
-          if (z.kind === "ghost") {
-            ctx.fillStyle = "#6e3b0c";
-            ctx.fillRect(z.x, z.y, z.w, z.h);
-            ctx.strokeStyle = "#3d1e04";
-            ctx.lineWidth = 3;
-            for (let gx = z.x; gx <= z.x + z.w; gx += 80) {
-              ctx.beginPath(); ctx.moveTo(gx, z.y); ctx.lineTo(gx, z.y + z.h); ctx.stroke();
-            }
-            for (let gy = z.y; gy <= z.y + z.h; gy += 70) {
-              ctx.beginPath(); ctx.moveTo(z.x, gy); ctx.lineTo(z.x + z.w, gy); ctx.stroke();
-            }
-            ctx.fillStyle = "#111827";
-            ctx.font = "900 30px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText(z.label, ARENA_W / 2, z.y + z.h + 36);
-          } else if (z.kind === "conveyorDown") {
-            ctx.fillStyle = z.color;
-            ctx.fillRect(z.x, z.y, z.w, z.h);
-            ctx.fillStyle = z.arrowColor;
-            ctx.font = "900 26px sans-serif";
-            ctx.textAlign = "center";
-            for (let ay = z.y + 40; ay < z.y + z.h - 20; ay += 52) {
-              ctx.fillText("↓↓", z.x + z.w / 2, ay);
-            }
-          }
-        });
-
-        sec.Banners.forEach(b => {
-          ctx.fillStyle = b.color;
-          ctx.fillRect(b.x, b.y, b.w, b.h);
-        });
-
-        // Glowing RED RESET ZONES (Touch = Teleport back to Start!)
-        sec.RedZones.forEach(rz => {
-          ctx.fillStyle = RED_RESET;
-          ctx.fillRect(rz.x, rz.y, rz.w, rz.h);
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 3;
-          ctx.strokeRect(rz.x, rz.y, rz.w, rz.h);
-        });
-
-        sec.Polys.forEach(poly => {
-          ctx.fillStyle = poly.color;
-          ctx.beginPath();
-          poly.pts.forEach((pt, i) => {
-            if (i === 0) ctx.moveTo(pt.x, pt.y);
-            else ctx.lineTo(pt.x, pt.y);
-          });
-          ctx.closePath();
-          ctx.fill();
-        });
-
-        sec.Boxes.forEach(bx => {
-          if (bx.y + bx.h < viewTop || bx.y - bx.h > viewBot) return;
-          ctx.save();
-          ctx.translate(bx.x, bx.y);
-          ctx.rotate(bx.angle || 0);
-          ctx.fillStyle = bx.color || BLACK;
-          ctx.fillRect(-bx.w / 2, -bx.h / 2, bx.w, bx.h);
-          ctx.restore();
-        });
-
-        sec.HalfMoons.forEach(hm => {
-          ctx.save();
-          ctx.translate(hm.x, hm.y);
-          ctx.rotate(hm.angle || 0);
-          ctx.fillStyle = hm.color || BLACK;
-          ctx.beginPath();
-          ctx.arc(0, 0, hm.r, -Math.PI * 0.5, Math.PI * 0.5);
-          ctx.closePath();
-          ctx.fill();
-          ctx.restore();
-        });
-
-        sec.Walls.forEach(w => {
-          if (Math.max(w.y1, w.y2) < viewTop || Math.min(w.y1, w.y2) > viewBot) return;
-          ctx.strokeStyle = w.color || BLACK;
-          ctx.lineWidth = w.thick || 22;
-          ctx.lineCap = "butt";
-          ctx.beginPath();
-          ctx.moveTo(w.x1, w.y1);
-          ctx.lineTo(w.x2, w.y2);
-          ctx.stroke();
-        });
-
-        sec.Pegs.forEach(p => {
-          if (p.y + p.r < viewTop || p.y - p.r > viewBot) return;
-          ctx.fillStyle = p.color || BLACK;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        sec.dynamicItems.forEach(item => {
-          const sp = item.spec;
-          if (sp.y + sp.len < viewTop || sp.y - sp.len > viewBot) return;
-          ctx.save();
-          ctx.translate(sp.x, sp.y);
-          ctx.rotate(item.angle);
-
-          if (sp.style === "pinwheel") {
-            const slices = 16;
-            const rad = sp.len / 2;
-            for (let s = 0; s < slices; s++) {
-              ctx.fillStyle = s % 2 === 0 ? "#ff00aa" : "#1d4ed8";
-              ctx.beginPath();
-              ctx.moveTo(0, 0);
-              ctx.arc(0, 0, rad, (s * Math.PI * 2) / slices, ((s + 1) * Math.PI * 2) / slices);
-              ctx.closePath();
-              ctx.fill();
-            }
-          } else if (sp.style === "star4") {
-            ctx.fillStyle = sp.color || BLACK;
-            const rOuter = sp.len / 2;
-            const rInner = rOuter * 0.34;
-            ctx.beginPath();
-            for (let i = 0; i < 8; i++) {
-              const r = i % 2 === 0 ? rOuter : rInner;
-              const a = (i * Math.PI) / 4;
-              if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-              else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-            }
-            ctx.closePath();
-            ctx.fill();
-          } else {
-            ctx.fillStyle = sp.color || BLACK;
-            const t = sp.thick || 20;
-            ctx.fillRect(-sp.len / 2, -t / 2, sp.len, t);
-            if (sp.style !== "bar") {
-              ctx.fillRect(-t / 2, -sp.len / 2, t, sp.len);
-            }
-          }
-          ctx.restore();
-        });
+      // Chevron Boosters (`>>>` in bottom lanes and `⌄⌄⌄` on sides)
+      w.Chevrons.forEach(chv => {
+        ctx.save();
+        ctx.translate(chv.x, chv.y);
+        if (chv.dirX !== 0) {
+          ctx.fillStyle = "rgba(0, 245, 102, 0.2)";
+          ctx.fillRect(-45, -18, 90, 36);
+          ctx.fillStyle = chv.color || NEON_GREEN;
+          ctx.font = "900 28px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(chv.dirX > 0 ? ">>>" : "<<<", 0, 1);
+        } else {
+          ctx.fillStyle = chv.color || NEON_YELLOW;
+          ctx.font = "900 22px monospace";
+          ctx.textAlign = "center";
+          ctx.fillText("⌄⌄⌄", 0, 6);
+        }
+        ctx.restore();
       });
 
-      ctx.fillStyle = "#0018ff";
-      ctx.fillRect(25, finishY, ARENA_W - 50, 24);
+      // Yellow Timing Gates in Bottom Serpentine Lanes
+      w.Gates.forEach(g => {
+        ctx.fillStyle = NEON_YELLOW;
+        ctx.fillRect(g.x - 5, g.y + 6, 10, g.h - 12);
+      });
 
-      // Render Red Zone Teleport Spark Particles
-      for (let i = this.resetParticles.length - 1; i >= 0; i--) {
-        const pt = this.resetParticles[i];
+      // Checkered Finish Line Banner in Final Sprint Lane
+      const sq = 13;
+      for (let fy = w.finishYMin + 6; fy < w.finishYMax - 6; fy += sq) {
+        const rowIdx = Math.floor((fy - w.finishYMin) / sq);
+        ctx.fillStyle = rowIdx % 2 === 0 ? "#ffffff" : "#000000";
+        ctx.fillRect(w.finishX, fy, sq, sq);
+        ctx.fillStyle = rowIdx % 2 === 0 ? "#000000" : "#ffffff";
+        ctx.fillRect(w.finishX + sq, fy, sq, sq);
+      }
+
+      // Hollow Purple Diamonds (3D Beveled Color Rush Style!)
+      w.Diamonds.forEach(d => {
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(Math.PI / 4);
+        const s = d.r * 1.32;
+        ctx.fillStyle = "#050711";
+        ctx.fillRect(-s / 2, -s / 2, s, s);
+        ctx.lineWidth = 14;
+        ctx.strokeStyle = PURPLE_DARK;
+        ctx.strokeRect(-s / 2 + 2, -s / 2 + 2, s, s);
+        ctx.strokeStyle = PURPLE_MAIN;
+        ctx.strokeRect(-s / 2, -s / 2, s, s);
+        ctx.restore();
+      });
+
+      // Segmented Red Hazard Rings (With White/Black Inner Spokes like Image!)
+      w.RedRings.forEach(rr => {
+        ctx.save();
+        ctx.translate(rr.x, rr.y);
+        ctx.rotate(rr.angle || 0);
+
+        // Outer red ring
+        ctx.beginPath();
+        ctx.arc(0, 0, rr.r, 0, Math.PI * 2);
+        ctx.fillStyle = "#080a14";
+        ctx.fill();
+        ctx.lineWidth = 13;
+        ctx.strokeStyle = NEON_RED;
+        ctx.stroke();
+
+        // 3 dark/white segment notches
+        for (let k = 0; k < 3; k++) {
+          ctx.save();
+          ctx.rotate((k * Math.PI * 2) / 3);
+          ctx.fillStyle = k === 0 ? "#ffffff" : "#080a14";
+          ctx.fillRect(-4, -rr.r - 6, 8, 14);
+          ctx.restore();
+        }
+        ctx.restore();
+      });
+
+      // Yellow Peg Chains
+      w.YellowPegs.forEach(p => {
+        ctx.fillStyle = NEON_YELLOW;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Green 4-Blade Rotating Cross Spinners
+      w.dynamicItems.forEach(item => {
+        const sp = item.spec;
+        ctx.save();
+        ctx.translate(sp.x, sp.y);
+        ctx.rotate(item.angle);
+        ctx.fillStyle = NEON_GREEN;
+        const t = sp.thick || 14;
+        ctx.beginPath();
+        ctx.roundRect(-sp.len / 2, -t / 2, sp.len, t, 6);
+        ctx.roundRect(-t / 2, -sp.len / 2, t, sp.len, 6);
+        ctx.fill();
+
+        // Dark center hub ring
+        ctx.strokeStyle = "#070913";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Arena Walls & Tilted Bars
+      w.Walls.forEach(seg => {
+        ctx.strokeStyle = seg.color || PURPLE_MAIN;
+        ctx.lineWidth = seg.thick || 16;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+        ctx.stroke();
+
+        // Top roof green dash highlights (Matches Image!)
+        if (seg.stripeGreen) {
+          ctx.strokeStyle = NEON_GREEN;
+          ctx.lineWidth = 10;
+          ctx.setLineDash([45, 75]);
+          ctx.beginPath();
+          ctx.moveTo(seg.x1 + 30, seg.y1);
+          ctx.lineTo(seg.x2 - 30, seg.y2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      });
+
+      // Spark Particles
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const pt = this.particles[i];
         pt.x += pt.vx;
         pt.y += pt.vy;
         pt.life -= 1;
-        ctx.fillStyle = pt.life % 2 === 0 ? "#ff1111" : "#fbbf24";
+        ctx.fillStyle = pt.color;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
         ctx.fill();
-        if (pt.life <= 0) this.resetParticles.splice(i, 1);
+        if (pt.life <= 0) this.particles.splice(i, 1);
       }
 
-      // Render Marbles: Pure Full-Bleed Flag Circle (Zero Outline, Zero Floating Text)
+      // Render Marbles (Razor-Sharp 4K Full-Bleed Flag Circles, Zero Outline, Zero Text!)
       this.marbles.forEach(m => {
         if (m.finished || m.eliminated) return;
-        if (m.y + m.r < viewTop || m.y - m.r > viewBot) return;
 
         if (m.trail.length > 1 && skin.trail) {
           ctx.strokeStyle = skin.trail;
-          ctx.lineWidth = 6;
+          ctx.lineWidth = 5;
           ctx.globalAlpha = 0.45;
           ctx.beginPath();
           m.trail.forEach((pt, i) => {
@@ -2581,143 +2339,21 @@
         ctx.save();
         ctx.translate(m.x, m.y);
         ctx.rotate(m.angle);
-        if (m.inGhostZone) ctx.globalAlpha = 0.65;
         ctx.drawImage(tex, -m.r, -m.r, m.r * 2, m.r * 2);
         ctx.restore();
       });
 
       ctx.restore();
-
-      // 2. BOTTOM QUALIFICATION HOLDING TUBE
-      const tubeY = arenaViewH + 2;
-      ctx.fillStyle = BLACK;
-      ctx.fillRect(arenaViewX, tubeY, arenaViewW, holdingTubeH);
-
-      const lane1Y = tubeY + 5;
-      const lane2Y = tubeY + 26;
-      ctx.fillStyle = PERIWINKLE;
-      ctx.fillRect(arenaViewX + 8, lane1Y, arenaViewW - 16, 17);
-      ctx.fillRect(arenaViewX + 8, lane2Y, arenaViewW - 16, 17);
-
-      const maxPerLane = Math.floor((arenaViewW - 28) / 17);
-      this.finishedOrder.slice(0, maxPerLane * 2).forEach((m, idx) => {
-        const tex = MarbleTextureCache.getTexture(m.country);
-        const lane = idx < maxPerLane ? 0 : 1;
-        const col = lane === 0 ? idx : idx - maxPerLane;
-        const mx = arenaViewX + 18 + col * 17;
-        const my = (lane === 0 ? lane1Y : lane2Y) + 8.5;
-        ctx.drawImage(tex, mx - 7.5, my - 7.5, 15, 15);
-      });
-
-      // 3. LEFT BROADCAST SIDEBAR
-      ctx.fillStyle = "#0e1117";
-      ctx.fillRect(0, 0, sidebarW, H);
-      ctx.strokeStyle = PERIWINKLE;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(sidebarW + 2, 0);
-      ctx.lineTo(sidebarW + 2, H);
-      ctx.stroke();
-
-      ctx.fillStyle = "#1c212b";
-      ctx.fillRect(6, 6, sidebarW - 12, 46);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(6, 6, sidebarW - 12, 46);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "900 12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`LAP ${this.session.currentRound} • ${this.marbles.length} FLAGS`, sidebarW / 2, 23);
-      ctx.fillStyle = "#ff4d6d";
-      ctx.font = "800 10px sans-serif";
-      ctx.fillText(this.lastResetBanner || `🔴 RESETS: ${this.totalRedResets}`, sidebarW / 2, 42);
-
-      const listTop = 58;
-      const listBot = H - 58;
-      const listH = listBot - listTop;
-      ctx.fillStyle = "#161a22";
-      ctx.fillRect(6, listTop, sidebarW - 12, listH);
-
-      const rowH = 19;
-      const visibleRows = Math.max(4, Math.floor((listH - 6) / rowH));
-      const startRankIdx = Math.max(0, Math.min(liveRanking.length - visibleRows, Math.max(0, this.finishedOrder.length - Math.floor(visibleRows * 0.6))));
-
-      for (let i = 0; i < visibleRows && (startRankIdx + i) < liveRanking.length; i++) {
-        const rankIdx = startRankIdx + i;
-        const m = liveRanking[rankIdx];
-        const ry = listTop + 3 + i * rowH;
-
-        ctx.fillStyle = m.eliminated ? "#ef4444" : "#00ff66";
-        ctx.font = "900 11.5px monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(`${rankIdx + 1}.`, 10, ry + 13);
-
-        const tex = MarbleTextureCache.getTexture(m.country);
-        ctx.drawImage(tex, 42, ry + 2, 14, 14);
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "800 11.5px sans-serif";
-        ctx.fillText(m.country.iso3 || m.country.code.slice(0, 3), 62, ry + 13);
-
-        const arrowX = sidebarW - 18;
-        ctx.fillStyle = m.rankDelta >= 0 ? "#00f2fe" : "#f97316";
-        ctx.beginPath();
-        if (m.rankDelta >= 0) {
-          ctx.moveTo(arrowX, ry + 4);
-          ctx.lineTo(arrowX - 4.5, ry + 13);
-          ctx.lineTo(arrowX + 4.5, ry + 13);
-        } else {
-          ctx.moveTo(arrowX - 4.5, ry + 4);
-          ctx.lineTo(arrowX + 4.5, ry + 4);
-          ctx.lineTo(arrowX, ry + 13);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      const botBoxY = H - 52;
-      ctx.fillStyle = "#1c212b";
-      ctx.fillRect(6, botBoxY, sidebarW - 12, 46);
-      ctx.strokeStyle = GREEN_SAFE;
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(6, botBoxY, sidebarW - 12, 46);
-
-      const latestFin = this.finishedOrder[this.finishedOrder.length - 1] || liveRanking[0];
-      if (latestFin) {
-        const tex = MarbleTextureCache.getTexture(latestFin.country);
-        ctx.drawImage(tex, sidebarW / 2 - 28, botBoxY + 5, 15, 15);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "900 11.5px sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(latestFin.country.iso3 || latestFin.country.code.slice(0, 3), sidebarW / 2 - 8, botBoxY + 17);
-      }
-
-      const spotsLeft = Math.max(0, this.spotsTotal - this.finishedOrder.length);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "900 10.5px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`SPOTS LEFT: ${spotsLeft}`, sidebarW / 2, botBoxY + 38);
-
-      const stripX = W - 12;
-      ctx.fillStyle = "#16181d";
-      ctx.fillRect(stripX, 4, 10, H - 8);
-      this.marbles.forEach(m => {
-        if (m.eliminated) return;
-        const my = 6 + Math.min(1, Math.max(0, m.y / finishY)) * (H - 12);
-        const tex = MarbleTextureCache.getTexture(m.country);
-        ctx.drawImage(tex, stripX + 1, my - 4, 8, 8);
-      });
     },
 
     skipToResult() {
       if (!this.session || !this.worldData) return;
       let guard = 0;
-      while (!this.checkRaceFinished() && guard < 3000) {
+      while (!this.checkRaceFinished() && guard < 2600) {
         this.stepPhysicsSubStep();
         guard++;
       }
-      const rem = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => b.y - a.y);
+      const rem = this.marbles.filter(m => !m.finished && !m.eliminated).sort((a, b) => this.computeProgressScore(b) - this.computeProgressScore(a));
       rem.forEach((m, idx) => {
         m.finished = true;
         m.finishTimeMs = Math.round(performance.now() - this.raceStartTime) + idx * 45;
@@ -2729,8 +2365,8 @@
 
     onRoundComplete() {
       if (this.animId) cancelAnimationFrame(this.animId);
-      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
-        try { this.mediaRecorder.stop(); } catch (e) {}
+      if (this.isRecording) {
+        this.stopRecordingInternal();
       }
 
       const finalOrder = [
@@ -2761,17 +2397,7 @@
 
       UI.unlockAchievement("first_win");
       if (winner.country.small || winner.country.isCustom) UI.unlockAchievement("underdog");
-      State.coins += 40;
-
-      let betMsg = "";
-      if (this.session.betCode) {
-        const top3Codes = finalOrder.slice(0, 3).map(m => m.country.code.split("#")[0]);
-        if (top3Codes.includes(this.session.betCode)) {
-          State.coins += 200;
-          UI.unlockAchievement("bet_win");
-          betMsg = "🎯 Podium Bet Won! +200 Coins! ";
-        }
-      }
+      State.coins += 45;
 
       finalOrder.forEach((m, idx) => {
         const pos = idx + 1;
@@ -2806,14 +2432,16 @@
         if (pos <= 3) st.podiums += 1;
       });
 
-      let elimNote = betMsg;
+      let elimNote = "";
       let knockedCodes = new Set();
       if (this.session.format === "knockout" && this.session.activeCountries.length > 2) {
         const cut = Math.min(this.session.elimPerRound, this.session.activeCountries.length - 1);
         const knocked = finalOrder.slice(-cut).map(m => m.country);
         knockedCodes = new Set(knocked.map(c => c.code));
         this.session.activeCountries = this.session.activeCountries.filter(c => !knockedCodes.has(c.code));
-        elimNote += `Eliminated (${cut}): ${knocked.slice(0, 6).map(c => c.iso3 || c.name).join(", ")}${knocked.length > 6 ? "..." : ""}`;
+        elimNote = `Eliminated (${cut}): ${knocked.slice(0, 6).map(c => c.iso3 || c.name).join(", ")}${knocked.length > 6 ? "..." : ""}`;
+      } else if (this.session.format === "survival") {
+        elimNote = `Survived: ${this.finishedOrder.length} • Eliminated by Red: ${this.eliminatedOrder.length}`;
       }
 
       saveState();
@@ -2825,17 +2453,17 @@
       document.getElementById("winHeader").textContent =
         `🏆 LAP ${this.session.currentRound}/${this.session.totalRounds} WINNER!`;
       document.getElementById("winTrackSub").textContent =
-        `${this.getTrackDisplayName(this.currentTrackId)} • Red Resets: ${this.totalRedResets}`;
+        `${this.getTrackDisplayName(this.currentTrackId)} • Red Hits: ${this.redEventsCount}`;
 
       const wCnv = document.getElementById("winMarbleCanvas");
       if (wCnv) {
         const wCtx = wCnv.getContext("2d");
-        wCtx.clearRect(0, 0, 76, 76);
-        wCtx.drawImage(MarbleTextureCache.getTexture(winCountry), 0, 0, 76, 76);
+        wCtx.clearRect(0, 0, 96, 96);
+        wCtx.drawImage(MarbleTextureCache.getTexture(winCountry), 0, 0, 96, 96);
       }
 
-      document.getElementById("winCountryName").textContent = `${winCountry.name} (${winCountry.iso3 || winCountry.code})`;
-      document.getElementById("winFunFact").textContent = "💡 " + winCountry.fact;
+      document.getElementById("winCountryName").textContent = `${winCountry.flag || "🔵"} ${winCountry.name} (${winCountry.iso3 || winCountry.code})`;
+      document.getElementById("winFunFact").innerHTML = `💡 <strong>Country Fun Fact:</strong> ${winCountry.fact}`;
       document.getElementById("winTotalMarbles").textContent = finalOrder.length;
 
       let seriesText = elimNote;
@@ -2855,21 +2483,23 @@
       const leaderMs = finalOrder[0]?.finishTimeMs || 1000;
       document.getElementById("winPodiumList").innerHTML = finalOrder.map((m, idx) => {
         const isElim = m.eliminated || (knockedCodes && knockedCodes.has(m.country.code));
-        const timeStr = idx === 0
-          ? (m.finishTimeMs / 1000).toFixed(2) + "s"
-          : "+" + Math.max(0.01, (m.finishTimeMs - leaderMs) / 1000).toFixed(2) + "s";
+        const timeStr = m.eliminated && this.session.format === "survival"
+          ? "💀 RED OUT"
+          : idx === 0
+            ? (m.finishTimeMs / 1000).toFixed(2) + "s"
+            : "+" + Math.max(0.01, (m.finishTimeMs - leaderMs) / 1000).toFixed(2) + "s";
 
         let extraCol = "";
         if (isGrandPrix) {
           const pts = window.GAME_DATA.getPoints(idx, this.session.gpSystem);
           const totalPts = this.session.seriesScores[m.country.code] || 0;
-          extraCol = `<span style="color:var(--gold); font-weight:700;">+${pts} (${totalPts})</span>`;
+          extraCol = `<span style="color:var(--neon-yellow); font-weight:700;">+${pts} (${totalPts})</span>`;
         } else if (isElim) {
-          extraCol = `<span style="color:var(--neon-red); font-weight:700;">❌ OUT</span>`;
+          extraCol = `<span style="color:var(--neon-pink); font-weight:700;">❌ OUT</span>`;
         } else if (idx === 0) {
           extraCol = `<span style="color:var(--neon-green); font-weight:700;">🥇 1ST</span>`;
         } else {
-          extraCol = `<span style="color:#00ff66;">✓ SAFE</span>`;
+          extraCol = `<span style="color:#00f566;">✓ SAFE</span>`;
         }
 
         return `
@@ -2877,7 +2507,6 @@
             <td><strong>#${idx + 1}</strong></td>
             <td>${m.country.flag || "🔵"} ${m.country.name} (${m.country.iso3 || ""})</td>
             <td>${timeStr}</td>
-            <td>${m.resets || 0}</td>
             <td>${extraCol}</td>
           </tr>
         `;
@@ -2896,6 +2525,7 @@
 
     nextStepAfterModal() {
       document.getElementById("winnerModal").classList.remove("active");
+      if (this.replayInterval) clearInterval(this.replayInterval);
       if (!this.session) return;
 
       if (this.session.isCareer) {
@@ -2972,110 +2602,170 @@
 
     updateHUDButtons() {
       document.getElementById("btnSpeed").textContent = `⏩ ${this.speedMult}x`;
-      document.getElementById("btnCam").textContent = `🎥 ${this.cameraMode}`;
+      document.getElementById("btnCam").textContent = `🎥 ${this.cameraMode === "wide" ? "Full 16:9" : this.cameraMode}`;
       document.getElementById("btnAuto").textContent = `🔄 Auto: ${this.autoPlay ? "ON" : "OFF"}`;
     },
 
+    // ========================================================================
+    // DUAL-ENGINE SCREEN RECORDER (MediaRecorder + Canvas Frame Replay Backup)
+    // ========================================================================
     toggleRecording() {
-      const canvas = document.getElementById("raceCanvas");
       const btn = document.getElementById("btnRec");
-
-      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
-        this.mediaRecorder.stop();
-        btn.textContent = "🔴 REC Video";
+      if (this.isRecording) {
+        this.stopRecordingInternal();
         return;
       }
 
-      const stream = canvas.captureStream ? canvas.captureStream(30) : (canvas.mozCaptureStream ? canvas.mozCaptureStream(30) : null);
-      if (!stream || typeof MediaRecorder === "undefined") {
-        alert("This Android WebView does not support MediaRecorder video capture.");
-        return;
-      }
+      this.isRecording = true;
+      this.capturedFrames = [];
+      this.recordedChunks = [];
+      this.lastRecordedBlob = null;
+      btn.textContent = "⏹️ REC ON";
 
-      const mimeTypes = ["video/webm;codecs=vp8", "video/webm;codecs=vp9", "video/webm", "video/mp4"];
-      let chosenMime = "";
-      for (const m of mimeTypes) {
-        if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
-          chosenMime = m;
-          break;
-        }
-      }
-
+      const canvas = document.getElementById("raceCanvas");
       try {
-        this.recordedChunks = [];
-        this.lastRecordedMime = chosenMime || "video/webm";
-        this.mediaRecorder = chosenMime
-          ? new MediaRecorder(stream, { mimeType: chosenMime, videoBitsPerSecond: 2500000 })
-          : new MediaRecorder(stream);
-
-        this.mediaRecorder.ondataavailable = e => {
-          if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
-        };
-
-        this.mediaRecorder.onstop = () => {
-          btn.textContent = "🔴 REC Video";
-          if (!this.recordedChunks.length) return;
-          this.lastRecordedBlob = new Blob(this.recordedChunks, { type: this.lastRecordedMime });
-          const url = URL.createObjectURL(this.lastRecordedBlob);
-          const vidEl = document.getElementById("recordedVideoEl");
-          const boxEl = document.getElementById("videoReplayBox");
-          if (vidEl && boxEl) {
-            vidEl.src = url;
-            boxEl.style.display = "block";
-          }
-        };
-
-        this.mediaRecorder.start(250);
-        btn.textContent = "⏹️ STOP REC";
-      } catch (e) {
-        alert("Could not start video recorder: " + e.message);
-      }
-    },
-
-    downloadRecordedVideo() {
-      if (!this.lastRecordedBlob) {
-        alert("No recorded video yet! Tap 🔴 REC Video during a race.");
-        return;
-      }
-      const ext = this.lastRecordedMime.includes("mp4") ? "mp4" : "webm";
-      const url = URL.createObjectURL(this.lastRecordedBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `country-marble-race-${Date.now()}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => document.body.removeChild(a), 500);
-    },
-
-    async shareClipOrResult() {
-      const winName = document.getElementById("winCountryName").textContent;
-      const shareText = `🏆 ${winName} just won in Country Marble Race Pro! #CountryMarbleRace`;
-
-      if (navigator.share) {
-        try {
-          if (this.lastRecordedBlob) {
-            const ext = this.lastRecordedMime.includes("mp4") ? "mp4" : "webm";
-            const file = new File([this.lastRecordedBlob], `marble-race.${ext}`, { type: this.lastRecordedMime });
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({ title: "Country Marble Race Pro", text: shareText, files: [file] });
-              return;
+        const stream = canvas.captureStream ? canvas.captureStream(30) : null;
+        if (stream && typeof MediaRecorder !== "undefined") {
+          const mimeTypes = ["video/webm;codecs=vp8", "video/webm", "video/mp4"];
+          let chosen = "";
+          for (const m of mimeTypes) {
+            if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) {
+              chosen = m;
+              break;
             }
           }
-          await navigator.share({ title: "Country Marble Race Pro", text: shareText });
+          this.lastRecordedMime = chosen || "video/webm";
+          this.mediaRecorder = chosen ? new MediaRecorder(stream, { mimeType: chosen }) : new MediaRecorder(stream);
+          this.mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) this.recordedChunks.push(e.data);
+          };
+          this.mediaRecorder.onstop = () => {
+            if (this.recordedChunks.length > 0) {
+              this.lastRecordedBlob = new Blob(this.recordedChunks, { type: this.lastRecordedMime });
+            }
+            this.showReplayWidget();
+          };
+          this.mediaRecorder.start(200);
+        }
+      } catch (e) {
+        // Even if MediaRecorder fails on an Android WebView, this.capturedFrames records the clip!
+      }
+    },
+
+    stopRecordingInternal() {
+      this.isRecording = false;
+      const btn = document.getElementById("btnRec");
+      if (btn) btn.textContent = "🔴 REC";
+      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
+        try {
+          this.mediaRecorder.stop();
           return;
         } catch (e) {}
       }
+      this.showReplayWidget();
+    },
+
+    showReplayWidget() {
+      const box = document.getElementById("videoReplayBox");
+      const vidEl = document.getElementById("recordedVideoEl");
+      const imgEl = document.getElementById("recordedPlaybackImg");
+      if (!box) return;
+
+      if (this.lastRecordedBlob && this.lastRecordedBlob.size > 0) {
+        box.style.display = "block";
+        vidEl.style.display = "block";
+        imgEl.style.display = "none";
+        vidEl.src = URL.createObjectURL(this.lastRecordedBlob);
+      } else if (this.capturedFrames.length > 0) {
+        box.style.display = "block";
+        vidEl.style.display = "none";
+        imgEl.style.display = "block";
+        imgEl.src = this.capturedFrames[0];
+        this.playFrameReplay();
+      }
+    },
+
+    playFrameReplay() {
+      if (this.replayInterval) clearInterval(this.replayInterval);
+      const imgEl = document.getElementById("recordedPlaybackImg");
+      const vidEl = document.getElementById("recordedVideoEl");
+      if (this.lastRecordedBlob && vidEl.style.display === "block") {
+        vidEl.currentTime = 0;
+        vidEl.play().catch(() => {});
+        return;
+      }
+      if (!this.capturedFrames.length || !imgEl) return;
+      imgEl.style.display = "block";
+      let idx = 0;
+      this.replayInterval = setInterval(() => {
+        imgEl.src = this.capturedFrames[idx];
+        idx = (idx + 1) % this.capturedFrames.length;
+      }, 90);
+    },
+
+    async exportOrShareRecording() {
+      const winName = document.getElementById("winCountryName").textContent;
+      const shareText = `🏆 ${winName} won on ${this.getTrackDisplayName(this.currentTrackId)} in Country Marble Color Rush 4K!`;
+
+      // 1. Try Native Android Share Sheet with Video File or Snapshot Image File
+      if (navigator.share) {
+        try {
+          if (this.lastRecordedBlob && this.lastRecordedBlob.size > 0) {
+            const ext = this.lastRecordedMime.includes("mp4") ? "mp4" : "webm";
+            const file = new File([this.lastRecordedBlob], `color-rush-race.${ext}`, { type: this.lastRecordedMime });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: "Color Rush 4K", text: shareText, files: [file] });
+              return;
+            }
+          }
+          if (this.capturedFrames.length > 0) {
+            const res = await fetch(this.capturedFrames[this.capturedFrames.length - 1]);
+            const blob = await res.blob();
+            const file = new File([blob], "color-rush-finish.webp", { type: "image/webp" });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: "Color Rush 4K", text: shareText, files: [file] });
+              return;
+            }
+          }
+          await navigator.share({ title: "Color Rush 4K", text: shareText });
+          return;
+        } catch (e) {}
+      }
+
+      // 2. Direct Data-URL / Blob Anchor Download Fallback
+      if (this.lastRecordedBlob && this.lastRecordedBlob.size > 0) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const a = document.createElement("a");
+          a.href = reader.result;
+          a.download = `color-rush-${Date.now()}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => document.body.removeChild(a), 500);
+        };
+        reader.readAsDataURL(this.lastRecordedBlob);
+        return;
+      }
+
+      if (this.capturedFrames.length > 0) {
+        const a = document.createElement("a");
+        a.href = this.capturedFrames[this.capturedFrames.length - 1];
+        a.download = `color-rush-snapshot-${Date.now()}.webp`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => document.body.removeChild(a), 500);
+        return;
+      }
+
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(shareText).catch(() => {});
       }
-      alert("Result copied to clipboard: " + shareText);
+      alert("Race summary copied to clipboard: " + shareText);
     },
 
     stopAndExit() {
       if (this.animId) cancelAnimationFrame(this.animId);
-      if (this.mediaRecorder && this.mediaRecorder.state === "recording") {
-        try { this.mediaRecorder.stop(); } catch (e) {}
-      }
+      if (this.isRecording) this.stopRecordingInternal();
       UI.showScreen("creator");
     }
   };
