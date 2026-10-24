@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Country Marble Race Pro</title>
+  <title>Country Marble Color Rush 4K</title>
   <style>
     :root {
-      --bg: #050811;
-      --bg-grad: radial-gradient(circle at 15% 15%, #111c38 0%, #050811 70%);
-      --panel: rgba(15, 23, 42, 0.88);
-      --card: rgba(30, 41, 59, 0.78);
-      --border: rgba(56, 189, 248, 0.24);
-      --neon-cyan: #00f2fe;
-      --neon-green: #00ff66;
-      --neon-red: #ff1e42;
-      --gold: #fbbf24;
+      --bg: #070812;
+      --bg-grad: radial-gradient(circle at 20% 20%, #151336 0%, #070812 75%);
+      --panel: rgba(16, 18, 38, 0.92);
+      --card: rgba(28, 31, 64, 0.85);
+      --purple-wall: #6344f5;
+      --neon-green: #00f566;
+      --neon-pink: #ff2a5f;
+      --neon-yellow: #ffd600;
+      --neon-cyan: #00e5ff;
       --text: #f8fafc;
       --muted: #94a3b8;
       --font-scale: 1;
@@ -36,18 +36,29 @@
       font-size: calc(13.5px * var(--font-scale));
       overflow: hidden;
     }
-    /* WIDESCREEN LANDSCAPE SHELL */
     #app {
       display: flex;
       flex-direction: row;
       width: 100vw;
       height: 100vh;
     }
-    /* LEFT CYBER-STADIUM NAVIGATION RAIL */
+    /* HIDE LEFT MENU AND TOP BAR COMPLETELY WHEN PLAYING A RACE! */
+    body.in-race aside.side-rail,
+    body.in-race header.top-bar {
+      display: none !important;
+    }
+    body.in-race .content-shell,
+    body.in-race main.viewport {
+      width: 100vw !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+    }
+
+    /* LEFT COLOR RUSH MENU RAIL (ONLY SHOWN IN MENUS, HIDDEN IN RACE) */
     aside.side-rail {
-      width: 82px;
-      background: #080d1a;
-      border-right: 2px solid rgba(0, 242, 254, 0.25);
+      width: 80px;
+      background: #0a0c1b;
+      border-right: 2px solid var(--purple-wall);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -55,19 +66,18 @@
       padding: 8px 4px;
       flex-shrink: 0;
       z-index: 20;
-      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6);
+      box-shadow: 4px 0 22px rgba(99, 68, 245, 0.3);
     }
     .rail-logo {
-      font-size: 1.5rem;
-      width: 48px;
-      height: 48px;
+      font-size: 1.45rem;
+      width: 46px;
+      height: 46px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      background: linear-gradient(135deg, var(--purple-wall), var(--neon-pink));
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 15px rgba(0, 242, 254, 0.45);
-      margin-bottom: 4px;
+      box-shadow: 0 0 14px rgba(255, 42, 95, 0.5);
     }
     .rail-nav {
       display: flex;
@@ -77,7 +87,7 @@
     }
     .rail-nav button {
       background: transparent;
-      border: 1px solid transparent;
+      border: 1.5px solid transparent;
       color: var(--muted);
       border-radius: 12px;
       padding: 7px 2px;
@@ -86,20 +96,19 @@
       align-items: center;
       gap: 2px;
       cursor: pointer;
-      font-size: 0.68rem;
-      font-weight: 800;
-      transition: all 0.15s ease;
+      font-size: 0.66rem;
+      font-weight: 900;
     }
     .rail-nav button span.icon {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
     }
     .rail-nav button.active {
       color: #fff;
-      background: linear-gradient(135deg, rgba(0, 242, 254, 0.22), rgba(59, 130, 246, 0.15));
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+      background: rgba(99, 68, 245, 0.28);
+      border-color: var(--neon-green);
+      box-shadow: 0 0 12px rgba(0, 245, 102, 0.3);
     }
-    /* RIGHT CONTENT AREA */
+
     .content-shell {
       flex: 1;
       display: flex;
@@ -109,9 +118,9 @@
     }
     header.top-bar {
       height: 44px;
-      background: rgba(8, 13, 26, 0.92);
-      border-bottom: 1px solid var(--border);
-      padding: 0 16px;
+      background: rgba(10, 12, 27, 0.95);
+      border-bottom: 2px solid var(--purple-wall);
+      padding: 0 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -120,10 +129,10 @@
     }
     .brand-title {
       font-weight: 900;
-      font-size: 1.05rem;
+      font-size: 1rem;
       letter-spacing: 0.6px;
       text-transform: uppercase;
-      background: linear-gradient(90deg, #00f2fe, #fbbf24, #00ff66);
+      background: linear-gradient(90deg, var(--neon-green), var(--neon-yellow), var(--neon-pink), var(--neon-cyan));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       display: flex;
@@ -136,14 +145,13 @@
       gap: 8px;
     }
     .coin-pill {
-      background: #050811;
-      border: 1px solid var(--gold);
-      color: var(--gold);
-      padding: 4px 12px;
+      background: #070812;
+      border: 1.5px solid var(--neon-yellow);
+      color: var(--neon-yellow);
+      padding: 4px 11px;
       border-radius: 999px;
       font-weight: 900;
-      font-size: 0.82rem;
-      box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+      font-size: 0.8rem;
     }
     main.viewport {
       flex: 1;
@@ -160,26 +168,28 @@
     .screen.active {
       display: block;
     }
-    /* FULLSCREEN LANDSCAPE RACE VIEWPORT */
+
+    /* FULLSCREEN 4K LANDSCAPE RACE SCREEN (NO APP MENU VISIBLE) */
     #screen-race.active {
       padding: 0;
-      max-width: 100%;
-      width: 100%;
-      height: 100%;
+      margin: 0;
+      max-width: 100vw;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       position: relative;
-      background: #000;
+      background: #070913;
     }
     #raceCanvas {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       display: block;
-      background: #000;
+      background: #070913;
     }
     .race-top-hud {
       position: absolute;
       top: 8px;
-      right: 14px;
+      right: 12px;
       display: flex;
       gap: 6px;
       z-index: 10;
@@ -187,27 +197,27 @@
     .race-bottom-hud {
       position: absolute;
       bottom: 8px;
-      right: 14px;
+      right: 12px;
       display: flex;
       gap: 6px;
       z-index: 10;
     }
-    /* CARDS & GRIDS */
+
+    /* COLOR RUSH CARDS & BUTTONS */
     .card {
       background: var(--panel);
-      border: 1px solid var(--border);
+      border: 2px solid var(--purple-wall);
       border-radius: 14px;
       padding: 14px;
       margin-bottom: 12px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), inset 0 0 18px rgba(99, 68, 245, 0.12);
     }
     .card h2, .card h3 {
       margin: 0 0 10px 0;
-      font-size: 1.05rem;
+      font-size: 1rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--neon-cyan);
+      color: var(--neon-green);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -229,85 +239,80 @@
     }
     label {
       display: block;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       color: var(--muted);
       margin-bottom: 3px;
-      font-weight: 700;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
     }
     select, input[type="number"], input[type="text"], input[type="range"], input[type="color"] {
       width: 100%;
       padding: 7px 10px;
       border-radius: 9px;
-      border: 1px solid #334155;
-      background: #070b16;
+      border: 1.5px solid #3b308a;
+      background: #080a17;
       color: var(--text);
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.84rem;
+      font-weight: 700;
     }
     select:focus, input:focus {
       outline: none;
-      border-color: var(--neon-cyan);
+      border-color: var(--neon-green);
     }
     .btn {
-      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      background: linear-gradient(135deg, var(--purple-wall), #4f46e5);
       color: #fff;
       border: none;
-      padding: 8px 14px;
+      padding: 8px 13px;
       border-radius: 9px;
       font-weight: 900;
       cursor: pointer;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+      gap: 5px;
+      box-shadow: 0 4px 12px rgba(99, 68, 245, 0.35);
     }
     .btn-launch {
-      background: linear-gradient(90deg, #00ff66, #00b4d8);
-      color: #03150a;
-      font-size: 1rem;
-      padding: 12px 18px;
-      box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
+      background: linear-gradient(90deg, var(--neon-green), #00d4ff);
+      color: #04140a;
+      font-size: 0.96rem;
+      padding: 11px 16px;
+      box-shadow: 0 0 18px rgba(0, 245, 102, 0.45);
     }
     .btn.active-tool {
       outline: 2px solid var(--neon-green);
-      background: rgba(0, 255, 102, 0.22);
-      color: #fff;
+      background: rgba(0, 245, 102, 0.25);
     }
     .btn-block {
       width: 100%;
     }
     .btn-sec {
-      background: #1e293b;
+      background: #191d3a;
       color: #e2e8f0;
-      border: 1px solid #334155;
+      border: 1px solid #3b308a;
       box-shadow: none;
     }
     .btn-green {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      background: var(--neon-green);
+      color: #03170a;
     }
     .btn-red {
-      background: linear-gradient(135deg, #ff1e42, #be123c);
+      background: var(--neon-pink);
       color: #fff;
-      box-shadow: 0 4px 12px rgba(255, 30, 66, 0.35);
     }
     .btn-sm {
-      padding: 5px 10px;
-      font-size: 0.74rem;
+      padding: 5px 9px;
+      font-size: 0.72rem;
     }
     .tag {
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
-      background: rgba(0, 242, 254, 0.14);
-      border: 1px solid rgba(0, 242, 254, 0.3);
+      background: rgba(99, 68, 245, 0.22);
+      border: 1px solid var(--purple-wall);
       color: var(--neon-cyan);
       font-size: 0.7rem;
       font-weight: 800;
@@ -317,8 +322,8 @@
       align-items: center;
       gap: 6px;
       padding: 6px 8px;
-      background: #070b16;
-      border: 1px solid #334155;
+      background: #080a17;
+      border: 1px solid #3b308a;
       border-radius: 8px;
       cursor: pointer;
       font-size: 0.78rem;
@@ -326,12 +331,12 @@
     }
     .country-chip.selected {
       border-color: var(--neon-green);
-      background: rgba(0, 255, 102, 0.18);
+      background: rgba(0, 245, 102, 0.18);
     }
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(3, 6, 14, 0.88);
+      background: rgba(5, 6, 15, 0.9);
       display: none;
       align-items: center;
       justify-content: center;
@@ -343,16 +348,16 @@
       display: flex;
     }
     .modal-content {
-      background: #0d1527;
-      border: 2px solid var(--neon-cyan);
+      background: #0e1126;
+      border: 2.5px solid var(--neon-green);
       border-radius: 16px;
       padding: 14px 18px;
       width: 100%;
-      max-width: 720px;
+      max-width: 760px;
       max-height: 92vh;
       overflow-y: auto;
       text-align: center;
-      box-shadow: 0 0 35px rgba(0, 242, 254, 0.3);
+      box-shadow: 0 0 35px rgba(0, 245, 102, 0.3);
     }
     table {
       width: 100%;
@@ -360,17 +365,17 @@
       font-size: 0.78rem;
     }
     th, td {
-      padding: 6px 6px;
-      border-bottom: 1px solid #1e293b;
+      padding: 5px 6px;
+      border-bottom: 1px solid #1f2447;
       text-align: start;
     }
     th {
-      color: var(--neon-cyan);
+      color: var(--neon-green);
       position: sticky;
       top: 0;
-      background: #0d1527;
+      background: #0e1126;
       text-transform: uppercase;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
     }
     .editor-layout {
       display: grid;
@@ -380,8 +385,8 @@
     }
     .editor-canvas-wrap {
       height: 290px;
-      background: #798eff;
-      border: 3px solid #000;
+      background: #070913;
+      border: 3px solid var(--purple-wall);
       border-radius: 12px;
       position: relative;
       overflow: hidden;
@@ -397,65 +402,65 @@
       height: 44px;
       border-radius: 50%;
       background: #050811;
-      border: 2px solid var(--neon-cyan);
+      border: 2px solid var(--neon-green);
       object-fit: cover;
     }
   </style>
 </head>
 <body>
 <div id="app">
-  <!-- WIDESCREEN LEFT NAVIGATION RAIL -->
+  <!-- LEFT NAVIGATION RAIL (HIDDEN AUTOMATICALLY WHEN RACE STARTS) -->
   <aside class="side-rail">
-    <div class="rail-logo">🌍</div>
+    <div class="rail-logo">🏁</div>
     <div class="rail-nav">
-      <button class="active" onclick="UI.showScreen('creator', this)"><span class="icon">🏁</span><span data-i18n="navRace">RACE</span></button>
+      <button class="active" onclick="UI.showScreen('creator', this)"><span class="icon">⚡</span><span data-i18n="navRace">RACE</span></button>
       <button onclick="UI.showScreen('competitions', this)"><span class="icon">🏆</span><span data-i18n="navCups">CUPS</span></button>
       <button onclick="UI.showScreen('editor', this)"><span class="icon">🛠️</span><span data-i18n="navEditor">EDITOR</span></button>
       <button onclick="UI.showScreen('shop', this)"><span class="icon">✨</span><span data-i18n="navShop">LOGOS</span></button>
-      <button onclick="UI.showScreen('stats', this)"><span class="icon">📊</span><span data-i18n="navStats">STATS</span></button>
-      <button onclick="UI.openSettings()"><span class="icon">⚙️</span><span data-i18n="navConfig">SETUP</span></button>
+      <button onclick="UI.showScreen('stats', this)"><span class="icon">📊</span><span data-i18n="navStats">FACTS</span></button>
+      <button onclick="UI.openSettings()"><span class="icon">⚙️</span><span data-i18n="navConfig">4K</span></button>
     </div>
-    <div style="font-size:0.62rem; color:var(--muted); text-align:center;">v5.0 PRO</div>
+    <div style="font-size:0.6rem; color:var(--neon-green); font-weight:800;">4K UHD</div>
   </aside>
 
-  <!-- MAIN LANDSCAPE SHELL -->
   <div class="content-shell">
+    <!-- TOP BAR (HIDDEN AUTOMATICALLY WHEN RACE STARTS) -->
     <header class="top-bar">
       <div class="brand-title">
-        <span>⚡ COUNTRY MARBLE RACE PRO</span>
-        <span class="tag" id="totalCountriesBadge">255 FLAGS</span>
-        <span class="tag" style="border-color:#ff1e42; color:#ff1e42; background:rgba(255,30,66,0.12);">🔴 RED ZONE = RESET TO START</span>
+        <span>🌈 COLOR RUSH MARBLE RACE 4K</span>
+        <span class="tag" id="totalCountriesBadge">255 COUNTRIES</span>
+        <span class="tag" style="border-color:#ff2a5f; color:#ff2a5f; background:rgba(255,42,95,0.15);">💀 SURVIVAL: TOUCH RED = ELIMINATED</span>
       </div>
       <div class="top-bar-right">
         <div class="coin-pill">🪙 <span id="coinCount">0</span></div>
-        <button class="btn btn-sm btn-sec" id="btnMusic" onclick="UI.toggleMusic()">🎵 BGM</button>
+        <button class="btn btn-sm btn-sec" id="btnMusic" onclick="UI.toggleMusic()">🎵 Synth BGM</button>
         <button class="btn btn-sm btn-sec" id="btnSound" onclick="UI.toggleSound()">🔊 SFX</button>
         <button class="btn btn-sm btn-sec" onclick="UI.WatchRewardedAd('coins')">🎥 +100 🪙</button>
       </div>
     </header>
 
     <main class="viewport">
-      <!-- SCREEN 1: LANDSCAPE WIDESCREEN RACE CREATOR -->
+      <!-- SCREEN 1: COLOR RUSH LANDSCAPE RACE CREATOR -->
       <section id="screen-creator" class="screen active">
         <div class="card">
-          <h2>🏁 Widescreen Broadcast Race Creator (Landscape Pro Edition)</h2>
+          <h2>🌈 Color Rush Widescreen Landscape Race Creator (4K Ultra-HD)</h2>
           <div class="grid-4">
             <div>
-              <label data-i18n="numCountries">Countries / Marbles (2-300)</label>
-              <input type="number" id="crCount" min="2" max="300" value="120" />
+              <label data-i18n="numCountries">Marbles (2-255)</label>
+              <input type="number" id="crCount" min="2" max="255" value="64" />
             </div>
             <div>
-              <label data-i18n="raceFormat">Race Mode</label>
+              <label data-i18n="raceFormat">Game Mode</label>
               <select id="crFormat" onchange="UI.onFormatChange()">
-                <option value="knockout" selected>Elimination Spots Left (Lap Mode)</option>
-                <option value="normal">Normal Race (All Finish)</option>
-                <option value="survival">Survival Rising Void</option>
+                <option value="knockout" selected>Spots Left Elimination (Color Rush Lap)</option>
+                <option value="survival">💀 Survival Mode (Touch Red = Eliminated!)</option>
+                <option value="normal">Normal Race (Touch Red = Reset to Top)</option>
                 <option value="grandprix">Grand Prix Points (Formula / NASCAR)</option>
                 <option value="team">Continent / Alliance Team Race</option>
               </select>
             </div>
             <div>
-              <label data-i18n="regionFilter">World Pool (255 Flags)</label>
+              <label data-i18n="regionFilter">World Pool (255 Flags & Facts)</label>
               <select id="crRegion">
                 <option value="ALL">🌍 All 255 World Countries & Territories</option>
                 <option value="CUSTOM">✨ Custom Logos & Created Marbles</option>
@@ -471,26 +476,32 @@
               </select>
             </div>
             <div>
-              <label data-i18n="trackSelect">Select Arena Track (100% Passable)</label>
+              <label data-i18n="trackSelect">22 Landscape Color Rush Arenas</label>
               <select id="crTrack" onchange="UI.onTrackChange()">
-                <option value="rotate" selected>🔄 Rotate New Arena Every Lap (16 Tracks)</option>
-                <option value="diamond_grid">1. Diamond Plinko Lattice + Red Traps</option>
-                <option value="circle_gear_matrix">2. Circular Gear Matrix & Red Reset Gates</option>
-                <option value="musical_hammers">3. Curved Chutes & Musical Note Levers</option>
-                <option value="star_conveyor_maze">4. 3-Tier Sloped Star Maze & Elevators</option>
-                <option value="triple_pinball_launchers">5. Wide Triple Pinball Flipper Chambers</option>
-                <option value="capsule_scallop_bowl">6. 4-Story Sloped Cross Capsules & Basin</option>
-                <option value="halfmoon_ghost_zone">7. Tilted Half-Moons & No-Collision Zone</option>
-                <option value="oval_peg_chain">8. Triple Vertical Oval Peg Lanes</option>
-                <option value="wheel_funnel_drop">9. Giant Pinwheel & Wide Funnel Drop</option>
-                <option value="serpentine_planks">10. 10-Level Serpentine Slanted Planks</option>
-                <option value="zig_zag_sawtooth">11. Twin Sawtooth Canyons & Star Wheel</option>
-                <option value="soccer_stadium_gate">12. Stadium Goal Qualification Arena</option>
-                <option value="algodoo_mega_mix">13. Ultimate Algodoo Multi-Stage Megamix</option>
-                <option value="hourglass_bottleneck">14. Triple Hourglass & Red Laser Sweepers</option>
-                <option value="pendulum_gauntlet">15. Swinging Hammers & Red Reset Bumpers</option>
-                <option value="seeded_random">16. 🎲 Seeded Random Procedural Track</option>
-                <option value="custom">🛠️ Custom Pro Vector Track</option>
+                <option value="rotate" selected>🔄 Rotate New Landscape Arena Every Lap (22 Tracks)</option>
+                <option value="color_rush_classic">1. Color Rush Official Arena (Exact Image Style)</option>
+                <option value="neon_diamond_matrix">2. Neon Purple Diamond & Red Ring Matrix</option>
+                <option value="emerald_cross_reactor">3. Emerald Cross-Spinners & Yellow Pegs</option>
+                <option value="crimson_ring_gauntlet">4. Crimson Ring Gauntlet & Chevron Boosts</option>
+                <option value="twin_funnel_symphony">5. Twin Widescreen Funnel Symphony</option>
+                <option value="cyber_pinball_stadium">6. Cyber Pinball Bumpers & Seesaw Tray</option>
+                <option value="starlight_plinko_wide">7. Starlight Wide Plinko & 3-Lane Sprint</option>
+                <option value="laser_slalom_arena">8. Neon Laser Slalom & Red Hazard Rings</option>
+                <option value="vortex_windmill_wide">9. 8-Windmill Vortex Widescreen Arena</option>
+                <option value="honeycomb_hex_rush">10. Honeycomb Diamond & Ring Rush</option>
+                <option value="hyper_chevron_speedway">11. Hyper Chevron Booster Speedway</option>
+                <option value="pendulum_shockwave">12. Neon Pendulum & Red Ring Shockwave</option>
+                <option value="supernova_collider">13. Supernova Dual-Chamber Collider</option>
+                <option value="atlas_peaks_landscape">14. Atlas Peaks Widescreen Switchback</option>
+                <option value="sahara_mirage_rush">15. Sahara Golden Peg & Red Ring Rush</option>
+                <option value="tokyo_arcade_matrix">16. Tokyo Arcade Neon Bumper Matrix</option>
+                <option value="olympus_titan_arena">17. Mount Olympus Titan Widescreen</option>
+                <option value="caribbean_wave_basin">18. Caribbean Wave & Green Spinner Basin</option>
+                <option value="nordic_aurora_grid">19. Nordic Aurora Diamond Grid</option>
+                <option value="amazon_serpent_lanes">20. Amazon Serpent 3-Lane Finish</option>
+                <option value="world_cup_gran_finale">21. World Cup Grand Finale Landscape</option>
+                <option value="seeded_random">22. 🎲 Seeded Random Landscape Generator</option>
+                <option value="custom">🛠️ Custom Editor Landscape Arena</option>
               </select>
             </div>
 
@@ -503,42 +514,42 @@
             </div>
 
             <div id="seedInputWrap" style="display:none; grid-column: span 2;">
-              <label>Procedural Track Seed</label>
+              <label>Landscape Generator Seed</label>
               <div style="display:flex; gap:6px;">
-                <input type="text" id="crTrackSeed" value="ORAN-PRO-2026" />
+                <input type="text" id="crTrackSeed" value="COLOR-RUSH-4K" />
                 <button class="btn btn-sm btn-sec" onclick="UI.randomizeSeed()">🎲</button>
               </div>
             </div>
 
             <div>
-              <label data-i18n="raceLength">Track Size (Small / Medium / Long)</label>
+              <label data-i18n="raceLength">Bottom Finish Sprint Length</label>
               <select id="crLength">
-                <option value="small">Small Track (1 Giant Arena • Fast Laps)</option>
-                <option value="medium" selected>Medium Track (2 Stacked Arenas)</option>
-                <option value="long">Long Track (4 Stacked Arenas • Marathon)</option>
+                <option value="small">Small (1 Bottom Sprint Lane • Fast)</option>
+                <option value="medium">Medium (2 Serpentine Sprint Lanes)</option>
+                <option value="long" selected>Long (3 Serpentine Sprint Lanes • Image Style)</option>
               </select>
             </div>
             <div>
-              <label>🔴 Red Reset Hazard Density</label>
+              <label>🔴 Red Hazard Rule (Outside Survival)</label>
+              <select id="crRedRule">
+                <option value="reset" selected>Touch Red = Teleport Back to Start</option>
+                <option value="eliminate">💀 Touch Red = Instant Elimination!</option>
+                <option value="bounce">Touch Red = High-Speed Bounce Only</option>
+              </select>
+            </div>
+            <div>
+              <label data-i18n="difficulty">Obstacle & Red Ring Density</label>
               <select id="crDifficulty">
-                <option value="easy">Low Red Zones (Chill Flow)</option>
-                <option value="medium" selected>Medium Red Zones (Balanced)</option>
-                <option value="hard">High Red Zones (Brutal Resets!)</option>
-              </select>
-            </div>
-            <div>
-              <label data-i18n="cameraMode">Broadcast Camera</label>
-              <select id="crCamera">
-                <option value="wide" selected>Widescreen Full Arena View</option>
-                <option value="leader">Follow Leader</option>
-                <option value="pack">Follow Main Crowd Pack</option>
+                <option value="easy">Easy (Wide Channels)</option>
+                <option value="medium" selected>Medium (Color Rush Standard)</option>
+                <option value="hard">Hard (Dense Red Rings & Spinners)</option>
               </select>
             </div>
             <div>
               <label data-i18n="physicsSpeed">Physics Speed</label>
               <select id="crPhysSpeed">
                 <option value="0.85">Slow Motion</option>
-                <option value="1" selected>Normal Crisp 60fps</option>
+                <option value="1" selected>Normal 60fps</option>
                 <option value="1.35">Fast Turbo</option>
               </select>
             </div>
@@ -547,8 +558,8 @@
               <input type="number" id="crRounds" min="1" max="25" value="5" />
             </div>
             <div>
-              <label data-i18n="elimCount">Eliminated Per Lap</label>
-              <input type="number" id="crElim" min="1" max="150" value="15" />
+              <label data-i18n="elimCount">Spots Cut Per Lap</label>
+              <input type="number" id="crElim" min="1" max="150" value="8" />
             </div>
             <div>
               <label data-i18n="countrySelection">Selection Mode</label>
@@ -558,8 +569,12 @@
               </select>
             </div>
             <div>
-              <label>🎯 Podium Prediction Bet (+200 🪙)</label>
-              <select id="crBetCountry"></select>
+              <label>4K Super-Sampling Resolution</label>
+              <select id="crResolution">
+                <option value="2.5" selected>4K Ultra-HD Crisp (2.5x DPR)</option>
+                <option value="2">2K QHD Sharp (2.0x DPR)</option>
+                <option value="1.5">1080p Balanced (1.5x DPR)</option>
+              </select>
             </div>
           </div>
 
@@ -572,26 +587,26 @@
             <select id="presetSelect" onchange="UI.loadPreset(this.value)">
               <option value="">📂 Load Saved Preset...</option>
             </select>
-            <button class="btn btn-launch" onclick="Game.startFromCreator()">🚀 LAUNCH WIDESCREEN RACE</button>
+            <button class="btn btn-launch" onclick="Game.startFromCreator()">🚀 PLAY FULLSCREEN LANDSCAPE RACE</button>
           </div>
         </div>
       </section>
 
-      <!-- SCREEN 2: FULLSCREEN LANDSCAPE RACE BROADCAST -->
+      <!-- SCREEN 2: FULLSCREEN 4K LANDSCAPE RACE BROADCAST (NO LEFT MENU!) -->
       <section id="screen-race" class="screen">
         <canvas id="raceCanvas"></canvas>
 
         <div class="race-top-hud">
           <button class="btn btn-sm" id="btnSpeed" onclick="Game.cycleSpeed()">⏩ 1x</button>
-          <button class="btn btn-sm btn-sec" id="btnCam" onclick="Game.cycleCamera()">🎥 wide</button>
+          <button class="btn btn-sm btn-sec" id="btnCam" onclick="Game.cycleCamera()">🎥 Full 16:9</button>
           <button class="btn btn-sm btn-sec" id="btnAuto" onclick="Game.toggleAutoPlay()">🔄 Auto: OFF</button>
-          <button class="btn btn-sm btn-red" id="btnRec" onclick="Game.toggleRecording()">🔴 REC Video</button>
+          <button class="btn btn-sm btn-red" id="btnRec" onclick="Game.toggleRecording()">🔴 REC</button>
         </div>
 
         <div class="race-bottom-hud">
-          <button class="btn btn-sm btn-sec" onclick="Game.nudgeAllMarbles()">⚡ Impulse Pack</button>
-          <button class="btn btn-sm btn-sec" onclick="Game.skipToResult()">⏭️ Skip Lap</button>
-          <button class="btn btn-sm btn-red" onclick="Game.stopAndExit()">✖ Exit</button>
+          <button class="btn btn-sm btn-sec" onclick="Game.nudgeAllMarbles()">⚡ Boost</button>
+          <button class="btn btn-sm btn-sec" onclick="Game.skipToResult()">⏭️ Skip</button>
+          <button class="btn btn-sm btn-red" onclick="Game.stopAndExit()">✖ Menu</button>
         </div>
       </section>
 
@@ -603,15 +618,15 @@
             <div class="grid-2">
               <div>
                 <label>Competition Name</label>
-                <input type="text" id="ctName" placeholder="e.g. World Super League" maxlength="28" />
+                <input type="text" id="ctName" placeholder="e.g. Color Rush World Cup" maxlength="28" />
               </div>
               <div>
                 <label>Format</label>
                 <select id="ctFormat">
-                  <option value="knockout">Knockout Elimination Cup</option>
+                  <option value="knockout">Spots Left Elimination Cup</option>
+                  <option value="survival">💀 Survival Red-Elimination Cup</option>
                   <option value="grandprix">Formula GP Points League</option>
                   <option value="nascar">NASCAR Full-Field League</option>
-                  <option value="survival">Survival Void Series</option>
                 </select>
               </div>
               <div>
@@ -628,11 +643,11 @@
                 </select>
               </div>
               <div>
-                <label>Track Size</label>
+                <label>Bottom Sprint Lanes</label>
                 <select id="ctLength">
-                  <option value="small">Small Track</option>
-                  <option value="medium" selected>Medium Track</option>
-                  <option value="long">Long Track</option>
+                  <option value="small">1 Sprint Lane</option>
+                  <option value="medium">2 Sprint Lanes</option>
+                  <option value="long" selected>3 Sprint Lanes</option>
                 </select>
               </div>
               <div>
@@ -652,14 +667,14 @@
           </div>
 
           <div class="card">
-            <h2>🌱 Career Mode & Derby Rivalries</h2>
+            <h2>🌱 Career Mode & Head-to-Head Derbies</h2>
             <div id="careerStatusBox"></div>
             <div class="grid-2" style="margin-top:8px;">
               <select id="careerCountrySelect"></select>
               <button class="btn btn-green" onclick="Game.startOrContinueCareer()">▶ Play Career Stage</button>
             </div>
-            <hr style="border-color:#1e293b; margin:12px 0;" />
-            <h3>⚔️ Best-of-5 Head-to-Head Derby</h3>
+            <hr style="border-color:#232854; margin:12px 0;" />
+            <h3>⚔️ Best-of-5 Landscape Derby</h3>
             <div class="grid-3">
               <select id="rivalA"></select>
               <select id="rivalB"></select>
@@ -669,30 +684,30 @@
         </div>
 
         <div class="card">
-          <h2>🌍 Official World Cups & Leagues</h2>
+          <h2>🌍 Official Color Rush Cups & Leagues</h2>
           <div class="grid-4" id="cupsList"></div>
         </div>
       </section>
 
-      <!-- SCREEN 4: STATS & STANDINGS -->
+      <!-- SCREEN 4: COUNTRY FUN FACTS ENCYCLOPEDIA & STANDINGS -->
       <section id="screen-stats" class="screen">
         <div class="grid-2">
           <div class="card">
-            <h2>📊 Records & Highlights</h2>
-            <div id="recordsSummary" class="grid-2"></div>
-            <h3 style="margin-top:12px;">🔍 Country / Marble Profile</h3>
+            <h2>💡 World Country Fun Facts & Profile (255 Nations)</h2>
             <select id="profileCountrySelect" onchange="UI.renderCountryProfile(this.value)"></select>
-            <div id="countryProfileView" style="margin-top:8px;"></div>
+            <div id="countryProfileView" style="margin-top:10px;"></div>
+            <h3 style="margin-top:12px;">📊 All-Time Records</h3>
+            <div id="recordsSummary" class="grid-2"></div>
           </div>
 
           <div class="card">
-            <h2>🏆 All-Time World Standings (255 Flags)</h2>
-            <div style="max-height:310px; overflow-y:auto;">
+            <h2>🏆 All-Time World Standings</h2>
+            <div style="max-height:330px; overflow-y:auto;">
               <table>
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Marble</th>
+                    <th>Country</th>
                     <th>Wins</th>
                     <th>Podiums</th>
                     <th>GP Pts</th>
@@ -706,50 +721,41 @@
         </div>
       </section>
 
-      <!-- SCREEN 5: WIDESCREEN PRO TRACK EDITOR (WITH RED RESET ZONE TOOL!) -->
+      <!-- SCREEN 5: WIDESCREEN 16:9 COLOR RUSH TRACK EDITOR -->
       <section id="screen-editor" class="screen">
         <div class="card">
-          <h2>🛠️ Widescreen Algodoo Vector Track Editor (With Red Reset Zones!)</h2>
+          <h2>🛠️ Widescreen 16:9 Color Rush Track Editor</h2>
           <div class="editor-layout">
             <div>
               <div class="grid-4" style="margin-bottom:8px;">
                 <button class="btn btn-sm btn-sec active-tool" id="tool_select" onclick="Editor.setTool('select')">👆 Move/Edit</button>
-                <button class="btn btn-sm btn-red" id="tool_redReset" onclick="Editor.setTool('redReset')">🔴 Red Reset Bar</button>
-                <button class="btn btn-sm btn-sec" id="tool_diamond" onclick="Editor.setTool('diamond')">◆ Diamond</button>
-                <button class="btn btn-sm btn-sec" id="tool_circleNode" onclick="Editor.setTool('circleNode')">⚙️ Gear Ring</button>
-                <button class="btn btn-sm btn-sec" id="tool_hammer" onclick="Editor.setTool('hammer')">🎵 Note Lever</button>
-                <button class="btn btn-sm btn-sec" id="tool_star" onclick="Editor.setTool('star')">✦ 4-Pt Star</button>
-                <button class="btn btn-sm btn-sec" id="tool_halfMoon" onclick="Editor.setTool('halfMoon')">◗ Half-Moon</button>
-                <button class="btn btn-sm btn-sec" id="tool_cross" onclick="Editor.setTool('cross')">➕ Cross Spin</button>
-                <button class="btn btn-sm btn-sec" id="tool_rampL" onclick="Editor.setTool('rampL')">📐 Sloped Wall</button>
-                <button class="btn btn-sm btn-sec" id="tool_funnel" onclick="Editor.setTool('funnel')">⏳ Wide Funnel</button>
-                <button class="btn btn-sm btn-sec" id="tool_ghostZone" onclick="Editor.setTool('ghostZone')">🟫 No-Collide</button>
-                <button class="btn btn-sm btn-sec" id="btnSnap" onclick="Editor.toggleSnap()">🧲 Snap: ON</button>
+                <button class="btn btn-sm btn-sec" id="tool_diamond" onclick="Editor.setTool('diamond')">💜 Purple Diamond</button>
+                <button class="btn btn-sm btn-red" id="tool_redRing" onclick="Editor.setTool('redRing')">⭕ Red Hazard Ring</button>
+                <button class="btn btn-sm btn-green" id="tool_greenSpinner" onclick="Editor.setTool('greenSpinner')">✳️ Green X-Spinner</button>
+                <button class="btn btn-sm btn-sec" id="tool_yellowPegs" onclick="Editor.setTool('yellowPegs')">🟡 Yellow Peg Chain</button>
+                <button class="btn btn-sm btn-sec" id="tool_pinkBar" onclick="Editor.setTool('pinkBar')">➖ Red/Pink Tilt Bar</button>
+                <button class="btn btn-sm btn-sec" id="tool_greenBar" onclick="Editor.setTool('greenBar')">➖ Green Bounce Bar</button>
+                <button class="btn btn-sm btn-sec" id="tool_chevron" onclick="Editor.setTool('chevron')">⏩ Chevron Booster</button>
               </div>
-              <div style="display:flex; gap:8px;">
-                <div class="editor-canvas-wrap" style="flex:1;">
-                  <canvas id="editorCanvas" width="520" height="290"></canvas>
-                </div>
-                <input type="range" id="editorScroll" min="0" max="1600" value="0"
-                  style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; width:28px; height:290px;"
-                  oninput="Editor.setScroll(this.value)" />
+              <div class="editor-canvas-wrap">
+                <canvas id="editorCanvas" width="640" height="320"></canvas>
               </div>
             </div>
 
-            <div style="background:#070b16; border:1px solid #334155; border-radius:12px; padding:10px;">
-              <strong id="inspTitle" style="color:var(--gold); font-size:0.82rem; display:block; margin-bottom:6px;">Selected: None</strong>
+            <div style="background:#080a17; border:1.5px solid var(--purple-wall); border-radius:12px; padding:10px;">
+              <strong id="inspTitle" style="color:var(--neon-green); font-size:0.82rem; display:block; margin-bottom:6px;">Selected: None</strong>
               <label>Rotation Angle: <span id="inspAngleVal">0°</span></label>
               <input type="range" id="inspAngle" min="-180" max="180" step="5" value="0" oninput="Editor.updateSelectedProp('angle', this.value)" />
               <label>Scale Size: <span id="inspScaleVal">1.0x</span></label>
-              <input type="range" id="inspScale" min="0.5" max="2.5" step="0.1" value="1" oninput="Editor.updateSelectedProp('scale', this.value)" />
+              <input type="range" id="inspScale" min="0.5" max="2.2" step="0.1" value="1" oninput="Editor.updateSelectedProp('scale', this.value)" />
 
               <div class="grid-2" style="margin-top:8px;">
                 <button class="btn btn-sm btn-sec" onclick="Editor.duplicateSelected()">📄 Copy</button>
                 <button class="btn btn-sm btn-red" onclick="Editor.deleteSelected()">🗑️ Delete</button>
-                <button class="btn btn-sm btn-sec" onclick="Editor.loadPresetIntoEditor()">📐 Template</button>
+                <button class="btn btn-sm btn-sec" onclick="Editor.loadPresetIntoEditor()">🌈 Reset Template</button>
                 <button class="btn btn-sm btn-red" onclick="Editor.clear()">🗑️ Clear All</button>
               </div>
-              <button class="btn btn-sm btn-green btn-block" style="margin-top:8px;" onclick="Editor.save()">💾 Save Custom Track</button>
+              <button class="btn btn-sm btn-green btn-block" style="margin-top:8px;" onclick="Editor.save()">💾 Save Landscape Track</button>
               <button class="btn btn-sm btn-block" style="margin-top:6px;" onclick="Editor.testTrack()">▶️ Test Race Now</button>
 
               <label style="margin-top:10px;">Share / Import Track Code</label>
@@ -763,23 +769,23 @@
         </div>
       </section>
 
-      <!-- SCREEN 6: CUSTOM LOGO UPLOADER & SKINS -->
+      <!-- SCREEN 6: CUSTOM 2D LOGO UPLOADER & SKINS -->
       <section id="screen-shop" class="screen">
         <div class="grid-2">
           <div class="card">
-            <h2>✨ Custom Logo & Marble Creator</h2>
+            <h2>✨ Custom 2D Logo & Marble Creator</h2>
             <div class="grid-2">
               <div>
                 <label>Team / Country Name</label>
                 <input type="text" id="cmName" placeholder="e.g. MC Oran" maxlength="22" />
               </div>
               <div>
-                <label>3-Letter Broadcast Code</label>
+                <label>3-Letter Code</label>
                 <input type="text" id="cmCode3" placeholder="MCO" maxlength="3" value="MCO" />
               </div>
               <div style="grid-column: span 2;">
-                <label>📷 Upload Custom 2D Logo (Fills 100% of Marble Circle)</label>
-                <div style="display:flex; align-items:center; gap:10px; background:#070b16; padding:6px 10px; border-radius:8px; border:1px solid #334155;">
+                <label>📷 Upload Custom 2D Logo (Fills 100% of Marble Circle at 4K)</label>
+                <div style="display:flex; align-items:center; gap:10px; background:#080a17; padding:6px 10px; border-radius:8px; border:1px solid #3b308a;">
                   <img id="cmLogoPreview" class="logo-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Logo" />
                   <input type="file" id="cmLogoInput" accept="image/*" onchange="UI.handleLogoUpload(this)" style="flex:1; font-size:0.75rem;" />
                   <button class="btn btn-sm btn-sec" onclick="UI.clearUploadedLogo()">Clear</button>
@@ -787,11 +793,11 @@
               </div>
               <div>
                 <label>Primary Color</label>
-                <input type="color" id="cmColor" value="#ef4444" />
+                <input type="color" id="cmColor" value="#ff2a5f" />
               </div>
               <div>
                 <label>Stripe Color</label>
-                <input type="color" id="cmColor2" value="#ffffff" />
+                <input type="color" id="cmColor2" value="#00f566" />
               </div>
               <div>
                 <label>Region</label>
@@ -806,18 +812,18 @@
                 </select>
               </div>
               <div>
-                <label>Fun Fact / Motto</label>
-                <input type="text" id="cmFact" placeholder="Custom marble champion!" />
+                <label>Custom Fun Fact</label>
+                <input type="text" id="cmFact" placeholder="Write a fun fact for this marble!" />
               </div>
             </div>
-            <button class="btn btn-green btn-block" style="margin-top:8px;" onclick="UI.createCustomMarble()">➕ Create Full-Bleed Marble</button>
+            <button class="btn btn-green btn-block" style="margin-top:8px;" onclick="UI.createCustomMarble()">➕ Create 4K Full-Bleed Marble</button>
             <div id="customMarblesList" style="margin-top:10px;"></div>
           </div>
 
           <div class="card">
-            <h2>🎨 Marble Trail Effects & Achievements</h2>
+            <h2>🎨 Color Rush Trail Effects & Achievements</h2>
             <div id="skinsGrid" class="grid-2" style="margin-bottom:12px;"></div>
-            <h3>🏅 Unlocked Achievements</h3>
+            <h3>🏅 Achievements</h3>
             <div id="achievementsList" style="max-height:200px; overflow-y:auto;"></div>
           </div>
         </div>
@@ -826,39 +832,41 @@
   </div>
 </div>
 
-<!-- WINNER & VIDEO REPLAY MODAL -->
+<!-- WINNER, FUN FACT & REPLAY RECORDER MODAL -->
 <div id="winnerModal" class="modal-backdrop">
   <div class="modal-content">
     <div class="grid-2" style="align-items:center; text-align:start;">
       <div style="text-align:center;">
-        <h2 id="winHeader" style="margin:0; color:var(--neon-green);">🏆 LAP COMPLETE!</h2>
+        <h2 id="winHeader" style="margin:0; color:var(--neon-green);">🏆 LAP WINNER!</h2>
         <div id="winTrackSub" style="font-size:0.74rem; color:var(--neon-cyan); margin-bottom:4px;"></div>
-        <canvas id="winMarbleCanvas" width="76" height="76" style="border-radius:50%; margin:4px auto; display:block;"></canvas>
-        <h3 id="winCountryName" style="font-size:1.25rem; margin:2px 0;">Algeria</h3>
-        <p id="winFunFact" style="color:var(--muted); font-size:0.76rem; background:#070b16; padding:6px; border-radius:8px; margin:4px 0;"></p>
-        <div id="winSeriesInfo" style="margin:4px 0; font-size:0.78rem; color:var(--gold); font-weight:800;"></div>
+        <canvas id="winMarbleCanvas" width="96" height="96" style="border-radius:50%; margin:4px auto; display:block;"></canvas>
+        <h3 id="winCountryName" style="font-size:1.3rem; margin:2px 0;">Algeria (DZA)</h3>
+        <div id="winFunFact" style="color:#fff; font-size:0.8rem; background:rgba(99,68,245,0.22); border:1.5px solid var(--purple-wall); padding:8px 10px; border-radius:10px; margin:6px 0; line-height:1.35;"></div>
+        <div id="winSeriesInfo" style="margin:4px 0; font-size:0.78rem; color:var(--neon-yellow); font-weight:800;"></div>
 
-        <div id="videoReplayBox" style="display:none; background:#070b16; border:1px solid var(--neon-green); border-radius:10px; padding:6px; margin-top:6px;">
-          <video id="recordedVideoEl" controls playsinline style="width:100%; max-height:110px; border-radius:6px; background:#000;"></video>
-          <div class="grid-2" style="margin-top:4px;">
-            <button class="btn btn-sm btn-green" onclick="Game.downloadRecordedVideo()">⬇️ Save Video</button>
-            <button class="btn btn-sm btn-sec" onclick="Game.shareClipOrResult()">📤 Share</button>
+        <!-- Built-in Video & Frame Replay Recorder Box -->
+        <div id="videoReplayBox" style="display:none; background:#080a17; border:1.5px solid var(--neon-green); border-radius:10px; padding:6px; margin-top:6px;">
+          <div style="font-size:0.74rem; font-weight:900; color:var(--neon-green); margin-bottom:4px;">🎬 Recorded Race Clip Ready!</div>
+          <video id="recordedVideoEl" controls playsinline style="width:100%; max-height:110px; border-radius:6px; background:#000; display:none;"></video>
+          <img id="recordedPlaybackImg" style="width:100%; max-height:110px; object-fit:contain; border-radius:6px; background:#000; display:none;" alt="Replay" />
+          <div class="grid-2" style="margin-top:5px;">
+            <button class="btn btn-sm btn-green" onclick="Game.exportOrShareRecording()">📤 Save / Share Video</button>
+            <button class="btn btn-sm btn-sec" onclick="Game.playFrameReplay()">▶️ Play Replay</button>
           </div>
         </div>
       </div>
 
       <div>
-        <div style="font-weight:800; font-size:0.78rem; color:var(--neon-cyan); margin-bottom:4px;">
-          📋 Full Standings (<span id="winTotalMarbles">0</span> Marbles):
+        <div style="font-weight:900; font-size:0.78rem; color:var(--neon-cyan); margin:0 0 4px 0;">
+          📋 Full Standings (<span id="winTotalMarbles">0</span> Countries):
         </div>
-        <div style="max-height:195px; overflow-y:auto; background:#070b16; border:1px solid #1e293b; border-radius:8px; padding:4px; margin-bottom:8px;">
+        <div style="max-height:200px; overflow-y:auto; background:#080a17; border:1px solid #232854; border-radius:8px; padding:4px; margin-bottom:8px;">
           <table>
             <thead>
               <tr>
                 <th>Pos</th>
                 <th>Country</th>
                 <th>Time</th>
-                <th>Resets</th>
                 <th id="winColExtra">Status</th>
               </tr>
             </thead>
@@ -867,9 +875,9 @@
         </div>
         <div class="grid-2">
           <button class="btn btn-sec btn-sm" onclick="UI.WatchRewardedAd('rerace')">🎥 Re-Play Lap</button>
-          <button class="btn btn-sec btn-sm" onclick="Game.shareClipOrResult()">📤 Share Result</button>
+          <button class="btn btn-sec btn-sm" onclick="Game.exportOrShareRecording()">📤 Share Result</button>
         </div>
-        <button class="btn btn-launch btn-block" style="margin-top:8px; padding:9px;" id="btnNextRaceStep" onclick="Game.nextStepAfterModal()">Next Lap / Continue ➔</button>
+        <button class="btn btn-launch btn-block" style="margin-top:8px; padding:10px;" id="btnNextRaceStep" onclick="Game.nextStepAfterModal()">Next Lap / Continue ➔</button>
       </div>
     </div>
   </div>
@@ -880,7 +888,7 @@
   <div class="modal-content">
     <h3>Select Participating Countries & Marbles</h3>
     <div style="display:flex; gap:8px; margin-bottom:8px;">
-      <input type="text" id="pickerSearch" placeholder="🔍 Search 255 countries or code..." oninput="UI.filterCountryPicker(this.value)" style="flex:1;" />
+      <input type="text" id="pickerSearch" placeholder="🔍 Search 255 countries or 3-letter code..." oninput="UI.filterCountryPicker(this.value)" style="flex:1;" />
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(true)">Select All</button>
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(false)">Clear All</button>
     </div>
@@ -892,7 +900,7 @@
 <!-- SETTINGS MODAL -->
 <div id="settingsModal" class="modal-backdrop">
   <div class="modal-content" style="max-width:480px;">
-    <h3>⚙️ Setup & Performance</h3>
+    <h3>⚙️ 4K Graphics & Language Setup</h3>
     <div class="grid-2">
       <div>
         <label>Language / اللغة</label>
@@ -906,9 +914,9 @@
       <div>
         <label>Max Marble Cap</label>
         <select id="optMaxMarbles" onchange="UI.applySettings()">
-          <option value="80">80 Marbles (Fastest)</option>
-          <option value="160">160 Marbles (Balanced)</option>
-          <option value="256" selected>256 Marbles (Full World)</option>
+          <option value="80">80 Marbles</option>
+          <option value="160">160 Marbles</option>
+          <option value="255" selected>255 Marbles (All Countries)</option>
         </select>
       </div>
       <div>
@@ -920,10 +928,11 @@
         </select>
       </div>
       <div>
-        <label>Screen Orientation</label>
-        <select id="optOrientation" onchange="UI.setOrientationPref(this.value)">
-          <option value="landscape" selected>Locked Landscape (Default)</option>
-          <option value="any">Auto-Rotate</option>
+        <label>Soundtrack Theme</label>
+        <select id="optBgmTrack" onchange="UI.changeBgmTrack(this.value)">
+          <option value="assets/color_rush_theme_1.wav">Color Rush Synth 1</option>
+          <option value="assets/color_rush_theme_2.wav">Color Rush Synth 2</option>
+          <option value="assets/color_rush_theme_3.wav">Color Rush Synth 3</option>
         </select>
       </div>
     </div>
@@ -931,7 +940,7 @@
   </div>
 </div>
 
-<audio id="bgmAudio" loop preload="auto" src="assets/stadium_theme_1.wav"></audio>
+<audio id="bgmAudio" loop preload="auto" src="assets/color_rush_theme_1.wav"></audio>
 <script src="matter.min.js"></script>
 <script src="data.js"></script>
 <script src="game.js"></script>
