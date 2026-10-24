@@ -6,11 +6,12 @@
   <title>Country Marble Race</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --card: #334155;
-      --accent: #f59e0b;
-      --accent2: #10b981;
+      --bg: #0b0f19;
+      --panel: #161f33;
+      --card: #26334d;
+      --accent: #22c55e;
+      --accent2: #3b82f6;
+      --gold: #f59e0b;
       --danger: #ef4444;
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -28,7 +29,7 @@
       height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: calc(14px * var(--font-scale));
       overflow: hidden;
     }
@@ -40,18 +41,18 @@
     }
     header {
       background: var(--panel);
-      padding: 6px 12px;
+      padding: 6px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 2px solid #475569;
+      border-bottom: 2px solid #334155;
       flex-shrink: 0;
       z-index: 10;
     }
     .brand {
-      font-weight: 800;
-      font-size: 1rem;
-      color: var(--accent);
+      font-weight: 900;
+      font-size: 0.98rem;
+      color: var(--gold);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -59,16 +60,16 @@
     .top-bar-right {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
     .coin-badge {
-      background: #0f172a;
-      padding: 4px 10px;
+      background: #090d16;
+      padding: 4px 9px;
       border-radius: 999px;
-      font-weight: 700;
+      font-weight: 800;
       color: #fbbf24;
       border: 1px solid #fbbf24;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
     }
     main {
       flex: 1;
@@ -78,9 +79,9 @@
     }
     .screen {
       display: none;
-      padding: 12px;
-      padding-bottom: 85px;
-      max-width: 860px;
+      padding: 10px;
+      padding-bottom: 84px;
+      max-width: 900px;
       margin: 0 auto;
     }
     .screen.active {
@@ -92,55 +93,36 @@
       height: 100%;
       overflow: hidden;
       position: relative;
+      background: #000;
     }
     #raceCanvas {
       width: 100%;
       height: 100%;
       display: block;
-      background: #92a8d8;
+      background: #000000;
     }
-    .hud-overlay {
+    .race-floating-controls {
       position: absolute;
-      top: 6px;
-      left: 8px;
-      right: 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      pointer-events: none;
-      z-index: 5;
-    }
-    .hud-box {
-      background: rgba(10, 14, 26, 0.86);
-      border: 2px solid #000000;
-      padding: 6px 10px;
-      border-radius: 8px;
-      pointer-events: auto;
-      max-width: 66%;
-      box-shadow: 0 3px 0 #000;
-    }
-    .hud-controls {
+      top: 8px;
+      right: 10px;
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
       gap: 5px;
-      max-width: 165px;
-      pointer-events: auto;
+      z-index: 6;
+      justify-content: flex-end;
+      max-width: 68%;
     }
-    .hud-bottom {
+    .race-bottom-controls {
       position: absolute;
       bottom: 8px;
-      left: 8px;
-      right: 28px;
+      right: 10px;
       display: flex;
-      justify-content: space-between;
       gap: 6px;
-      pointer-events: auto;
-      z-index: 5;
+      z-index: 6;
     }
     nav {
       background: var(--panel);
-      border-top: 2px solid #475569;
+      border-top: 2px solid #334155;
       display: grid;
       grid-template-columns: repeat(6, 1fr);
       flex-shrink: 0;
@@ -157,11 +139,11 @@
       align-items: center;
       gap: 2px;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 700;
     }
     nav button.active {
-      color: var(--accent);
-      background: rgba(245, 158, 11, 0.12);
+      color: var(--gold);
+      background: rgba(245, 158, 11, 0.14);
     }
     nav button span.icon {
       font-size: 1.15rem;
@@ -176,7 +158,7 @@
     .card h2, .card h3 {
       margin-top: 0;
       margin-bottom: 8px;
-      color: var(--accent);
+      color: var(--gold);
     }
     .grid-2 {
       display: grid;
@@ -197,48 +179,38 @@
       .grid-2 {
         grid-template-columns: repeat(3, 1fr);
       }
-      header {
-        padding: 4px 12px;
-      }
       nav button {
         flex-direction: row;
         justify-content: center;
         gap: 6px;
-        padding: 6px;
-      }
-      .hud-controls {
-        max-width: 320px;
       }
     }
     label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--muted);
       margin-bottom: 3px;
       margin-top: 6px;
+      font-weight: 600;
     }
     select, input[type="number"], input[type="text"], input[type="range"], input[type="color"] {
       width: 100%;
       padding: 7px 8px;
       border-radius: 8px;
       border: 1px solid #475569;
-      background: #0f172a;
+      background: #090d16;
       color: var(--text);
-      font-size: 0.9rem;
-    }
-    input[type="color"] {
-      height: 36px;
-      padding: 2px;
+      font-size: 0.88rem;
     }
     .btn {
-      background: var(--accent);
-      color: #0f172a;
+      background: var(--gold);
+      color: #090d16;
       border: none;
-      padding: 9px 12px;
+      padding: 8px 11px;
       border-radius: 8px;
       font-weight: 800;
       cursor: pointer;
-      font-size: 0.86rem;
+      font-size: 0.84rem;
       text-align: center;
       display: inline-flex;
       align-items: center;
@@ -246,8 +218,8 @@
       gap: 5px;
     }
     .btn.active-tool {
-      outline: 2px solid var(--accent);
-      background: rgba(245, 158, 11, 0.25);
+      outline: 2px solid #22c55e;
+      background: rgba(34, 197, 94, 0.25);
       color: #fff;
     }
     .btn-block {
@@ -259,7 +231,7 @@
       color: var(--text);
     }
     .btn-green {
-      background: var(--accent2);
+      background: var(--accent);
       color: #052e16;
     }
     .btn-red {
@@ -268,14 +240,14 @@
     }
     .btn-sm {
       padding: 5px 8px;
-      font-size: 0.76rem;
+      font-size: 0.75rem;
     }
     .tag {
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
       background: var(--card);
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       margin: 2px;
     }
     .country-chip {
@@ -283,7 +255,7 @@
       align-items: center;
       gap: 6px;
       padding: 6px 8px;
-      background: #0f172a;
+      background: #090d16;
       border: 1px solid #334155;
       border-radius: 8px;
       cursor: pointer;
@@ -291,12 +263,12 @@
     }
     .country-chip.selected {
       border-color: var(--accent);
-      background: rgba(245, 158, 11, 0.2);
+      background: rgba(34, 197, 94, 0.2);
     }
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.86);
       display: none;
       align-items: center;
       justify-content: center;
@@ -308,19 +280,14 @@
     }
     .modal-content {
       background: var(--panel);
-      border: 2px solid var(--accent);
+      border: 2px solid var(--gold);
       border-radius: 16px;
       padding: 14px;
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       max-height: 92vh;
       overflow-y: auto;
       text-align: center;
-    }
-    .big-flag {
-      font-size: 3.8rem;
-      line-height: 1.1;
-      margin: 4px 0;
     }
     table {
       width: 100%;
@@ -333,7 +300,7 @@
       text-align: start;
     }
     th {
-      color: var(--accent);
+      color: var(--gold);
       position: sticky;
       top: 0;
       background: var(--panel);
@@ -345,8 +312,8 @@
     }
     .editor-canvas-wrap {
       flex: 1;
-      height: 340px;
-      background: #92a8d8;
+      height: 350px;
+      background: #798eff;
       border: 3px solid #000000;
       border-radius: 10px;
       position: relative;
@@ -359,44 +326,55 @@
       display: block;
     }
     .inspector-box {
-      background: #0f172a;
+      background: #090d16;
       border: 1px solid #475569;
       border-radius: 8px;
       padding: 8px;
       margin-top: 8px;
+    }
+    .logo-preview {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #090d16;
+      border: 2px solid #475569;
+      object-fit: cover;
+      display: inline-block;
+      vertical-align: middle;
     }
   </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="brand">🌍 <span data-i18n="title">Country Marble Race</span> <span class="tag" id="totalCountriesBadge">250+ Flags</span></div>
+    <div class="brand">🌍 <span data-i18n="title">Country Marble Race</span> <span class="tag" id="totalCountriesBadge">255 Flags</span></div>
     <div class="top-bar-right">
       <div class="coin-badge">🪙 <span id="coinCount">0</span></div>
-      <button class="btn btn-sm btn-sec" onclick="UI.toggleOrientation()" title="Switch Portrait / Landscape">🔄 Rotate</button>
+      <button class="btn btn-sm btn-sec" id="btnSound" onclick="UI.toggleSound()">🔊 SFX</button>
+      <button class="btn btn-sm btn-sec" onclick="UI.toggleOrientation()">🔄 Rotate</button>
       <button class="btn btn-sm btn-sec" onclick="UI.WatchRewardedAd('coins')">🎥 +50</button>
       <button class="btn btn-sm btn-sec" onclick="UI.openSettings()">⚙️</button>
     </div>
   </header>
 
   <main>
-    <!-- SCREEN 1: CUSTOM RACE CREATOR -->
+    <!-- SCREEN 1: RACE CREATOR -->
     <section id="screen-creator" class="screen active">
       <div class="card">
-        <h2 data-i18n="customCreator">Mega-World Marble Race Creator</h2>
+        <h2 data-i18n="customCreator">Algodoo-Style Marble Race Creator</h2>
         <div class="grid-2">
           <div>
-            <label data-i18n="numCountries">Marbles (2-300)</label>
-            <input type="number" id="crCount" min="2" max="300" value="80" />
+            <label data-i18n="numCountries">Countries / Marbles (2-300)</label>
+            <input type="number" id="crCount" min="2" max="300" value="120" />
           </div>
           <div>
-            <label data-i18n="raceFormat">Game Mode</label>
+            <label data-i18n="raceFormat">Race Format</label>
             <select id="crFormat" onchange="UI.onFormatChange()">
-              <option value="normal">Normal Race (No Points)</option>
-              <option value="knockout">Knockout Elimination (No Points)</option>
-              <option value="survival">Survival Rising Lava / Gate Cut</option>
+              <option value="knockout" selected>Elimination Spots Left (Algodoo Lap Mode)</option>
+              <option value="normal">Normal Race (All Finish)</option>
+              <option value="survival">Survival Rising Void</option>
               <option value="grandprix">Grand Prix Points (Formula / NASCAR)</option>
-              <option value="team">Team / Continent Alliance</option>
+              <option value="team">Continent / Alliance Team Race</option>
             </select>
           </div>
           <div id="gpSystemWrap" style="display:none; grid-column: span 2;">
@@ -407,117 +385,106 @@
             </select>
           </div>
           <div>
-            <label data-i18n="regionFilter">World Region / Territory Pool (250+)</label>
+            <label data-i18n="regionFilter">World Pool (255 Countries & Territories)</label>
             <select id="crRegion">
-              <option value="ALL">🌍 All 250+ World Countries & Territories</option>
-              <option value="CUSTOM">✨ Custom Marbles Only</option>
-              <option value="Africa">🦁 Africa (All States & Islands)</option>
-              <option value="Arab">🌙 Arab League & Maghreb/Middle East</option>
-              <option value="Europe">🏰 Europe (All States & Territories)</option>
-              <option value="Asia">🐉 Asia (East, South, Central & SE)</option>
+              <option value="ALL">🌍 All 255 World Countries & Territories</option>
+              <option value="CUSTOM">✨ Custom Logo & Created Marbles Only</option>
+              <option value="Africa">🦁 Africa (58 Countries & Islands)</option>
+              <option value="Arab">🌙 Arab World League</option>
+              <option value="Europe">🏰 Europe (56 Countries & Territories)</option>
+              <option value="Asia">🐉 Asia (54 Countries & Territories)</option>
               <option value="NorthAmerica">🦅 North & Central America</option>
-              <option value="Caribbean">🌴 Caribbean Islands & Territories</option>
-              <option value="SouthAmerica">☀️ South America & Territories</option>
+              <option value="Caribbean">🌴 Caribbean Islands</option>
+              <option value="SouthAmerica">☀️ South America</option>
               <option value="Oceania">🌊 Oceania & Pacific Islands</option>
-              <option value="Territories">🏝️ World Territories & Dependencies Only</option>
+              <option value="Territories">🏝️ World Territories Only</option>
             </select>
           </div>
           <div>
-            <label data-i18n="trackSelect">24 Mega Tracks (1600px Wide x up to 65,000px Tall)</label>
+            <label data-i18n="trackSelect">Select Arena Track (Crisp Vector Physics)</label>
             <select id="crTrack" onchange="UI.onTrackChange()">
-              <option value="rotate" selected>🔄 Rotate New Mega Track Every Round (24 Tracks)</option>
-              <option value="seeded_random">🎲 Generate Mega Track (Seeded Random)</option>
-              <option value="colossus_odyssey">1. Colossus 20-Section Odyssey</option>
-              <option value="serpent_citadel">2. Serpentine Citadel & Capsules</option>
-              <option value="hourglass_jam">3. Hourglass Traffic Jam & Bowls</option>
-              <option value="pendulum_fortress">4. Pendulum & Slider Fortress</option>
-              <option value="stadion_cup">5. Stadium Goal Qualification Gauntlet</option>
-              <option value="reactor_core">6. Big Wheel & Cross Spinner Reactor</option>
-              <option value="alpine_slalom">7. Alpine S-Curve & Staircase Drop</option>
-              <option value="ghost_phantom">8. Phantom No-Collision Ghost Run</option>
-              <option value="bubble_basin">9. Scalloped Bubble & Basin Cascade</option>
-              <option value="sawtooth_canyon">10. Sawtooth & Narrow Tube Canyon</option>
-              <option value="champions_marathon">11. 60,000px Grand World Marathon</option>
-              <option value="pinball_matrix">12. Giant Pegboard & Bumper Matrix</option>
-              <option value="atlas_mountains">13. Atlas Mountains Switchback Peaks</option>
-              <option value="sahara_vortex">14. Sahara Sandstorm Funnel Vortex</option>
-              <option value="tokyo_neon">15. Cyber Plinko & Twin Wheel Highway</option>
-              <option value="amazon_rapids">16. Amazon River Basin & S-Curve Rapids</option>
-              <option value="nordic_fjord">17. Nordic Fjord Ice Tubes & Hammers</option>
-              <option value="caribbean_reef">18. Coral Bubble Reef & Capsule Chambers</option>
-              <option value="andes_stairway">19. Andes Stepped Temple & Drop Shafts</option>
-              <option value="olympus_gauntlet">20. Mount Olympus 25-Section Titan Run</option>
-              <option value="mediterranean_derby">21. Mediterranean Goal & Bowl Arena</option>
-              <option value="pacific_trench">22. Mariana Deep Trench Hourglass</option>
-              <option value="supernova_chaos">23. Supernova Cross-Spinner Reactor</option>
-              <option value="world_cup_final">24. Ultimate World Cup Championship Track</option>
+              <option value="rotate" selected>🔄 Rotate New Arena Every Lap/Round (16 Tracks)</option>
+              <option value="diamond_grid">1. Diamond Plinko Lattice (Image 1 Style)</option>
+              <option value="circle_gear_matrix">2. Circular Gear Matrix & Red/Green Gates (Image 2 Style)</option>
+              <option value="musical_hammers">3. Curved Chutes & Musical Note Hammers (Image 3 Style)</option>
+              <option value="star_conveyor_maze">4. 3-Tier Star Maze & Side Elevators (Image 4 Style)</option>
+              <option value="triple_pinball_launchers">5. Triple Pinball Flipper Chambers (Image 5 Style)</option>
+              <option value="capsule_scallop_bowl">6. 4-Story Cross Capsules & Scalloped Basin (Image 7 Style)</option>
+              <option value="halfmoon_ghost_zone">7. Tilted Half-Moons & Brown No-Collision Zone (Image 8 Style)</option>
+              <option value="oval_peg_chain">8. Triple Vertical Oval Peg Chain (Image 9 Style)</option>
+              <option value="wheel_funnel_drop">9. Pink-Blue Stripped Wheel & Funnel Drop (Image 7R Style)</option>
+              <option value="serpentine_planks">10. 12-Level Serpentine Slanted Planks</option>
+              <option value="zig_zag_sawtooth">11. Twin Sawtooth Canyons & Star Wheel</option>
+              <option value="soccer_stadium_gate">12. Stadium Goal Qualification Arena</option>
+              <option value="algodoo_mega_mix">13. Ultimate Algodoo Multi-Stage Megamix</option>
+              <option value="hourglass_bottleneck">14. Triple Hourglass Traffic Jam</option>
+              <option value="pendulum_gauntlet">15. Swinging Hammers & Moving Bridges</option>
+              <option value="seeded_random">16. 🎲 Seeded Random Procedural Track</option>
               <option value="custom">🛠️ Custom Pro Editor Track</option>
             </select>
           </div>
           <div id="seedInputWrap" style="display:none; grid-column: span 2;">
-            <label>Track Generator Seed (Same seed = exact same giant track)</label>
+            <label>Procedural Seed (Same seed = exact same track)</label>
             <div style="display:flex; gap:6px;">
-              <input type="text" id="crTrackSeed" value="ORAN-2026" placeholder="Enter any word or number..." />
+              <input type="text" id="crTrackSeed" value="ALGERIA-2026" />
               <button class="btn btn-sm btn-sec" onclick="UI.randomizeSeed()">🎲 Random</button>
             </div>
           </div>
           <div>
-            <label data-i18n="difficulty">Obstacle Difficulty</label>
-            <select id="crDifficulty">
-              <option value="easy">Easy (Fast Flow)</option>
-              <option value="medium" selected>Medium (Balanced Jam)</option>
-              <option value="hard">Hard (Extreme Chaos)</option>
-            </select>
-          </div>
-          <div>
-            <label data-i18n="raceLength">World Size (Sections & Height)</label>
+            <label data-i18n="raceLength">Track Size Option (Small / Medium / Long)</label>
             <select id="crLength">
-              <option value="short">Short (10 Sections • ~20,000px)</option>
-              <option value="medium">Medium (15 Sections • ~30,000px)</option>
-              <option value="long" selected>Long (20 Sections • ~42,000px)</option>
-              <option value="marathon">Colossal (28 Sections • ~60,000px)</option>
+              <option value="small">Small Track (1 Giant Arena • Fast Laps)</option>
+              <option value="medium" selected>Medium Track (2 Stacked Arenas • Standard)</option>
+              <option value="long">Long Track (4 Stacked Arenas • Marathon)</option>
             </select>
           </div>
           <div>
-            <label data-i18n="cameraMode">Default Camera</label>
+            <label data-i18n="difficulty">Obstacle Density</label>
+            <select id="crDifficulty">
+              <option value="easy">Easy (Smooth Flow)</option>
+              <option value="medium" selected>Medium (Balanced)</option>
+              <option value="hard">Hard (Tight Chaos)</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="cameraMode">Camera View</label>
             <select id="crCamera">
-              <option value="leader" selected>Leader Follow</option>
-              <option value="pack">Pack Center (Top Crowd)</option>
-              <option value="wide">Landscape Wide View</option>
-              <option value="overview">Full Crowd Zoom-Out</option>
+              <option value="wide" selected>Full Arena Broadcast View (Best)</option>
+              <option value="leader">Follow Leader</option>
+              <option value="pack">Follow Main Crowd Pack</option>
             </select>
           </div>
           <div>
             <label data-i18n="physicsSpeed">Physics Speed</label>
             <select id="crPhysSpeed">
               <option value="0.85">Slow Motion</option>
-              <option value="1" selected>Normal Realistic</option>
+              <option value="1" selected>Normal Crisp 60fps</option>
               <option value="1.35">Fast Turbo</option>
             </select>
           </div>
           <div>
-            <label data-i18n="numRounds">Number of Rounds (1-20)</label>
-            <input type="number" id="crRounds" min="1" max="20" value="4" />
+            <label data-i18n="numRounds">Laps / Rounds (1-25)</label>
+            <input type="number" id="crRounds" min="1" max="25" value="5" />
           </div>
           <div>
-            <label data-i18n="elimCount">Knockout Cut / Round</label>
-            <input type="number" id="crElim" min="1" max="150" value="10" />
+            <label data-i18n="elimCount">Eliminated Per Lap</label>
+            <input type="number" id="crElim" min="1" max="150" value="15" />
           </div>
           <div>
-            <label data-i18n="countrySelection">Selection Mode</label>
+            <label data-i18n="countrySelection">Marble Selection</label>
             <select id="crSelectMode" onchange="UI.toggleManualPicker()">
               <option value="random">Random from Pool</option>
               <option value="manual">Manual Pick Marbles</option>
             </select>
           </div>
           <div>
-            <label>Custom Marbles</label>
-            <button class="btn btn-sec btn-sm" style="width:100%; height:36px;" onclick="UI.showScreen('shop')">➕ Create Marble</button>
+            <label>🎯 Bet on Podium Winner (+150 🪙)</label>
+            <select id="crBetCountry"></select>
           </div>
         </div>
 
         <div id="manualPickerWrap" style="display:none; margin-top:10px;">
-          <button class="btn btn-sec btn-block" onclick="UI.openCountryPicker()">🏳️ Pick Participating Countries/Territories (<span id="manualPickedCount">0</span>)</button>
+          <button class="btn btn-sec btn-block" onclick="UI.openCountryPicker()">🏳️ Pick Participating Marbles (<span id="manualPickedCount">0</span>)</button>
         </div>
 
         <div class="grid-2" style="margin-top:10px;">
@@ -527,108 +494,121 @@
           </select>
         </div>
 
-        <button class="btn btn-block" style="font-size:1.05rem; margin-top:12px;" onclick="Game.startFromCreator()">🏁 LAUNCH MEGA MARBLE RACE</button>
+        <button class="btn btn-green btn-block" style="font-size:1.05rem; margin-top:12px;" onclick="Game.startFromCreator()">🏁 START BROADCAST MARBLE RACE</button>
       </div>
     </section>
 
-    <!-- SCREEN 2: LIVE RACE CANVAS -->
+    <!-- SCREEN 2: LIVE BROADCAST RACE CANVAS -->
     <section id="screen-race" class="screen">
       <canvas id="raceCanvas"></canvas>
 
-      <div class="hud-overlay">
-        <div class="hud-box">
-          <div id="hudTitle" style="font-weight:900; color:var(--accent); font-size:0.86rem;">Round 1/1</div>
-          <div id="hudTrackName" style="font-size:0.72rem; color:#38bdf8; font-weight:700;">Track: Colossus</div>
-          <div id="hudSub" style="font-size:0.78rem; color:#f8fafc; font-weight:700; margin-top:2px;">Leader: --</div>
-          <div id="hudStandings" style="font-size:0.72rem; margin-top:2px; line-height:1.3; color:#cbd5e1;"></div>
-        </div>
-        <div class="hud-controls">
-          <button class="btn btn-sm" id="btnSpeed" onclick="Game.cycleSpeed()">⏩ 1x</button>
-          <button class="btn btn-sm btn-sec" id="btnCam" onclick="Game.cycleCamera()">🎥 leader</button>
-          <button class="btn btn-sm btn-sec" onclick="UI.toggleOrientation()">🔄 Rotate</button>
-          <button class="btn btn-sm btn-sec" id="btnAuto" onclick="Game.toggleAutoPlay()">🔄 Auto: OFF</button>
-          <button class="btn btn-sm btn-sec" id="btnRec" onclick="Game.toggleRecording()">🔴 Rec</button>
-        </div>
+      <div class="race-floating-controls">
+        <button class="btn btn-sm" id="btnSpeed" onclick="Game.cycleSpeed()">⏩ 1x</button>
+        <button class="btn btn-sm btn-sec" id="btnCam" onclick="Game.cycleCamera()">🎥 wide</button>
+        <button class="btn btn-sm btn-sec" id="btnAuto" onclick="Game.toggleAutoPlay()">🔄 Auto: OFF</button>
+        <button class="btn btn-sm btn-red" id="btnRec" onclick="Game.toggleRecording()">🔴 REC Video</button>
       </div>
 
-      <div class="hud-bottom">
-        <button class="btn btn-sm btn-sec" onclick="Game.nudgeAllMarbles()">💥 Unstick / Boost Pack</button>
-        <button class="btn btn-sm btn-sec" onclick="Game.skipToResult()">⏭️ Skip to Result</button>
+      <div class="race-bottom-controls">
+        <button class="btn btn-sm btn-sec" onclick="Game.nudgeAllMarbles()">⚡ Boost Pack</button>
+        <button class="btn btn-sm btn-sec" onclick="Game.skipToResult()">⏭️ Skip Lap</button>
         <button class="btn btn-sm btn-red" onclick="Game.stopAndExit()">✖ Exit</button>
       </div>
     </section>
 
-    <!-- SCREEN 3: COMPETITIONS, CAREER & RIVALRIES -->
+    <!-- SCREEN 3: CUSTOM TOURNAMENT / LEAGUE / CUP BUILDER + COMPETITIONS -->
     <section id="screen-competitions" class="screen">
       <div class="card">
-        <h2 data-i18n="competitions">Major Cups & Grand Prix Leagues</h2>
+        <h2>🏆 Create Custom Tournament / League / Cup</h2>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0 0 8px;">Build your own custom World Cup, Continental League, or Elimination Series and save it permanently!</p>
+        <div class="grid-2">
+          <div>
+            <label>Competition Name</label>
+            <input type="text" id="ctName" placeholder="e.g. Maghreb Super Cup" maxlength="28" />
+          </div>
+          <div>
+            <label>Format</label>
+            <select id="ctFormat">
+              <option value="knockout">Knockout Elimination Cup</option>
+              <option value="grandprix">Formula League (Points Table)</option>
+              <option value="nascar">NASCAR Full-Field League</option>
+              <option value="survival">Survival Void Series</option>
+            </select>
+          </div>
+          <div>
+            <label>Region / Marble Pool</label>
+            <select id="ctRegion">
+              <option value="ALL">All World (255)</option>
+              <option value="CUSTOM">Custom Marbles Only</option>
+              <option value="Africa">Africa</option>
+              <option value="Arab">Arab World</option>
+              <option value="Europe">Europe</option>
+              <option value="Asia">Asia</option>
+              <option value="SouthAmerica">South America</option>
+              <option value="NorthAmerica">North America</option>
+            </select>
+          </div>
+          <div>
+            <label>Track Size</label>
+            <select id="ctLength">
+              <option value="small">Small Track (Fast)</option>
+              <option value="medium" selected>Medium Track</option>
+              <option value="long">Long Track</option>
+            </select>
+          </div>
+          <div>
+            <label>Number of Entrants (4-255)</label>
+            <input type="number" id="ctCount" min="4" max="255" value="64" />
+          </div>
+          <div>
+            <label>Number of Laps / Rounds (1-20)</label>
+            <input type="number" id="ctRounds" min="1" max="20" value="5" />
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:8px;">
+          <button class="btn btn-green" onclick="UI.saveCustomTournament()">➕ Save Custom Cup/League</button>
+          <button class="btn" onclick="UI.saveCustomTournament(true)">▶️ Save & Play Now</button>
+        </div>
+        <div id="customTournamentsList" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="competitions">Official World Cups & Leagues</h2>
         <div class="grid-2" id="cupsList"></div>
       </div>
 
       <div class="card">
-        <h2>🌱 Career Mode (Road to World Cup)</h2>
-        <p style="color:var(--muted); margin:4px 0 8px;">Guide any of the 250+ countries, territories, or custom marbles across 4 giant tracks to the World Title!</p>
+        <h2>🌱 Career Mode & Head-to-Head Rivalries</h2>
         <div id="careerStatusBox"></div>
         <div class="grid-2" style="margin-top:8px;">
           <select id="careerCountrySelect"></select>
-          <button class="btn btn-green" onclick="Game.startOrContinueCareer()">▶ Play Next Career Stage</button>
+          <button class="btn btn-green" onclick="Game.startOrContinueCareer()">▶ Play Career Stage</button>
         </div>
-        <button class="btn btn-sm btn-sec" style="margin-top:8px;" onclick="Game.resetCareer()">Reset Career</button>
-      </div>
-
-      <div class="card">
-        <h2>⚔️ Head-to-Head Rivalry Series</h2>
-        <p style="font-size:0.8rem; color:var(--muted); margin:0 0 6px;">Each round plays on a new huge track! Decided purely by round wins.</p>
-        <div class="grid-2">
-          <div>
-            <label>Marble / Country A</label>
-            <select id="rivalA"></select>
-          </div>
-          <div>
-            <label>Marble / Country B</label>
-            <select id="rivalB"></select>
-          </div>
-          <div>
-            <label>Series Length</label>
-            <select id="rivalBestOf">
-              <option value="3">Best of 3</option>
-              <option value="5" selected>Best of 5</option>
-              <option value="7">Best of 7</option>
-            </select>
-          </div>
-          <div>
-            <label>Classic Derbies</label>
-            <select onchange="UI.setQuickDerby(this.value)">
-              <option value="">Custom Pick</option>
-              <option value="DZ-MA">🇩🇿 Algeria vs 🇲🇦 Morocco</option>
-              <option value="BR-AR">🇧🇷 Brazil vs 🇦🇷 Argentina</option>
-              <option value="FR-DE">🇫🇷 France vs 🇩🇪 Germany</option>
-              <option value="EG-SN">🇪🇬 Egypt vs 🇸🇳 Senegal</option>
-              <option value="JP-KR">🇯🇵 Japan vs 🇰🇷 South Korea</option>
-              <option value="ENG-SCT">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England vs 🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</option>
-            </select>
-          </div>
+        <hr style="border-color:#334155; margin:12px 0;" />
+        <div class="grid-3">
+          <select id="rivalA"></select>
+          <select id="rivalB"></select>
+          <button class="btn" onclick="Game.startRivalrySeries()">⚔️ Best-of-5 Derby</button>
         </div>
-        <button class="btn btn-block" onclick="Game.startRivalrySeries()">⚔️ Start Rivalry Series</button>
       </div>
     </section>
 
     <!-- SCREEN 4: STATS, RANKINGS & PROFILES -->
     <section id="screen-stats" class="screen">
       <div class="card">
-        <h2>📊 Records & Dramatic Highlights</h2>
+        <h2>📊 Records & Highlights</h2>
         <div id="recordsSummary" class="grid-2"></div>
       </div>
 
       <div class="card">
-        <h2>🔍 Country / Territory Profile (250+)</h2>
+        <h2>🔍 Country / Custom Marble Profile</h2>
         <select id="profileCountrySelect" onchange="UI.renderCountryProfile(this.value)"></select>
         <div id="countryProfileView" style="margin-top:10px;"></div>
       </div>
 
       <div class="card">
-        <h2>🏆 All-Time World Standings (All 250+ Entrants)</h2>
-        <div style="max-height:380px; overflow-y:auto;">
+        <h2>🏆 All-Time World Standings</h2>
+        <div style="max-height:360px; overflow-y:auto;">
           <table>
             <thead>
               <tr>
@@ -646,57 +626,58 @@
       </div>
     </section>
 
-    <!-- SCREEN 5: INTERACTIVE PRO TRACK EDITOR -->
+    <!-- SCREEN 5: UPGRADED ALGODOD-STYLE TRACK EDITOR -->
     <section id="screen-editor" class="screen">
       <div class="card">
-        <h2>🛠️ Interactive Huge Track & Obstacle Editor</h2>
-        <p style="font-size:0.78rem; color:var(--muted); margin:0 0 8px;">
-          Tap an obstacle button then tap the canvas to place it. Use <strong>👆 Move/Edit</strong> to drag, rotate, or resize any placed piece!
+        <h2>🛠️ Algodoo Vector Track Editor</h2>
+        <p style="font-size:0.76rem; color:var(--muted); margin:0 0 8px;">
+          Tap any tool to place crisp vector obstacles. Use <strong>👆 Move/Edit</strong> to drag, rotate, or scale. Toggle <strong>🧲 Grid Snap</strong> for perfect geometric alignment!
         </p>
 
         <div class="grid-4" style="margin-bottom:8px;">
           <button class="btn btn-sm btn-sec active-tool" id="tool_select" onclick="Editor.setTool('select')">👆 Move/Edit</button>
+          <button class="btn btn-sm btn-sec" id="tool_diamond" onclick="Editor.setTool('diamond')">◆ Diamond</button>
+          <button class="btn btn-sm btn-sec" id="tool_circleNode" onclick="Editor.setTool('circleNode')">⚙️ Gear Ring</button>
+          <button class="btn btn-sm btn-sec" id="tool_hammer" onclick="Editor.setTool('hammer')">🎵 Note Lever</button>
+          <button class="btn btn-sm btn-sec" id="tool_star" onclick="Editor.setTool('star')">✦ 4-Pt Star</button>
+          <button class="btn btn-sm btn-sec" id="tool_halfMoon" onclick="Editor.setTool('halfMoon')">◗ Half-Moon</button>
           <button class="btn btn-sm btn-sec" id="tool_cross" onclick="Editor.setTool('cross')">➕ Cross Spin</button>
-          <button class="btn btn-sm btn-sec" id="tool_wheel" onclick="Editor.setTool('wheel')">🎡 Big Wheel</button>
-          <button class="btn btn-sm btn-sec" id="tool_funnel" onclick="Editor.setTool('funnel')">⏳ Hourglass</button>
-          <button class="btn btn-sm btn-sec" id="tool_rampL" onclick="Editor.setTool('rampL')">📐 Plank ↘</button>
-          <button class="btn btn-sm btn-sec" id="tool_rampR" onclick="Editor.setTool('rampR')">📐 Plank ↙</button>
-          <button class="btn btn-sm btn-sec" id="tool_bowl" onclick="Editor.setTool('bowl')">🥣 Bowl Basin</button>
-          <button class="btn btn-sm btn-sec" id="tool_pegGrid" onclick="Editor.setTool('pegGrid')">⚫ Pegboard</button>
-          <button class="btn btn-sm btn-sec" id="tool_bumper" onclick="Editor.setTool('bumper')">🔴 Bumper</button>
-          <button class="btn btn-sm btn-sec" id="tool_pendulum" onclick="Editor.setTool('pendulum')">🕰️ Pendulum</button>
-          <button class="btn btn-sm btn-sec" id="tool_goal" onclick="Editor.setTool('goal')">⚽ Goal Gate</button>
-          <button class="btn btn-sm btn-sec" onclick="Editor.loadTemplate()">🎲 Auto-Fill</button>
+          <button class="btn btn-sm btn-sec" id="tool_rampL" onclick="Editor.setTool('rampL')">📐 Wall Bar</button>
+          <button class="btn btn-sm btn-sec" id="tool_funnel" onclick="Editor.setTool('funnel')">⏳ Funnel</button>
+          <button class="btn btn-sm btn-sec" id="tool_bowl" onclick="Editor.setTool('bowl')">🥣 Basin</button>
+          <button class="btn btn-sm btn-sec" id="tool_ghostZone" onclick="Editor.setTool('ghostZone')">🟫 No-Collide</button>
+          <button class="btn btn-sm btn-sec" id="btnSnap" onclick="Editor.toggleSnap()">🧲 Snap: ON</button>
         </div>
 
         <div class="editor-layout">
           <div class="editor-canvas-wrap">
-            <canvas id="editorCanvas" width="360" height="340"></canvas>
+            <canvas id="editorCanvas" width="400" height="350"></canvas>
           </div>
-          <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; width:38px; background:#0f172a; border:1px solid #475569; border-radius:8px; padding:6px 2px;">
-            <span style="font-size:0.65rem; color:var(--accent);">TOP</span>
-            <input type="range" id="editorScroll" min="0" max="2600" value="0"
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:space-between; width:38px; background:#090d16; border:1px solid #475569; border-radius:8px; padding:6px 2px;">
+            <span style="font-size:0.65rem; color:var(--gold);">TOP</span>
+            <input type="range" id="editorScroll" min="0" max="1800" value="0"
               style="writing-mode: bt-lr; -webkit-appearance: slider-vertical; width:24px; height:240px;"
               oninput="Editor.setScroll(this.value)" />
-            <span style="font-size:0.65rem; color:#10b981;">END</span>
+            <span style="font-size:0.65rem; color:#22c55e;">END</span>
           </div>
         </div>
 
         <div id="editorInspector" class="inspector-box">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <strong id="inspTitle" style="color:var(--accent); font-size:0.85rem;">Selected: None (Tap an obstacle)</strong>
+            <strong id="inspTitle" style="color:var(--gold); font-size:0.82rem;">Selected: None</strong>
             <div style="display:flex; gap:4px;">
+              <button class="btn btn-sm btn-sec" onclick="Editor.loadPresetIntoEditor()">📐 Load Template</button>
               <button class="btn btn-sm btn-sec" onclick="Editor.duplicateSelected()">📄 Copy</button>
-              <button class="btn btn-sm btn-red" onclick="Editor.deleteSelected()">🗑️ Delete</button>
+              <button class="btn btn-sm btn-red" onclick="Editor.deleteSelected()">🗑️ Del</button>
             </div>
           </div>
           <div class="grid-2" style="margin-top:4px;">
             <div>
               <label style="margin-top:2px;">Angle: <span id="inspAngleVal">0°</span></label>
-              <input type="range" id="inspAngle" min="-180" max="180" value="0" oninput="Editor.updateSelectedProp('angle', this.value)" />
+              <input type="range" id="inspAngle" min="-180" max="180" step="5" value="0" oninput="Editor.updateSelectedProp('angle', this.value)" />
             </div>
             <div>
-              <label style="margin-top:2px;">Size: <span id="inspScaleVal">1.0x</span></label>
+              <label style="margin-top:2px;">Scale: <span id="inspScaleVal">1.0x</span></label>
               <input type="range" id="inspScale" min="0.5" max="2.5" step="0.1" value="1" oninput="Editor.updateSelectedProp('scale', this.value)" />
             </div>
           </div>
@@ -705,7 +686,7 @@
         <div class="grid-3" style="margin-top:8px;">
           <button class="btn btn-sm btn-red" onclick="Editor.clear()">🗑️ Clear All</button>
           <button class="btn btn-sm btn-green" onclick="Editor.save()">💾 Save Track</button>
-          <button class="btn btn-sm" onclick="Editor.testTrack()">▶️ Test Race</button>
+          <button class="btn btn-sm" onclick="Editor.testTrack()">▶️ Race Custom Track</button>
         </div>
 
         <label>Share / Import Track Code</label>
@@ -717,27 +698,37 @@
       </div>
     </section>
 
-    <!-- SCREEN 6: CUSTOM MARBLE CREATOR, SKINS & ACHIEVEMENTS -->
+    <!-- SCREEN 6: CUSTOM MARBLE & LOGO UPLOAD CREATOR -->
     <section id="screen-shop" class="screen">
       <div class="card">
-        <h2>✨ Custom Marble Creator</h2>
-        <p style="font-size:0.8rem; color:var(--muted); margin:0 0 8px;">Create custom marbles, clubs, or countries! They race alongside all 250+ world flags.</p>
+        <h2>✨ Custom Marble & Logo Creator</h2>
+        <p style="font-size:0.78rem; color:var(--muted); margin:0 0 8px;">
+          Upload your own custom club/team logo image from your phone (or choose colors/stripes) to create a full-bleed borderless marble!
+        </p>
         <div class="grid-2">
           <div>
             <label>Marble / Team Name</label>
-            <input type="text" id="cmName" placeholder="e.g. Oran Lions" maxlength="22" />
+            <input type="text" id="cmName" placeholder="e.g. MC Oran" maxlength="22" />
           </div>
           <div>
-            <label>Emoji / Badge (1-3 chars)</label>
-            <input type="text" id="cmFlag" placeholder="🦁 or ORN" value="🦁" maxlength="4" />
+            <label>3-Letter Code (Shown on HUD)</label>
+            <input type="text" id="cmCode3" placeholder="MCO" maxlength="3" value="MCO" />
+          </div>
+          <div style="grid-column: span 2;">
+            <label>📷 Upload Custom Logo Image (Optional - Fills Entire Marble Circle)</label>
+            <div style="display:flex; align-items:center; gap:10px; background:#090d16; padding:8px; border-radius:8px; border:1px solid #475569;">
+              <img id="cmLogoPreview" class="logo-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Preview" />
+              <input type="file" id="cmLogoInput" accept="image/*" onchange="UI.handleLogoUpload(this)" style="flex:1; font-size:0.78rem;" />
+              <button class="btn btn-sm btn-sec" onclick="UI.clearUploadedLogo()">Clear</button>
+            </div>
           </div>
           <div>
-            <label>Body Color</label>
-            <input type="color" id="cmColor" value="#f59e0b" />
+            <label>Primary Color (If no logo image)</label>
+            <input type="color" id="cmColor" value="#ef4444" />
           </div>
           <div>
-            <label>Ring / Border Color</label>
-            <input type="color" id="cmBorder" value="#ffffff" />
+            <label>Secondary Stripe Color</label>
+            <input type="color" id="cmColor2" value="#ffffff" />
           </div>
           <div>
             <label>Region / Group</label>
@@ -756,13 +747,13 @@
             <input type="text" id="cmFact" placeholder="Custom marble champion!" />
           </div>
         </div>
-        <button class="btn btn-green btn-block" onclick="UI.createCustomMarble()">➕ Add Custom Marble</button>
+        <button class="btn btn-green btn-block" onclick="UI.createCustomMarble()">➕ Create Full-Bleed Marble</button>
 
         <div id="customMarblesList" style="margin-top:10px;"></div>
       </div>
 
       <div class="card">
-        <h2>🎨 Marble Skins & Trails</h2>
+        <h2>🎨 Marble Trail Effects</h2>
         <div id="skinsGrid" class="grid-2"></div>
       </div>
 
@@ -783,25 +774,35 @@
   </nav>
 </div>
 
-<!-- WINNER & FULL STANDINGS MODAL -->
+<!-- WINNER, FULL STANDINGS & VIDEO REPLAY MODAL -->
 <div id="winnerModal" class="modal-backdrop">
   <div class="modal-content">
-    <h2 id="winHeader" style="margin-bottom:2px;">🏆 RACE WINNER!</h2>
-    <div id="winTrackSub" style="font-size:0.78rem; color:#38bdf8; margin-bottom:4px;"></div>
-    <div id="winFlag" class="big-flag">🇩🇿</div>
+    <h2 id="winHeader" style="margin-bottom:2px;">🏆 LAP / RACE COMPLETE!</h2>
+    <div id="winTrackSub" style="font-size:0.78rem; color:#38bdf8; margin-bottom:6px;"></div>
+    <canvas id="winMarbleCanvas" width="84" height="84" style="border-radius:50%; margin:4px auto; display:block;"></canvas>
     <h3 id="winCountryName" style="font-size:1.35rem; margin:2px 0;">Algeria</h3>
-    <p id="winFunFact" style="color:var(--muted); font-size:0.84rem; background:#0f172a; padding:8px; border-radius:8px; margin:6px 0;"></p>
-    <div id="winSeriesInfo" style="margin:6px 0; font-size:0.82rem; color:var(--accent2); font-weight:700;"></div>
+    <p id="winFunFact" style="color:var(--muted); font-size:0.82rem; background:#090d16; padding:8px; border-radius:8px; margin:6px 0;"></p>
+    <div id="winSeriesInfo" style="margin:6px 0; font-size:0.82rem; color:var(--accent); font-weight:700;"></div>
 
-    <div style="text-align:start; font-weight:800; font-size:0.82rem; color:var(--accent); margin:6px 0 4px;">
-      📋 Full Finish Standings (<span id="winTotalMarbles">0</span> Marbles):
+    <!-- Video Recording Player & Download Box (Appears automatically when recorded) -->
+    <div id="videoReplayBox" style="display:none; background:#090d16; border:1px solid #22c55e; border-radius:10px; padding:8px; margin-bottom:10px;">
+      <div style="font-size:0.78rem; font-weight:800; color:#22c55e; margin-bottom:4px;">🎬 Race Video Clip Recorded!</div>
+      <video id="recordedVideoEl" controls playsinline style="width:100%; max-height:170px; border-radius:6px; background:#000;"></video>
+      <div class="grid-2" style="margin-top:6px;">
+        <button class="btn btn-sm btn-green" onclick="Game.downloadRecordedVideo()">⬇️ Save Video File</button>
+        <button class="btn btn-sm btn-sec" onclick="Game.shareClipOrResult()">📤 Share Video / Result</button>
+      </div>
     </div>
-    <div style="max-height:220px; overflow-y:auto; background:#0f172a; border:1px solid #334155; border-radius:8px; padding:4px; margin-bottom:10px;">
+
+    <div style="text-align:start; font-weight:800; font-size:0.8rem; color:var(--gold); margin:6px 0 4px;">
+      📋 Full Standings (<span id="winTotalMarbles">0</span> Marbles):
+    </div>
+    <div style="max-height:195px; overflow-y:auto; background:#090d16; border:1px solid #334155; border-radius:8px; padding:4px; margin-bottom:10px;">
       <table>
         <thead>
           <tr>
             <th>Pos</th>
-            <th>Marble</th>
+            <th>Country / Code</th>
             <th>Time / Gap</th>
             <th id="winColExtra">Status</th>
           </tr>
@@ -811,18 +812,18 @@
     </div>
 
     <div class="grid-2">
-      <button class="btn btn-sec btn-sm" onclick="UI.WatchRewardedAd('rerace')">🎥 Ad: Re-Race</button>
+      <button class="btn btn-sec btn-sm" onclick="UI.WatchRewardedAd('rerace')">🎥 Re-Play Lap</button>
       <button class="btn btn-sec btn-sm" onclick="Game.shareClipOrResult()">📤 Share Result</button>
     </div>
-    <button class="btn btn-block" id="btnNextRaceStep" onclick="Game.nextStepAfterModal()">Continue ➔</button>
+    <button class="btn btn-green btn-block" id="btnNextRaceStep" onclick="Game.nextStepAfterModal()">Next Lap / Continue ➔</button>
   </div>
 </div>
 
 <!-- MANUAL COUNTRY PICKER MODAL -->
 <div id="pickerModal" class="modal-backdrop">
   <div class="modal-content">
-    <h3>Select Participating Countries & Territories</h3>
-    <input type="text" id="pickerSearch" placeholder="🔍 Search 250+ countries or territories..." oninput="UI.filterCountryPicker(this.value)" style="margin-bottom:8px;" />
+    <h3>Select Participating Countries & Marbles</h3>
+    <input type="text" id="pickerSearch" placeholder="🔍 Search 255 countries or code..." oninput="UI.filterCountryPicker(this.value)" style="margin-bottom:8px;" />
     <div style="display:flex; gap:6px; margin-bottom:8px;">
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(true)">Select All</button>
       <button class="btn btn-sm btn-sec" onclick="UI.selectAllCountries(false)">Clear All</button>
@@ -835,12 +836,12 @@
 <!-- SETTINGS MODAL -->
 <div id="settingsModal" class="modal-backdrop">
   <div class="modal-content">
-    <h3>⚙️ Orientation, Performance & Accessibility</h3>
-    <label>Screen Orientation Mode</label>
+    <h3>⚙️ Settings & Performance</h3>
+    <label>Screen Orientation</label>
     <select id="optOrientation" onchange="UI.setOrientationPref(this.value)">
-      <option value="any">Auto-Rotate (Portrait & Landscape)</option>
-      <option value="landscape">Lock Landscape (Wide View)</option>
-      <option value="portrait">Lock Portrait (Tall View)</option>
+      <option value="any">Auto-Rotate (Landscape & Portrait)</option>
+      <option value="landscape">Landscape Mode (Best Broadcast Layout)</option>
+      <option value="portrait">Portrait Mode</option>
     </select>
 
     <label>Language / اللغة / Langue / Idioma</label>
@@ -851,17 +852,11 @@
       <option value="es">Español</option>
     </select>
 
-    <label>Device Performance Quality & Marble Cap</label>
+    <label>Max Marble Cap (Device Performance)</label>
     <select id="optMaxMarbles" onchange="UI.applySettings()">
-      <option value="60">Low-End Phone (Max 60 Marbles • Ultra Smooth)</option>
-      <option value="150" selected>Medium Phone (Max 150 Marbles • Balanced)</option>
-      <option value="300">High Performance (Max 300 Marbles • Full World)</option>
-    </select>
-
-    <label>Colorblind High-Contrast Outlines</label>
-    <select id="optColorblind" onchange="UI.applySettings()">
-      <option value="0">Off</option>
-      <option value="1">On (High-Visibility Borders)</option>
+      <option value="80">80 Marbles (Fastest)</option>
+      <option value="160">160 Marbles (Balanced)</option>
+      <option value="256" selected>256 Marbles (Full World Broadcast)</option>
     </select>
 
     <label>Text Size Scaling</label>
